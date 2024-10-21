@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '@/shared/axiousintance'; // Ensure this path is correct
+import  { axiosInstanceMultipart } from '@/shared/axiousintance'; // Ensure this path is correct
 
 interface UploadEventFormProps {
-  onClose: () => void; // Define onClose prop type
+  onClose: () => void;
+}
+
+interface FormErrors {
+  bandName?: string;
+  mobileNumber?: string;
+  video?: string;
+  description?: string;
 }
 
 const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
   const [bandName, setBandName] = useState('');
-  const [place, setPlace] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [category, setCategory] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [video, setVideo] = useState<File | null>(null);
   const [description, setDescription] = useState('');
-  const [userId, setUserId] = useState<string | null>(null); // State to store user ID
-
-  // State for error messages
-  const [errors, setErrors] = useState({
-    bandName: '',
-    place: '',
-    videoUrl: '',
-    category: '',
-    description: '',
-  });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     const cookieToken = getCookie('userToken');
@@ -28,108 +26,100 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
       try {
         const payload = cookieToken.split('.')[1];
         const user = JSON.parse(atob(payload));
-        setUserId(user.id); // Set user ID from the token
+        setUserId(user.id);
       } catch (error) {
         console.error('Failed to parse user token:', error);
       }
     }
   }, []);
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!bandName.trim()) {
+      newErrors.bandName = 'Band Name is required.';
+    } else if (bandName.trim().length < 2) {
+      newErrors.bandName = 'Band Name must be at least 2 characters long.';
+    }
+
+    if (!mobileNumber.trim()) {
+      newErrors.mobileNumber = 'Mobile number is required.';
+    } else if (!isValidMobile(mobileNumber.trim())) {
+      newErrors.mobileNumber = 'Invalid mobile number.';
+    }
+
+    if (!video) {
+      newErrors.video = 'Please upload a video.';
+    }
+
+    if (!description.trim()) {
+      newErrors.description = 'Description is required.';
+    } else if (description.trim().length < 5) {
+      newErrors.description = 'Description must be at least 5 characters long.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Reset errors
-    setErrors({
-      bandName: '',
-      place: '',
-      videoUrl: '',
-      category: '',
-      description: '',
-    });
-
-    let isValid = true;
-
-    // Frontend validations
-    if (!bandName || bandName.length < 2) {
-      setErrors((prev) => ({ ...prev, bandName: 'Band Name must be at least 2 letters.' }));
-      isValid = false;
+  
+    if (!validateForm()) {
+      return;
     }
-    if (!place || place.length < 2) {
-      setErrors((prev) => ({ ...prev, place: 'Place must be at least 2 letters.' }));
-      isValid = false;
+  
+    const formData = new FormData();
+    formData.append('bandName', bandName.trim());
+    formData.append('mobileNumber', mobileNumber.trim());
+    if (video) {
+      formData.append('video', video);
     }
-    if (!videoUrl) {
-      setErrors((prev) => ({ ...prev, videoUrl: 'Video URL is required.' }));
-      isValid = false;
-    } else if (!isValidUrl(videoUrl)) {
-      setErrors((prev) => ({ ...prev, videoUrl: 'Invalid URL format.' }));
-      isValid = false;
+    formData.append('description', description.trim());
+    formData.append('user_id', userId || '');
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
     }
-    if (!category) {
-      setErrors((prev) => ({ ...prev, category: 'Category is required.' }));
-      isValid = false;
-    }
-    if (!description || description.length < 5) {
-      setErrors((prev) => ({ ...prev, description: 'Description must be at least 5 letters.' }));
-      isValid = false;
-    }
-
-    if (!isValid) return; // Stop submission if validation fails
-
-    const tempPerformerData = {
-      bandName,
-      place,
-      videoUrl,
-      category,
-      description,
-      user_id: userId, // Include user ID in the data
-    };
-
+  
     try {
-      console.log('hello world');
-      console.log(tempPerformerData);
-      const response = await axiosInstance.post('/tempPerformer', tempPerformerData);
+      const response = await axiosInstanceMultipart.post('/tempPerformer', formData);
       console.log('Response:', response.data);
-      onClose(); // Optionally close the modal after submission
+      onClose();
     } catch (error) {
       console.error('Error uploading event:', error);
     }
   };
-
+  
   const handleCancel = () => {
     setBandName('');
-    setPlace('');
-    setVideoUrl('');
-    setCategory('');
+    setMobileNumber('');
+    setVideo(null);
     setDescription('');
-    onClose(); // Close the modal on cancel
+    setErrors({});
+    onClose();
   };
 
-  const handleChange = (setter: React.Dispatch<React.SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (setter: React.Dispatch<React.SetStateAction<string>>, field: keyof FormErrors) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setter(e.target.value);
-    setErrors((prev) => ({ ...prev, [field]: '' })); // Clear error for the field being edited
+    setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const isValidUrl = (url: string) => {
-    const pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-      '((([a-z\\d]([a-z\\d-]*[a-z\\d])?)\\.)+[a-z]{2,}|' + // domain name
-      'localhost|' + // localhost
-      '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|' + // ipv4
-      '\\[?[a-f\\d]{1,4}(:?[a-f\\d]{1,4}){0,7}\\]?)' + // ipv6
-      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-      '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-      '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-    return !!pattern.test(url);
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setVideo(e.target.files[0]);
+      setErrors(prev => ({ ...prev, video: undefined }));
+    }
+  };
+
+  const isValidMobile = (mobile: string) => {
+    const mobilePattern = /^[0-9]{10}$/;
+    return mobilePattern.test(mobile);
   };
 
   const getCookie = (name: string): string | undefined => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-
-    if (parts.length > 1) {
-      return parts[1].split(';')[0];
-    }
-
+    if (parts.length > 1) return parts[1].split(';')[0];
     return undefined;
   };
 
@@ -143,46 +133,33 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
             type="text"
             value={bandName}
             onChange={handleChange(setBandName, 'bandName')}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.bandName ? 'border-red-500' : ''}`}
             placeholder="Enter the band name"
           />
-          {errors.bandName && <p className="text-red-600 text-sm">{errors.bandName}</p>} {/* Error message with smaller font size */}
+          {errors.bandName && <p className="text-red-500 text-sm mt-1">{errors.bandName}</p>}
         </div>
 
         <div className="mb-4">
-          <label className="block mb-1">Place:</label>
+          <label className="block mb-1">Mobile Number:</label>
           <input
             type="text"
-            value={place}
-            onChange={handleChange(setPlace, 'place')}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            placeholder="Enter the place"
+            value={mobileNumber}
+            onChange={handleChange(setMobileNumber, 'mobileNumber')}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.mobileNumber ? 'border-red-500' : ''}`}
+            placeholder="Enter your mobile number"
           />
-          {errors.place && <p className="text-red-600 text-sm">{errors.place}</p>} {/* Error message with smaller font size */}
+          {errors.mobileNumber && <p className="text-red-500 text-sm mt-1">{errors.mobileNumber}</p>}
         </div>
 
         <div className="mb-4">
-          <label className="block mb-1">Video URL:</label>
+          <label className="block mb-1">Upload Video:</label>
           <input
-            type="text"
-            value={videoUrl}
-            onChange={handleChange(setVideoUrl, 'videoUrl')}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            placeholder="Enter the video URL"
+            type="file"
+            accept="video/*"
+            onChange={handleVideoChange}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.video ? 'border-red-500' : ''}`}
           />
-          {errors.videoUrl && <p className="text-red-600 text-sm">{errors.videoUrl}</p>} {/* Error message with smaller font size */}
-        </div>
-
-        <div className="mb-4">
-          <label className="block mb-1">Category:</label>
-          <input
-            type="text"
-            value={category}
-            onChange={handleChange(setCategory, 'category')}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-            placeholder="Enter the category"
-          />
-          {errors.category && <p className="text-red-600 text-sm">{errors.category}</p>} {/* Error message with smaller font size */}
+          {errors.video && <p className="text-red-500 text-sm mt-1">{errors.video}</p>}
         </div>
 
         <div className="mb-4">
@@ -190,10 +167,10 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
           <textarea
             value={description}
             onChange={handleChange(setDescription, 'description')}
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.description ? 'border-red-500' : ''}`}
             placeholder="Enter a brief description"
           />
-          {errors.description && <p className="text-red-600 text-sm">{errors.description}</p>} {/* Error message with smaller font size */}
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
         </div>
 
         <div className="flex justify-between mt-4">

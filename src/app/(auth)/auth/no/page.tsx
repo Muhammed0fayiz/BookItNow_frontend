@@ -18,8 +18,10 @@ const LoginSignup: React.FC = () => {
   const [signUpData, setSignUpData] = useState<{ fullName: string; email: string; password: string; confirmPassword: string }>({ fullName: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<{ fullName: string; email: string; password: string; confirmPassword: string }>({ fullName: '', email: '', password: '', confirmPassword: '' });
   const [loginErrors, setLoginErrors] = useState<{ email: string; password: string }>({ email: '', password: '' });
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
 
   const handleUserLoginChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -198,89 +200,6 @@ const LoginSignup: React.FC = () => {
     }
   };
 
-  // const userLogin = async () => {
-  //   if (validateLoginForm()) {
-  //     const loadingToast = toast.loading('Logging in...');
-  //     try {
-  //       const response = await axiosInstance.post('/userlogin', userLoginData);
-       
-  //       toast.dismiss(loadingToast);
-  
-  //       if (response.data && response.data.token) {
-  //         document.cookie = `userToken=${response.data.token}; path=/; secure;`;
-  //         toast.success('Login successful!');
-  //         router.replace('/home');
-  //       } else {
-  //         toast.error('Login successful, but no token received.');
-  //       }
-  //     } catch (error: any) {
-  //       toast.dismiss(loadingToast);
-  //       if (error.response && error.response.status === 401) {
-  //         toast.error('Invalid email or password');
-  //       } else if(error.response.status==403){
-  //         console.log('403')
-  //       }
-  //       else {
-  //         toast.error('An error occurred during login. Please try again.');
-  //         console.error('An error occurred:', error);
-  //       }
-  //     }
-  //   }
-  // };
-  
-  // const performerLogin = async () => {
-  //   if (validateLoginForm()) {
-  //     const loadingToast = toast.loading('Logging in...');
-  //     try {
-  //       const response = await axiosInstance.post('/performerlogin', performerLoginData);
-  //       toast.dismiss(loadingToast);
-  
-  //       if (response.data && response.data.token) {
-  //         document.cookie = `userToken=${response.data.token}; path=/; secure;`;
-  //         toast.success('Login successful!');
-  //         router.replace('/performer-dashboard');
-  //       } else {
-  //         toast.error('Login successful, but no token received.');
-  //       }
-  //     } catch (error: any) {
-  //       toast.dismiss(loadingToast);
-  //       if (error.response && error.response.status === 401) {
-  //         toast.error('Invalid email or password');
-  //       } else {
-  //         toast.error('An error occurred during login. Please try again.');
-  //         console.error('An error occurred:', error);
-  //       }
-  //     }
-  //   }
-  // };
-  const performerLogin = async () => {
-    if (validateLoginForm()) {
-      const loadingToast = toast.loading('Logging in...');
-      try {
-        const response = await axiosInstance.post('/performerlogin', performerLoginData);
-        toast.dismiss(loadingToast);
-  
-        if (response.data && response.data.token) {
-          document.cookie = `userToken=${response.data.token}; path=/; secure;`;
-          toast.success('Login successful!');
-          router.replace('/performer-dashboard');
-        } else {
-          toast.error('Login successful, but no token received.');
-        }
-      } catch (error: any) {
-        toast.dismiss(loadingToast);
-        if (error.response && error.response.status === 401) {
-          toast.error('Invalid email or password');
-        } else if (error.response && error.response.status === 403) {
-          toast.error('Your account has been blocked');
-        } else {
-          toast.error('An error occurred during login. Please try again.');
-          console.error('An error occurred:', error);
-        }
-      }
-    }
-  };
-
   const userLogin = async () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
@@ -291,7 +210,7 @@ const LoginSignup: React.FC = () => {
         if (response.data && response.data.token) {
           document.cookie = `userToken=${response.data.token}; path=/; secure;`;
           toast.success('Login successful!');
-          router.replace('/home');
+          router.replace ('/home');
         } else {
           toast.error('Login successful, but no token received.');
         }
@@ -299,8 +218,6 @@ const LoginSignup: React.FC = () => {
         toast.dismiss(loadingToast);
         if (error.response && error.response.status === 401) {
           toast.error('Invalid email or password');
-        } else if (error.response && error.response.status === 403) {
-          toast.error('Your account has been blocked');
         } else {
           toast.error('An error occurred during login. Please try again.');
           console.error('An error occurred:', error);
@@ -308,18 +225,71 @@ const LoginSignup: React.FC = () => {
       }
     }
   };
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  
+  const performerLogin = async () => {
+    if (validateLoginForm()) {
+      const loadingToast = toast.loading('Logging in...');
+      try {
+        const response = await axiosInstance.post('/performerlogin', performerLoginData);
+        toast.dismiss(loadingToast);
+  
+        if (response.data && response.data.token) {
+          document.cookie = `userToken=${response.data.token}; path=/; secure;`;
+          toast.success('Login successful!');
+          router.replace ('/performer-dashboard');
+        } else {
+          toast.error('Login successful, but no token received.');
+        }
+      } catch (error: any) {
+        toast.dismiss(loadingToast);
+        if (error.response && error.response.status === 401) {
+          toast.error('Invalid email or password');
+        } else {
+          toast.error('An error occurred during login. Please try again.');
+          console.error('An error occurred:', error);
+        }
+      }
+    }
   };
 
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
+  const PasswordInput = ({ 
+    name, 
+    value, 
+    onChange, 
+    placeholder, 
+    showPassword, 
+    toggleShowPassword 
+  }: { 
+    name: string; 
+    value: string; 
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void; 
+    placeholder: string; 
+    showPassword: boolean; 
+    toggleShowPassword: () => void;
+  }) => (
+    <div className="relative">
+      <input 
+        type={showPassword ? "text" : "password"}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none pr-10"
+      />
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 flex items-center px-3"
+        onClick={toggleShowPassword}
+      >
+        {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+      </button>
+    </div>
+  );
 
   return (
     <div className="container flex items-center justify-center h-screen bg-gradient-to-r from-gray-200 to-blue-300">
       <div className="flex w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
-        <Toaster />
+      <Toaster />
 
         {/* Left Side - Image */}
         <div className="w-1/2 hidden md:block">
@@ -357,42 +327,24 @@ const LoginSignup: React.FC = () => {
               />
               {errors.email && <p className="text-red-500 mb-2">{errors.email}</p>}
               
-              <div className="relative w-full mb-4">
-                <input 
-                  type={showPassword ? "text" : "password"}
-                  name="password" 
-                  value={signUpData.password} 
-                  onChange={handleSignUpChange} 
-                  placeholder="Password" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none pr-10"
-                />
-                <button 
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+              <PasswordInput 
+                name="password"
+                value={signUpData.password}
+                onChange={handleSignUpChange}
+                placeholder="Password"
+                showPassword={showPassword}
+                toggleShowPassword={() => setShowPassword(!showPassword)}
+              />
               {errors.password && <p className="text-red-500 mb-2">{errors.password}</p>}
               
-              <div className="relative w-full mb-4">
-                <input 
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword" 
-                  value={signUpData.confirmPassword} 
-                  onChange={handleSignUpChange} 
-                  placeholder="Confirm Password" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none pr-10"
-                />
-                <button 
-                  type="button"
-                  onClick={toggleConfirmPasswordVisibility}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+              <PasswordInput 
+                name="confirmPassword"
+                value={signUpData.confirmPassword}
+                onChange={handleSignUpChange}
+                placeholder="Confirm Password"
+                showPassword={showConfirmPassword}
+                toggleShowPassword={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
               {errors.confirmPassword && <p className="text-red-500 mb-2">{errors.confirmPassword}</p>}
               
               <h1 className="text-red-600 font-semibold text-lg">{emailexisterror ? emailexisterror : ""}</h1>
@@ -402,67 +354,58 @@ const LoginSignup: React.FC = () => {
             </div>
           ) : (
             <div className="form-container">
-  <h1 className="text-3xl font-bold mb-6 text-center">{isPerformer ? 'Sign In as Performer' : 'Sign In as User'}</h1>
-  <input 
-    type="email" 
-    name="email" 
-    value={isPerformer ? performerLoginData.email : userLoginData.email} 
-    onChange={isPerformer ? handlePerformerLoginChange : handleUserLoginChange} 
-    placeholder="Email" 
-    className="w-full px-3 py-2 mb-1 border border-gray-300 rounded-md focus:outline-none"
-  />
-  {loginErrors.email && <p className="text-red-500 mb-2 text-sm">{loginErrors.email}</p>}
+            <h1 className="text-3xl font-bold mb-6 text-center">{isPerformer ? 'Sign In as Performer' : 'Sign In as User'}</h1>
+            <input 
+              type="email" 
+              name="email" 
+              value={isPerformer ? performerLoginData.email : userLoginData.email} 
+              onChange={isPerformer ? handlePerformerLoginChange : handleUserLoginChange} 
+              placeholder="Email" 
+              className="w-full px-3 py-2 mb-1 border border-gray-300 rounded-md focus:outline-none"
+            />
+            {loginErrors.email && <p className="text-red-500 mb-2 text-sm">{loginErrors.email}</p>}
 
-  <div className="relative w-full mb-4">
-    <input 
-      type={showPassword ? "text" : "password"}
-      name="password" 
-      value={isPerformer ? performerLoginData.password : userLoginData.password} 
-      onChange={isPerformer ? handlePerformerLoginChange : handleUserLoginChange} 
-      placeholder="Password" 
-      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none pr-10"
-    />
-    <button 
-      type="button"
-      onClick={togglePasswordVisibility}
-      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-    >
-      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-    </button>
-  </div>
-  {loginErrors.password && <p className="text-red-500 mb-2 text-sm">{loginErrors.password}</p>}
-              
-  <button onClick={isPerformer ? performerLogin : userLogin} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">Log In</button>
+            <PasswordInput 
+              name="password"
+              value={isPerformer ? performerLoginData.password : userLoginData.password}
+              onChange={isPerformer ? handlePerformerLoginChange : handleUserLoginChange}
+              placeholder="Password"
+              showPassword={showLoginPassword}
+              toggleShowPassword={() => setShowLoginPassword(!showLoginPassword)}
+            />
+            {loginErrors.password && <p className="text-red-500 mb-2 text-sm">{loginErrors.password}</p>}
+            
+            <button onClick={isPerformer ? performerLogin : userLogin} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">Log In</button>
 
-  {!isPerformer && (
-    <button
-      className="w-full bg-red-600 text-white py-2 mt-4 rounded-md hover:bg-red-700"
-    >
-      Log In with Google
-    </button>
-  )}
+            {!isPerformer && (
+              <button
+                // onClick={googleLogin}
+                className="w-full bg-red-600 text-white py-2 mt-4 rounded-md hover:bg-red-700"
+              >
+                Log In with Google
+              </button>
+            )}
 
-  <p className="text-center mt-4">Don't have an account? <button onClick={toggleForm} className="text-blue-600 hover:underline">Sign Up</button></p>
-              
-  <div className="text-center mt-4">
-          <button onClick={toggleRole} className="text-sm text-gray-700 hover:underline">{isPerformer ? 'Switch to User Login' : 'Switch to Performer Login'}</button>
-        </div>
+            <p className="text-center mt-4">Don't have an account? <button onClick={toggleForm} className="text-blue-600 hover:underline">Sign Up</button></p>
+            
+            <div className="text-center mt-4">
+              <button onClick={toggleRole} className="text-sm text-gray-700 hover:underline">{isPerformer ? 'Switch to User Login' : 'Switch to Performer Login'}</button>
+            </div>
+          </div>
+        )}
       </div>
-    )}
+    </div>
+
+    <style jsx>{`
+      .form-container {
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+    `}</style>
   </div>
-</div>
-
-<style jsx>{`
-  .form-container {
-    height: 500px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-`}</style>
-
-</div>
 );
 };
 

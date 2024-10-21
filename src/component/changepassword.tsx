@@ -2,6 +2,7 @@
 import axiosInstance from '@/shared/axiousintance';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Function to validate password
 export function isValidPassword(password: string): boolean {
@@ -22,6 +23,8 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, userId
     const [errorCurrentPassword, setErrorCurrentPassword] = useState<string | null>(null);
     const [errorNewPassword, setErrorNewPassword] = useState<string | null>(null);
     const [errorConfirmPassword, setErrorConfirmPassword] = useState<string | null>(null);
+    const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
+    const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,22 +82,40 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, userId
             <form onSubmit={handleChangePassword}>
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Current Password</label>
-                    <input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
+                    <div className="relative">
+                        <input
+                            type={showCurrentPassword ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                            {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
                     {errorCurrentPassword && <div className="text-red-500 text-xs italic mt-1">{errorCurrentPassword}</div>}
                 </div>
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
-                    <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
+                    <div className="relative">
+                        <input
+                            type={showNewPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                            {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
                     {errorNewPassword && <div className="text-red-500 text-xs italic mt-1">{errorNewPassword}</div>}
                 </div>
                 <div className="mb-6">

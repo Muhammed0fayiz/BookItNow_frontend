@@ -102,7 +102,7 @@ const Profile: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Top Navbar */}
-      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 flex justify-between items-center px-6 py-4">
+      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 flex justify-between items-center px-6 py-4 z-50">
         <a href="/home">
           <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
         </a>
@@ -119,7 +119,7 @@ const Profile: React.FC = () => {
       {/* Main Content */}
       <div className="flex flex-1 pt-20">
         {/* Left Sidebar */}
-        <aside className={`w-64 bg-blue-600 text-white p-6 fixed top-16 left-0 h-full transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <aside className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}>
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
               <img
@@ -159,8 +159,8 @@ const Profile: React.FC = () => {
         </aside>
 
         {/* Profile Section */}
-        <div className={`flex-1 flex justify-center items-center ${sidebarOpen ? 'blur-sm' : ''}`}>
-          <div className={`bg-white rounded-lg shadow-lg p-8 relative w-full max-w-md ${sidebarOpen ? 'opacity-30' : ''}`}>
+        <div className={`flex-1 flex justify-center items-center ${sidebarOpen ? 'md:ml-64' : ''} p-6`}>
+          <div className={`bg-white rounded-lg shadow-lg p-8 relative w-full max-w-md ${sidebarOpen ? 'md:opacity-100' : ''}`}>
             <div className="relative flex justify-center mb-6">
               <div className="w-32 h-32 rounded-full overflow-hidden border-8 border-white shadow-lg absolute -top-16">
                 <img
@@ -243,7 +243,7 @@ const Profile: React.FC = () => {
 
       {/* Overlay for Mobile View */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black opacity-50" onClick={toggleSidebar}></div>
+        <div className="fixed inset-0 bg-black opacity-50 md:hidden" onClick={toggleSidebar}></div>
       )}
     </div>
   );

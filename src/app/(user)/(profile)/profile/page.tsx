@@ -1,10 +1,10 @@
 import React from 'react'
-import PerformerDashboard from './component/performer_dashboard'
+import Profile from './_component/profile'
 
 const page = () => {
   return (
     <div>
-      <PerformerDashboard/>
+<Profile/>
     </div>
   )
 }

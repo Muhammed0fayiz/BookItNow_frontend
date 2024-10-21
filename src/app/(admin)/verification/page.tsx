@@ -7,13 +7,13 @@ import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faInbox } from '@forta
 import { Dialog, Transition } from '@headlessui/react';
 import axiosInstance from '@/shared/axiousintance';
 
-// Define the type for Performer
 type Performer = {
     id: string;
     bandName: string;
     createdAt: string;
-    videoUrl: string;
-    place: string;
+    video: string;
+    mobileNumber: string;
+    description: string;
     isVerified: boolean;
     isRejected: boolean;
 };
@@ -55,53 +55,45 @@ const Verification: React.FC = () => {
       const fetchPerformers = async () => {
         try {
           const response = await axiosInstance.get('/getTempPerformers');
-          console.log('Response:', response);
-
           if (response.data && response.data.data) {
             const performersData = response.data.data.map((performer: any): Performer => ({
               id: performer._id,
               bandName: performer.bandName,
               createdAt: performer.createdAt,
-              videoUrl: performer.videoUrl,
-              place: performer.place,
-              isVerified: performer.isVerified,
+              video: performer.video,
+              mobileNumber: performer.mobileNumber,
+              description: performer.description,
+              isVerified: performer.isVerified || false,
               isRejected: performer.isRejected || false,
             }));
-
             setPerformers(performersData);
           }
         } catch (error) {
           console.error('Error fetching performers:', error);
         }
       };
-
       fetchPerformers();
     }
   }, [sessionValid]);
 
   const handleLogout = async () => {
     try {
-      console.log('handle logout')
       const response = await axiosInstance.post('/adminLogout');
-      console.log('response',response)
       if (response.data.success) {
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
-      } else {
-        console.error('Logout failed:', response.data.message);
       }
     } catch (error) {
       console.error('Error during logout:', error);
     }
   };
+
   const handleVerificationStatusChange = async (id: string, status: boolean) => {
     try {
       if (status) {
-        // Approve performer
         await axiosInstance.post(`/grant-performer-permission/${id}`, { isVerified: true, isRejected: false });
       } else {
-        // Reject performer
         await axiosInstance.post(`/reject-performer-permission/${id}`, { isVerified: false, isRejected: true });
       }
       
@@ -124,7 +116,6 @@ const Verification: React.FC = () => {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Pagination Logic
   const totalPages = Math.ceil(performers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const selectedPerformers = performers.slice(startIndex, startIndex + itemsPerPage);
@@ -146,11 +137,8 @@ const Verification: React.FC = () => {
       <FontAwesomeIcon icon={faInbox} className="mx-auto h-12 w-12 text-gray-400" />
       <h3 className="mt-2 text-2xl font-medium text-gray-900">No submissions available</h3>
       <p className="mt-1 text-sm text-gray-500">Get started by adding new performers to verify.</p>
-     
     </div>
   );
-
-  // ... (rest of the component logic remains the same)
 
   if (loading) {
     return (
@@ -163,10 +151,7 @@ const Verification: React.FC = () => {
     );
   }
 
-  if (!sessionValid) {
-    return null; // or a custom message if needed
-  }
-
+  if (!sessionValid) return null;
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -196,7 +181,6 @@ const Verification: React.FC = () => {
                 </a>
               </li>
             ))}
-            {/* Logout item now triggers handleLogout */}
             <li>
               <button onClick={handleLogout} className="w-full text-left flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
                 <FontAwesomeIcon icon={faSignOutAlt} className="mr-3" />
@@ -220,8 +204,9 @@ const Verification: React.FC = () => {
                     <tr className="bg-indigo-700 text-white">
                       <th className="p-4">Band Name</th>
                       <th className="p-4">Submit Date</th>
-                      <th className="p-4">Video Link</th>
-                      <th className="p-4">Place</th>
+                      <th className="p-4">Video</th>
+                      <th className="p-4">Mobile Number</th>
+                      <th className="p-4">Description</th>
                       <th className="p-4">Status</th>
                     </tr>
                   </thead>
@@ -231,9 +216,10 @@ const Verification: React.FC = () => {
                         <td className="p-4">{performer.bandName}</td>
                         <td className="p-4">{new Date(performer.createdAt).toLocaleDateString()}</td>
                         <td className="p-4">
-                          <a href={performer.videoUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View Video</a>
+                          <a href={performer.video} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View Video</a>
                         </td>
-                        <td className="p-4">{performer.place}</td>
+                        <td className="p-4">{performer.mobileNumber}</td>
+                        <td className="p-4">{performer.description}</td>
                         <td className="p-4">
                           {performer.isVerified && (
                             <span className="text-green-500 font-semibold">Approved</span>
@@ -279,7 +265,6 @@ const Verification: React.FC = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       <Transition appear show={confirmationOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setConfirmationOpen(false)}>
           <Transition.Child

@@ -19,7 +19,7 @@ interface Performer {
     _id: string;
     userId: string;
     bandName: string;
-    place: string;
+    mobileNumber: string;
     rating: number;
     isBlocked: boolean;
 }
@@ -90,7 +90,7 @@ const UserPerformerManagement = () => {
                             _id: performer._id,
                             userId: performer.userId.toString(),
                             bandName: performer.bandName,
-                            place: performer.place,
+                            mobileNumber: performer.mobileNumber,
                             rating: performer.rating,
                             isBlocked: performer.userId.isBlocked,
                         }));
@@ -164,7 +164,7 @@ const UserPerformerManagement = () => {
           )
         : performers.filter(performer => 
             performer.bandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            performer.place.toLowerCase().includes(searchTerm.toLowerCase())
+            performer.mobileNumber.toLowerCase().includes(searchTerm.toLowerCase())
           );
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -216,7 +216,7 @@ const UserPerformerManagement = () => {
                         />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold">Admin Name</h3>
+                        <h3 className="text-lg font-semibold">Admin</h3>
                         <span className="text-sm font-light">Administrator</span>
                     </div>
                 </div>
@@ -287,7 +287,7 @@ const UserPerformerManagement = () => {
                                 <thead>
                                     <tr className="bg-indigo-700 text-white">
                                         <th className="p-4">{view === 'users' ? 'Name' : 'Band Name'}</th>
-                                        <th className="p-4">{view === 'users' ? 'Email' : 'Place'}</th>
+                                        <th className="p-4">{view === 'users' ? 'Email' : 'mobileNumber'}</th>
                                         <th className="p-4">{view === 'users' ? 'Verified' : 'Rating'}</th>
                                         <th className="p-4">Status</th>
                                         <th className="p-4">Actions</th>
@@ -298,7 +298,7 @@ const UserPerformerManagement = () => {
                                         currentItems.map((item: Item) => (
                                             <tr key={isUser(item) ? item.id : item._id} className="border-b hover:bg-gray-100">
                                                 <td className="p-4">{isUser(item) ? item.name : item.bandName}</td>
-                                                <td className="p-4">{isUser(item) ? item.email : item.place}</td>
+                                                <td className="p-4">{isUser(item) ? item.email : item.mobileNumber}</td>
                                                 <td className="p-4">
                                                     {isUser(item) ? (item.isVerified ? 'Yes' : 'No') : item.rating}
                                                 </td>
