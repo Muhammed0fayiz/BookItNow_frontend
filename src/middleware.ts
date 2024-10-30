@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
     const tokenCookie = req.cookies.get('userToken');
     const token = tokenCookie ? tokenCookie.value : null;
     const userProtectedPaths = ['/profile', '/home'];
-    const performerProtectedPaths = ['/performer-dashboard', '/performer-events','/performer-profile'];
+    const performerProtectedPaths = ['/performer-dashboard', '/performer-events','/performer-profile','/event-management','/eventupdate'];
     const authPath = '/auth';
 
     // Function to decode the token
@@ -77,5 +77,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events','/performer-profile'],
+    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events','/performer-profile','/performer-profile','/event-management','/eventupdate'],
 };

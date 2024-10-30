@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 // types/store.ts
 export interface PerformerDetails {
   PId: string; // Add this line if missing

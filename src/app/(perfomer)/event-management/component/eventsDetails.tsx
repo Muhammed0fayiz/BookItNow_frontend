@@ -6,6 +6,7 @@ import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import { useChatStore } from '@/store/useChatStore';
 import useEventManagerStore from '@/store/useEventManagerStore';
+import usePerformerStore from '@/store/usePerformerStore';
 
 interface Event {
   id: number;
@@ -72,11 +73,14 @@ const EventManagementDashboard: React.FC = () => {
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
   const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
   const { eventManagerDetails, fetchEventManagerDetails } = useEventManagerStore();
-
+  const { performerDetails, stats, fetchPerformerDetails, handleLogout: storeHandleLogout } = usePerformerStore();
   useEffect(() => {
     fetchEventManagerDetails();
   }, [fetchEventManagerDetails]);
-
+  React.useEffect(() => {
+    fetchPerformerDetails();
+  }, [fetchPerformerDetails]);
+  
   const sidebarDetails = eventManagerDetails ? {
     bandName: eventManagerDetails.name || '',
     imageUrl: '',
@@ -88,7 +92,7 @@ const EventManagementDashboard: React.FC = () => {
   };
 
   const handleCreateEvent = () => {
-    console.log('Create new event');
+   router.replace('/eventupdate')
   };
 
   const handleEditEvent = (eventId: number) => {
@@ -115,9 +119,9 @@ const EventManagementDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar 
+         <Sidebar 
         isOpen={sidebarOpen}
-        performerDetails={sidebarDetails}
+        performerDetails={performerDetails}
         onLogout={handleLogout}
       />
 

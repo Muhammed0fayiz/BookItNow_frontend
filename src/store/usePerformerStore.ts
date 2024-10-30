@@ -74,7 +74,9 @@ const usePerformerStore = create<PerformerStore>((set) => ({
           id: Date.now(),
           text: message,
           sender: 'performer',
-          timestamp: new Date()  // Added timestamp field
+          timestamp: new Date() // Added timestamp field
+          ,
+          content: undefined
         };
         
         return {
