@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import  { axiosInstanceMultipart } from '@/shared/axiousintance'; // Ensure this path is correct
+import { axiosInstanceMultipart } from '@/shared/axiousintance';
 
 interface UploadEventFormProps {
   onClose: () => void;
@@ -12,12 +12,22 @@ interface FormErrors {
   description?: string;
 }
 
+interface FormData {
+  bandName: string;
+  mobileNumber: string;
+  description: string;
+  video: File | null;
+  user_id: string;
+}
+
 const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
-  const [bandName, setBandName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [video, setVideo] = useState<File | null>(null);
-  const [description, setDescription] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    bandName: '',
+    mobileNumber: '',
+    description: '',
+    video: null,
+    user_id: '',
+  });
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
@@ -26,7 +36,7 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
       try {
         const payload = cookieToken.split('.')[1];
         const user = JSON.parse(atob(payload));
-        setUserId(user.id);
+        setFormData(prev => ({ ...prev, user_id: user.id }));
       } catch (error) {
         console.error('Failed to parse user token:', error);
       }
@@ -35,6 +45,7 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+    const { bandName, mobileNumber, video, description } = formData;
 
     if (!bandName.trim()) {
       newErrors.bandName = 'Band Name is required.';
@@ -69,49 +80,55 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
       return;
     }
   
-    const formData = new FormData();
-    formData.append('bandName', bandName.trim());
-    formData.append('mobileNumber', mobileNumber.trim());
-    if (video) {
-      formData.append('video', video);
-    }
-    formData.append('description', description.trim());
-    formData.append('user_id', userId || '');
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
+    const submitFormData = new FormData();
+    
+    // Type-safe way to append form data
+    submitFormData.append('bandName', formData.bandName.trim());
+    submitFormData.append('mobileNumber', formData.mobileNumber.trim());
+    submitFormData.append('description', formData.description.trim());
+    submitFormData.append('user_id', formData.user_id);
+    
+    if (formData.video) {
+      submitFormData.append('video', formData.video);
     }
   
     try {
-      const response = await axiosInstanceMultipart.post('/tempPerformer', formData);
+      const response = await axiosInstanceMultipart.post('/tempPerformer', submitFormData);
       console.log('Response:', response.data);
       onClose();
     } catch (error) {
       console.error('Error uploading event:', error);
+      // You might want to show an error message to the user here
     }
   };
-  
+
   const handleCancel = () => {
-    setBandName('');
-    setMobileNumber('');
-    setVideo(null);
-    setDescription('');
+    setFormData({
+      bandName: '',
+      mobileNumber: '',
+      description: '',
+      video: null,
+      user_id: formData.user_id, // Preserve user_id
+    });
     setErrors({});
     onClose();
   };
 
-  const handleChange = (setter: React.Dispatch<React.SetStateAction<string>>, field: keyof FormErrors) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setter(e.target.value);
+  const handleChange = (field: keyof FormData) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
     setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setVideo(e.target.files[0]);
+      setFormData(prev => ({ ...prev, video: e.target.files![0] }));
       setErrors(prev => ({ ...prev, video: undefined }));
     }
   };
 
-  const isValidMobile = (mobile: string) => {
+  const isValidMobile = (mobile: string): boolean => {
     const mobilePattern = /^[0-9]{10}$/;
     return mobilePattern.test(mobile);
   };
@@ -131,9 +148,11 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
           <label className="block mb-1">Band Name:</label>
           <input
             type="text"
-            value={bandName}
-            onChange={handleChange(setBandName, 'bandName')}
-            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.bandName ? 'border-red-500' : ''}`}
+            value={formData.bandName}
+            onChange={handleChange('bandName')}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${
+              errors.bandName ? 'border-red-500' : ''
+            }`}
             placeholder="Enter the band name"
           />
           {errors.bandName && <p className="text-red-500 text-sm mt-1">{errors.bandName}</p>}
@@ -143,9 +162,11 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
           <label className="block mb-1">Mobile Number:</label>
           <input
             type="text"
-            value={mobileNumber}
-            onChange={handleChange(setMobileNumber, 'mobileNumber')}
-            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.mobileNumber ? 'border-red-500' : ''}`}
+            value={formData.mobileNumber}
+            onChange={handleChange('mobileNumber')}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${
+              errors.mobileNumber ? 'border-red-500' : ''
+            }`}
             placeholder="Enter your mobile number"
           />
           {errors.mobileNumber && <p className="text-red-500 text-sm mt-1">{errors.mobileNumber}</p>}
@@ -157,7 +178,9 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
             type="file"
             accept="video/*"
             onChange={handleVideoChange}
-            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.video ? 'border-red-500' : ''}`}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${
+              errors.video ? 'border-red-500' : ''
+            }`}
           />
           {errors.video && <p className="text-red-500 text-sm mt-1">{errors.video}</p>}
         </div>
@@ -165,9 +188,11 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
         <div className="mb-4">
           <label className="block mb-1">Description:</label>
           <textarea
-            value={description}
-            onChange={handleChange(setDescription, 'description')}
-            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${errors.description ? 'border-red-500' : ''}`}
+            value={formData.description}
+            onChange={handleChange('description')}
+            className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300 ${
+              errors.description ? 'border-red-500' : ''
+            }`}
             placeholder="Enter a brief description"
           />
           {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}

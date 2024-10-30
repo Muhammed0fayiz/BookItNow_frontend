@@ -1,26 +1,17 @@
 'use client'
-import React, { useState, ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, UserCircle, Calendar, Clock, LogOut, MessageCircle, Send, LayoutDashboard } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+import { Menu, MessageCircle, Send } from 'lucide-react';
+import Sidebar from '@/component/performersidebar';
+import { useUIStore } from '@/store/useUIStore';
+import { useChatStore } from '@/store/useChatStore';
+import usePerformerStore from '@/store/usePerformerStore';
 
+// import { usePerformerStore } from '@/store/usePerformerStore';
 
 interface DashboardSectionProps {
   title: string;
   children: ReactNode;
-}
-
-interface ChatMessage {
-  id: number;
-  text: string;
-  sender: 'user' | 'performer';
-}
-
-interface PerformerDetails {
-  bandName: string;
-  place: string;
-  rating: number;
-  description: string;
 }
 
 const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) => (
@@ -32,116 +23,37 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) 
 
 const PerformerDashboard: React.FC = () => {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [chatOpen, setChatOpen] = useState<boolean>(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState<string>('');
-  const [performerDetails, setPerformerDetails] = useState<PerformerDetails | null>(null);
+  
+  // UI Store
+  const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
+  
+  // Performer Store
+  const { performerDetails, fetchPerformerDetails } = usePerformerStore();
+  
+  // Chat Store
+  const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
 
   useEffect(() => {
-   
-    const fetchPerformerDetails = async () => {
-      try {
-        const token = getCookie('userToken');
-        if (token) {
-          const payload = token.split('.')[1];
-          const decodedPayload = JSON.parse(atob(payload));
-          const userId = decodedPayload.id;
-          
-          const response = await axiosInstance.get(`/getPerfomer/${userId}`);
-          if (response.data) {
-            setPerformerDetails(response.data.response);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch performer details:', error);
-      }
-   
-    };
-
     fetchPerformerDetails();
-  }, []);
-
-  const getCookie = (name: string): string | undefined => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length > 1) return parts[1].split(';')[0];
-    return undefined;
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  const toggleChat = () => {
-    setChatOpen(!chatOpen);
-  };
-
-  const sendMessage = () => {
-    if (newMessage.trim()) {
-      setMessages([...messages, { id: Date.now(), text: newMessage, sender: 'performer' }]);
-      setNewMessage('');
-    }
-  };
+  }, [fetchPerformerDetails]);
 
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     router.push('/auth');
   };
+  useEffect(() => {
+    console.log('hello', performerDetails);
+  }, []); // Add performerDetails to dependency array
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Left Sidebar */}
-      <aside className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-20`}>
-        {/* Performer Avatar and Name */}
-        <div className="flex items-center mb-8">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-            <img
-              src="/api/placeholder/48/48"
-              alt="Performer"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div>
-            <h3 className="text-md font-semibold">{performerDetails?.bandName || 'Loading...'}</h3>
-            <span className="text-sm font-light">Performer</span>
-          </div>
-        </div>
-
-        {/* Sidebar Links */}
-        <ul className="space-y-4">
-          <li>
-            <a href="#dashboard" className="flex items-center text-lg hover:bg-blue-700 p-3 rounded">
-              <LayoutDashboard className="mr-2" size={20} /> Dashboard
-            </a>
-          </li>
-          <li>
-            <a href="#eventmanagement" className="flex items-center text-lg hover:bg-blue-700 p-3 rounded">
-              <Calendar className="mr-2" size={20} /> Events Details
-            </a>
-          </li>
-          <li>
-            <a href="#slotmanagement" className="flex items-center text-lg hover:bg-blue-700 p-3 rounded">
-              <Clock className="mr-2" size={20} /> Slot Management
-            </a>
-          </li>
-          <li>
-            <a href="#upcomingevents" className="flex items-center text-lg hover:bg-blue-700 p-3 rounded">
-              <Calendar className="mr-2" size={20} /> Upcoming Events
-            </a>
-          </li>
-          <li>
-            <a href="#eventhistory" className="flex items-center text-lg hover:bg-blue-700 p-3 rounded">
-              <Clock className="mr-2" size={20} /> Event History
-            </a>
-          </li>
-          <li>
-            <a className="flex items-center text-lg hover:bg-blue-700 p-3 rounded cursor-pointer" onClick={handleLogout}>
-              <LogOut className="mr-2" size={20} /> Logout
-            </a>
-          </li>
-        </ul>
-      </aside>
+      {/* Sidebar Component */}
+      <Sidebar 
+        isOpen={sidebarOpen}
+        performerDetails={performerDetails}
+        onLogout={handleLogout}
+      />
 
       {/* Main Content */}
       <div className="flex-1 md:ml-64">
@@ -160,30 +72,31 @@ const PerformerDashboard: React.FC = () => {
           </div>
         </nav>
 
-        {/* Performer Content Section */}
+        {/* Dashboard Content */}
         <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>
           <DashboardSection title="Dashboard">
-            <p>Welcome to your dashboard, {performerDetails?.bandName}. Here's an overview of your activities.</p>
-            <p>Location: {performerDetails?.place}</p>
-            <p>Rating: {performerDetails?.rating}</p>
-            <p>Description: {performerDetails?.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className="bg-blue-100 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Band Name</h3>
+                <p>{performerDetails?.bandName || 'Loading...'}</p>
+              </div>
+              <div className="bg-green-100 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Location</h3>
+                <p>{performerDetails?.place || 'Loading...'}</p>
+              </div>
+              <div className="bg-yellow-100 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Rating</h3>
+                <p>{performerDetails?.rating || 'N/A'} / 5</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Description</h3>
+              <p>{performerDetails?.description || 'No description available.'}</p>
+            </div>
           </DashboardSection>
 
-          <DashboardSection title="Event Management">
-            <p>Manage your events here.</p>
-          </DashboardSection>
+          {/* Rest of the DashboardSections remain the same */}
 
-          <DashboardSection title="Slot Management">
-            <p>Manage your available time slots.</p>
-          </DashboardSection>
-
-          <DashboardSection title="Upcoming Events">
-            <p>View your upcoming events.</p>
-          </DashboardSection>
-
-          <DashboardSection title="Event History">
-            <p>Review your past events.</p>
-          </DashboardSection>
         </div>
 
         {/* Chat Section */}
@@ -195,7 +108,7 @@ const PerformerDashboard: React.FC = () => {
             </button>
           </div>
           <div className="h-80 overflow-y-auto p-4">
-            {messages.map((msg) => (
+            {messages.map((msg: { id: React.Key | null | undefined; sender: string; text: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; }) => (
               <div key={msg.id} className={`mb-2 ${msg.sender === 'performer' ? 'text-right' : 'text-left'}`}>
                 <span className={`inline-block p-2 rounded-lg ${msg.sender === 'performer' ? 'bg-blue-100' : 'bg-gray-200'}`}>
                   {msg.text}
@@ -220,7 +133,7 @@ const PerformerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Overlay for Mobile View */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black opacity-50 z-10" onClick={toggleSidebar}></div>
       )}
@@ -229,3 +142,6 @@ const PerformerDashboard: React.FC = () => {
 };
 
 export default PerformerDashboard;
+
+
+

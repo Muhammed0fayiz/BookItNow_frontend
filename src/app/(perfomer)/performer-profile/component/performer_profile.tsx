@@ -1,207 +1,241 @@
-'use client'
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { UserCircle, Mail, MapPin, Star, Music, Edit, Save } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+'use client';
 
-interface PerformerDetails {
-  bandName: string;
-  email: string;
-  place: string;
-  rating: number;
-  description: string;
-  genre: string;
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Calendar, History, LogOut, Music, Star, Wallet } from 'lucide-react';
+import { Card, CardContent } from '@/component/ui/card';
+import { PerformerDetails, PerformerStats } from '@/types/store';
+import usePerformerStore from '@/store/usePerformerStore';
+import Sidebar from '@/component/performersidebar';
+import { useUIStore } from '@/store/useUIStore';
+import ChangePasswordForm from '@/component/changepassword';
+import EditPerformerProfileForm from '@/component/editPerformerProfile';
+
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
 }
 
-const PerformerProfile: React.FC = () => {
-  const router = useRouter();
-  const [performerDetails, setPerformerDetails] = useState<PerformerDetails | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedDetails, setEditedDetails] = useState<PerformerDetails | null>(null);
+interface ProfileButtonProps {
+  onClick: () => void;
+  variant: 'primary' | 'secondary';
+  children: React.ReactNode;
+}
 
-  useEffect(() => {
-    const fetchPerformerDetails = async () => {
-      try {
-        const token = getCookie('userToken');
-        if (token) {
-          const payload = token.split('.')[1];
-          const decodedPayload = JSON.parse(atob(payload));
-          const userId = decodedPayload.id;
-          
-          const response = await axiosInstance.get(`/getPerfomer/${userId}`);
-          if (response.data) {
-            setPerformerDetails(response.data.response);
-            setEditedDetails(response.data.response);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch performer details:', error);
-      }
-    };
+interface PerformerProfileProps {
+  performerDetails: PerformerDetails | null;
+  stats?: PerformerStats;
+  onUpdateProfile: () => void;
+  onChangePassword: () => void;
+}
 
-    fetchPerformerDetails();
-  }, []);
+const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value }) => (
+  <Card>
+    <CardContent>
+      <div className="flex items-center gap-4">
+        <Icon className={`w-8 h-8 ${label.includes('Reviews') ? 'text-yellow-500' : 'text-blue-600'}`} />
+        <div>
+          <p className="text-sm text-gray-500">{label}</p>
+          <p className="text-2xl font-bold">{value}</p>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
-  const getCookie = (name: string): string | undefined => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length > 1) return parts[1].split(';')[0];
-    return undefined;
-  };
+const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, variant, children }) => (
+  <button
+    onClick={onClick}
+    className={`w-full py-2 px-4 rounded-lg transition-colors ${
+      variant === 'primary'
+        ? 'bg-blue-600 text-white hover:bg-blue-700'
+        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    }`}
+  >
+    {children}
+  </button>
+);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      // Implement the API call to save the edited details
-      // await axiosInstance.put(`/updatePerformer/${performerDetails.id}`, editedDetails);
-      setPerformerDetails(editedDetails);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to update performer details:', error);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditedDetails(prev => prev ? { ...prev, [name]: value } : null);
-  };
-
-  if (!performerDetails) {
-    return <div>Loading...</div>;
-  }
+const PerformerProfile: React.FC<PerformerProfileProps> = ({
+  performerDetails,
+  stats = {
+    upcomingEvents: 0,
+    pastEvents: 0,
+    walletBalance: 0,
+    totalReviews: 0
+  },
+  onUpdateProfile,
+  onChangePassword,
+}) => {
+  const statCards = [
+    { icon: Calendar, label: 'Upcoming Events', value: stats.upcomingEvents },
+    { icon: History, label: 'Past Events', value: stats.pastEvents },
+    { icon: Wallet, label: 'Wallet Balance', value: `₹${stats.walletBalance}` },
+    { icon: Star, label: 'Total Reviews', value: performerDetails?.totalReviews || 0 },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 bg-blue-600 text-white">
-          <h3 className="text-lg leading-6 font-medium">Performer Profile</h3>
-          <p className="mt-1 max-w-2xl text-sm">Personal details and information</p>
-        </div>
-        <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-          <dl className="sm:divide-y sm:divide-gray-200">
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                <UserCircle className="mr-2" size={20} /> Band Name
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="bandName"
-                    value={editedDetails?.bandName || ''}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                  />
-                ) : (
-                  performerDetails.bandName
-                )}
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                <Mail className="mr-2" size={20} /> Email
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing ? (
-                  <input
-                    type="email"
-                    name="email"
-                    value={editedDetails?.email || ''}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                  />
-                ) : (
-                  performerDetails.email
-                )}
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                <MapPin className="mr-2" size={20} /> Location
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="place"
-                    value={editedDetails?.place || ''}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                  />
-                ) : (
-                  performerDetails.place
-                )}
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                <Star className="mr-2" size={20} /> Rating
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {performerDetails.rating} / 5
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                <Music className="mr-2" size={20} /> Genre
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="genre"
-                    value={editedDetails?.genre || ''}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                  />
-                ) : (
-                  performerDetails.genre
-                )}
-              </dd>
-            </div>
-            <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500 flex items-center">
-                Description
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing ? (
-                  <textarea
-                    name="description"
-                    value={editedDetails?.description || ''}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded"
-                    rows={4}
-                  />
-                ) : (
-                  performerDetails.description
-                )}
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
-          {isEditing ? (
-            <button
-              onClick={handleSave}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Save className="mr-2" size={20} /> Save
-            </button>
-          ) : (
-            <button
-              onClick={handleEdit}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Edit className="mr-2" size={20} /> Edit Profile
-            </button>
+    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Profile Section */}
+        <div className="md:w-1/3">
+          {/* Profile Image */}
+          <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
+            <img
+              src={performerDetails?.imageUrl || performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
+              alt={performerDetails?.bandName || 'Profile Image'}
+              className="object-cover w-full h-full"
+            />
+          </div>
+
+          {/* Profile Info */}
+          <h2 className="text-2xl font-bold mb-2">
+            {performerDetails?.bandName || 'Loading...'}
+          </h2>
+
+          <div className="flex items-center gap-2 text-gray-600 mb-2">
+            <Music size={18} />
+            <span>{performerDetails?.mobileNumber || 'Genre not specified'}</span>
+          </div>
+         
+
+          <div className="flex items-center gap-2 text-gray-600 mb-2">
+            <Calendar size={18} />
+            <span>{performerDetails?.place || 'Location not specified'}</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-gray-600 mb-4">
+            <Star size={18} className="text-yellow-500" />
+            <span>{performerDetails?.rating || '0'} Rating</span>
+          </div>
+
+          {performerDetails?.description && (
+            <p className="text-gray-600 mb-4">
+              {performerDetails.description}
+            </p>
           )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3">
+            <ProfileButton variant="primary" onClick={onUpdateProfile}>
+              Update Profile
+            </ProfileButton>
+            <ProfileButton variant="secondary" onClick={onChangePassword}>
+              Change Password
+            </ProfileButton>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {statCards.map((stat, index) => (
+            <StatCard key={index} icon={stat.icon} label={stat.label} value={stat.value} />
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-export default PerformerProfile;
+const PerformerProfileContainer: React.FC = () => {
+  const router = useRouter();
+  const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { performerDetails, stats, fetchPerformerDetails, handleLogout: storeHandleLogout } = usePerformerStore();
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    fetchPerformerDetails();
+  }, [fetchPerformerDetails]);
+
+  const handleUpdateProfile = () => {
+    setIsEditProfileModalOpen(true);
+  };
+
+  const handleChangePassword = () => {
+    setIsChangePasswordModalOpen(true);
+  };
+
+  const handleLogout = () => {
+    storeHandleLogout();
+    document.cookie = 'userToken=; Max-Age=0; path=/;';
+    router.push('/auth');
+  };
+
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setIsChangePasswordModalOpen(false);
+      setIsEditProfileModalOpen(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      <Sidebar 
+        isOpen={sidebarOpen}
+        performerDetails={performerDetails}
+        onLogout={handleLogout}
+      />
+
+      <div className="flex-1 md:ml-64">
+        <nav className="bg-white shadow-md fixed top-0 right-0 left-0 md:left-64 flex justify-between items-center px-6 py-4 z-10">
+          <button className="md:hidden text-blue-600 mr-4" onClick={toggleSidebar}>
+            <Calendar size={24} />
+          </button>
+          <h1 className="text-2xl font-bold text-blue-600">BookItNow - Profile</h1>
+        </nav>
+
+        <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>
+          <PerformerProfile
+            performerDetails={performerDetails}
+            stats={stats}
+            onUpdateProfile={handleUpdateProfile}
+            onChangePassword={handleChangePassword}
+          />
+        </div>
+
+        {/* Password Change Modal */}
+        {isChangePasswordModalOpen && (
+          <>
+            <div className="fixed inset-0 bg-black opacity-50 z-50" onClick={handleOverlayClick}></div>
+            <div className="fixed inset-0 flex justify-center items-center z-50" onClick={handleOverlayClick}>
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+                <ChangePasswordForm 
+                  onClose={() => setIsChangePasswordModalOpen(false)}
+                  userId={performerDetails?.userId || ''}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Edit Profile Modal */}
+        {isEditProfileModalOpen && (
+          <>
+            <div className="fixed inset-0 bg-black opacity-50 z-50" onClick={handleOverlayClick}></div>
+            <div className="fixed inset-0 flex justify-center items-center z-50 p-4" onClick={handleOverlayClick}>
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+              <EditPerformerProfileForm
+  performerDetails={performerDetails}
+  onClose={() => setIsEditProfileModalOpen(false)}
+  onSuccess={() => {
+    setIsEditProfileModalOpen(false);
+    fetchPerformerDetails(); // Refresh profile data after update
+  }}
+/>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black opacity-50 z-10 md:hidden" onClick={toggleSidebar}></div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PerformerProfileContainer;

@@ -44,12 +44,15 @@ const Profile: React.FC = () => {
 
   const fetchUserDetails = async (token: string) => {
     try {
+      
       const payload = token.split('.')[1];
       const decodedPayload = JSON.parse(atob(payload));
       const userId = decodedPayload.id;
       console.log('User ID from token:', userId);
       setUserId(userId);
       const response = await axiosInstanceMultipart.get(`/getUser/${userId}`);
+
+    
      
       if (response.data) {
         setUserDetails(response.data.response);

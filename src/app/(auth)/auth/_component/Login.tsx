@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast, Toaster } from 'sonner';
@@ -20,6 +20,38 @@ const LoginSignup: React.FC = () => {
   const [loginErrors, setLoginErrors] = useState<{ email: string; password: string }>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
+
+
+
+    useEffect(() => {
+      // Parse query parameters from URL
+      const query = new URLSearchParams(window.location.search);
+      const userData = query.get("user");
+      const tokenData = query.get("token");
+  
+      if (userData && tokenData) {
+        
+        const user = JSON.parse(decodeURIComponent(userData));
+        
+        // Store user and token in localStorage
+        document.cookie = `userToken=${decodeURIComponent(tokenData)}; path=/; secure; SameSite=Strict`;
+
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("token", decodeURIComponent(tokenData));
+        console.log('useresrwerew',localStorage.getItem('user'));
+        console.log('dfsadfasfsadf',localStorage.getItem('token'));
+        
+        // Redirect to the home page or any other page
+        router.push("/user/Home");
+      } else {
+        // Handle the case where there are no query parameters
+        console.log("No user data or token found in query parameters.");
+        // router.push("/login");
+      }
+    }, [router]);
+  
+
 
   const handleUserLoginChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -316,6 +348,10 @@ const LoginSignup: React.FC = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const handleGoogle = ()=>{
+    window.location.href = 'http://localhost:5000/auth/google'
+  }
+
   return (
     <div className="container flex items-center justify-center h-screen bg-gradient-to-r from-gray-200 to-blue-300">
       <div className="flex w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
@@ -437,6 +473,7 @@ const LoginSignup: React.FC = () => {
   {!isPerformer && (
     <button
       className="w-full bg-red-600 text-white py-2 mt-4 rounded-md hover:bg-red-700"
+      onClick={handleGoogle}
     >
       Log In with Google
     </button>

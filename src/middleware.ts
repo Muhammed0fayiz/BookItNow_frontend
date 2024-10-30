@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
     const tokenCookie = req.cookies.get('userToken');
     const token = tokenCookie ? tokenCookie.value : null;
     const userProtectedPaths = ['/profile', '/home'];
-    const performerProtectedPaths = ['/performer-dashboard', '/performer-events'];
+    const performerProtectedPaths = ['/performer-dashboard', '/performer-events','/performer-profile'];
     const authPath = '/auth';
 
     // Function to decode the token
@@ -21,6 +21,7 @@ export async function middleware(req: NextRequest) {
         try {
             // Decode token to get user details (role, id)
             const user = decodeToken(token);
+            console.log(user,'user is')
 
             // Fetch user data to verify block status
             const response = await axiosInstance.get(`/getUser/${user.id}`);
@@ -76,5 +77,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events'],
+    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events','/performer-profile'],
 };
