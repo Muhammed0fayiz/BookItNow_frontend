@@ -217,7 +217,7 @@ const EventForm: React.FC = () => {
         });
   
         // Step 3: Send data to the backend API
-          console.log('malik',formData)
+         
         const response = await axiosInstance.post(
           `/uploadEvents/${performerDetails?.PId}`,
           submitFormData
@@ -230,7 +230,7 @@ const EventForm: React.FC = () => {
         setErrors({});
         setTouched({});
         setSubmitSuccess(true);
-        router.replace('event-management');
+        router.replace('/event-management');
       } catch (error) {
         setSubmitError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
         console.error('Error:', error);
@@ -261,7 +261,7 @@ const EventForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-8">
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-8">
         <button
-          onClick={() => router.replace('event-management')}
+          onClick={() => router.replace('/event-management')}
           className="mb-4 flex items-center gap-2 text-indigo-500 hover:text-indigo-700 font-semibold"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -295,7 +295,7 @@ const EventForm: React.FC = () => {
               value={formData.title}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+             
             />
             {errors.title && <p className={errorClasses}>{errors.title}</p>}
           </div>
@@ -309,7 +309,7 @@ const EventForm: React.FC = () => {
               value={formData.category}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+          
             >
               <option value="">Select a category</option>
               <option value="music">Music</option>
@@ -330,7 +330,7 @@ const EventForm: React.FC = () => {
               value={formData.price}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+         
             />
             {errors.price && <p className={errorClasses}>{errors.price}</p>}
           </div>
@@ -345,7 +345,7 @@ const EventForm: React.FC = () => {
               value={formData.teamLeader}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+             
             />
             {errors.teamLeader && <p className={errorClasses}>{errors.teamLeader}</p>}
           </div>
@@ -360,7 +360,7 @@ const EventForm: React.FC = () => {
               value={formData.teamLeaderNumber}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+             
             />
             {errors.teamLeaderNumber && <p className={errorClasses}>{errors.teamLeaderNumber}</p>}
           </div>
@@ -374,7 +374,7 @@ const EventForm: React.FC = () => {
               value={formData.description}
               onChange={handleChange}
               onBlur={handleBlur}
-              required
+          
             ></textarea>
             {errors.description && <p className={errorClasses}>{errors.description}</p>}
           </div>
@@ -388,7 +388,7 @@ const EventForm: React.FC = () => {
               id="imageFile"
               onChange={handleImageChange}
               onBlur={handleBlur}
-              required
+           
             />
             {errors.imageFile && <p className={errorClasses}>{errors.imageFile}</p>}
             {imagePreview && (
