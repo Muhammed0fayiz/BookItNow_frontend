@@ -1,93 +1,65 @@
 'use client'
-import { axiosInstanceMultipart } from '@/shared/axiousintance';
 import React, { useState, useEffect } from 'react';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { useRouter } from 'next/navigation';
 import EditProfileForm from '@/component/edituserprofile';
 import ChangePasswordForm from '@/component/changepassword';
-
-interface UserDetails {
-  id: string;
-  username: string;
-  email: string;
-  profileImage: string;
-}
+import useUserStore from '@/store/useUserStore';
+import { useRouter } from 'next/navigation';
 
 const Profile: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get values and actions from Zustand store
+  const { 
+    userProfile, 
+    isLoading, 
+    error, 
+    fetchUserProfile, 
+    handleLogout 
+  } = useUserStore();
+
+  // Fetch user profile on mount and after any updates
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
+  }, [fetchUserProfile]);
+
+  // Set up an interval to periodically refresh the profile data
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      fetchUserProfile();
+    }, 60000); // Refresh every minute
+
+    return () => clearInterval(refreshInterval);
+  }, [fetchUserProfile]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleLogout = () => {
-    console.log('enter logout');
-    document.cookie = 'userToken=; Max-Age=0; path=/;';
-    setTimeout(() => {
-      router.replace('/auth');
-    }, 1000);
-  };
-
-  useEffect(() => {
-    const cookieToken = getCookie('userToken');
-    console.log('Token from cookies:', cookieToken);
-
-    if (cookieToken) {
-      fetchUserDetails(cookieToken);
-    }
-  }, []);
-
-  const fetchUserDetails = async (token: string) => {
-    try {
-      
-      const payload = token.split('.')[1];
-      const decodedPayload = JSON.parse(atob(payload));
-      const userId = decodedPayload.id;
-      console.log('User ID from token:', userId);
-      setUserId(userId);
-      const response = await axiosInstanceMultipart.get(`/getUser/${userId}`);
-
-    
-     
-      if (response.data) {
-        setUserDetails(response.data.response);
-        console.log('Fetched user data:', response.data.response);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user details:', error);
-    }
-  };
-
-  const getCookie = (name: string): string | undefined => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-
-    if (parts.length > 1) {
-      return parts[1].split(';')[0];
-    }
-
-    return undefined;
   };
 
   const handleEditProfileClick = () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const closeModal = async () => {
     setIsModalOpen(false);
+    // Refresh user profile after modal closes
+    await fetchUserProfile();
   };
 
   const handleChangePasswordClick = () => {
     setIsChangePasswordModalOpen(true);
   };
   
-  const closeChangePasswordModal = () => {
+  const closeChangePasswordModal = async () => {
     setIsChangePasswordModalOpen(false);
+    // Refresh user profile after password change
+    await fetchUserProfile();
   };
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -102,6 +74,43 @@ const Profile: React.FC = () => {
     }
   };
 
+  // Handle logout with proper cleanup
+
+
+  const handleLogouts = () => {
+    console.log('enter logout');
+    document.cookie = 'userToken=; Max-Age=0; path=/;';
+    setTimeout(() => {
+      router.replace('/auth');
+    }, 1000);
+  };
+
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="text-red-500 bg-red-100 p-4 rounded-lg">
+          <p className="font-semibold">Error loading profile</p>
+          <p className="text-sm">{error}</p>
+          <button 
+            onClick={() => fetchUserProfile()}
+            className="mt-2 text-blue-600 hover:text-blue-800"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Top Navbar */}
@@ -114,7 +123,7 @@ const Profile: React.FC = () => {
             <i className="fas fa-comments"></i>
           </a>
           <button className="md:hidden text-blue-600" onClick={toggleSidebar}>
-            {sidebarOpen ? 'Close' : 'Open'} Sidebar
+            <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
           </button>
         </div>
       </nav>
@@ -122,61 +131,75 @@ const Profile: React.FC = () => {
       {/* Main Content */}
       <div className="flex flex-1 pt-20">
         {/* Left Sidebar */}
-        <aside className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}>
+        <aside 
+          className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}
+        >
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
               <img
-                src={userDetails?.profileImage || "http://i.pravatar.cc/250?img=58"}
+                src={userProfile?.profileImage || "/default-avatar.png"}
                 alt="User Avatar"
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/default-avatar.png";
+                }}
               />
             </div>
             <div>
-              <h3 className="text-md font-semibold">{userDetails?.username || 'Guest'}</h3>
+              <h3 className="text-md font-semibold">{userProfile?.username || 'Guest'}</h3>
               <span className="text-sm font-light">User</span>
             </div>
           </div>
 
           <ul className="space-y-6">
             <li>
-              <a href="#upcoming" className="block text-lg hover:bg-blue-700 p-3 rounded">
+              <a href="#upcoming" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
                 Upcoming Events
               </a>
             </li>
             <li>
-              <a href="#history" className="block text-lg hover:bg-blue-700 p-3 rounded">
+              <a href="#history" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
                 Event History
               </a>
             </li>
             <li>
-              <a href="#wallet" className="block text-lg hover:bg-blue-700 p-3 rounded">
+              <a href="#wallet" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
                 Wallet
               </a>
             </li>
             <li>
-              <a className="block text-lg hover:bg-blue-700 p-3 rounded cursor-pointer" onClick={handleLogout}>
+              <button 
+                onClick={handleLogouts}
+                className="w-full text-left block text-lg hover:bg-blue-700 p-3 rounded transition duration-300"
+              >
                 Logout
-              </a>
+              </button>
             </li>
           </ul>
         </aside>
 
         {/* Profile Section */}
-        <div className={`flex-1 flex justify-center items-center ${sidebarOpen ? 'md:ml-64' : ''} p-6`}>
+        <div className={`flex-1 flex justify-center items-start ${sidebarOpen ? 'md:ml-64' : ''} p-6`}>
           <div className={`bg-white rounded-lg shadow-lg p-8 relative w-full max-w-md ${sidebarOpen ? 'md:opacity-100' : ''}`}>
             <div className="relative flex justify-center mb-6">
               <div className="w-32 h-32 rounded-full overflow-hidden border-8 border-white shadow-lg absolute -top-16">
                 <img
-                  src={userDetails?.profileImage || "http://i.pravatar.cc/250?img=58"}
+                  src={userProfile?.profileImage || "/default-avatar.png"}
                   alt="User Avatar"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/default-avatar.png";
+                  }}
                 />
               </div>
             </div>
         
             <div className="text-center mt-16">
-              <h4 className="text-2xl font-semibold">{userDetails?.username || 'Guest'}</h4>
-              <span className="block text-sm font-light mt-1">{userDetails?.email || 'Guest'}</span>
+              <h4 className="text-2xl font-semibold">{userProfile?.username || 'Guest'}</h4>
+              <span className="block text-sm font-light mt-1">{userProfile?.email || 'guest@example.com'}</span>
               <button
                 onClick={handleEditProfileClick}
                 className="block w-full mt-6 border border-black rounded-full py-2 px-6 text-sm transition hover:bg-black hover:text-white"
@@ -194,17 +217,17 @@ const Profile: React.FC = () => {
             {/* Profile Stats */}
             <div className="flex justify-between mt-8">
               <div className="text-center">
-                <i className="fas fa-wallet text-gold text-2xl"></i>
-                <div className="text-3xl font-bold">47</div>
+                <i className="fas fa-wallet text-yellow-500 text-2xl"></i>
+                <div className="text-3xl font-bold">{userProfile?.walletBalance?.toFixed(2) || '0.00'}</div>
                 <div className="text-sm">Wallet</div>
               </div>
               <div className="text-center">
-                <i className="fas fa-calendar text-blue text-2xl"></i>
+                <i className="fas fa-calendar text-blue-500 text-2xl"></i>
                 <div className="text-3xl font-bold">5</div>
                 <div className="text-sm">Upcoming Events</div>
               </div>
               <div className="text-center">
-                <i className="fas fa-history text-pink text-2xl"></i>
+                <i className="fas fa-history text-pink-500 text-2xl"></i>
                 <div className="text-3xl font-bold">12</div>
                 <div className="text-sm">Event History</div>
               </div>
@@ -216,13 +239,13 @@ const Profile: React.FC = () => {
       {/* Modal for Edit Profile */}
       {isModalOpen && (
         <>
-          <div className="fixed inset-0 bg-black opacity-50" onClick={handleOverlayClick}></div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleOverlayClick}></div>
           <div className="fixed inset-0 flex justify-center items-center z-50" onClick={handleOverlayClick}>
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
               <EditProfileForm 
                 onClose={closeModal} 
-                username={userDetails?.username || 'Guest'} 
-                userID={userId || 'defaultUserID'}
+                username={userProfile?.username || ''} 
+                userID={userProfile?.id || ''}
               />
             </div>
           </div>
@@ -232,12 +255,12 @@ const Profile: React.FC = () => {
       {/* Modal for Change Password */}
       {isChangePasswordModalOpen && (
         <>
-          <div className="fixed inset-0 bg-black opacity-50" onClick={handleChangePasswordOverlayClick}></div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleChangePasswordOverlayClick}></div>
           <div className="fixed inset-0 flex justify-center items-center z-50" onClick={handleChangePasswordOverlayClick}>
             <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
               <ChangePasswordForm 
                 onClose={closeChangePasswordModal} 
-                userId={userId || 'defaultUserID'}
+                userId={userProfile?.id || ''}
               />
             </div>
           </div>
@@ -246,7 +269,7 @@ const Profile: React.FC = () => {
 
       {/* Overlay for Mobile View */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black opacity-50 md:hidden" onClick={toggleSidebar}></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden" onClick={toggleSidebar}></div>
       )}
     </div>
   );

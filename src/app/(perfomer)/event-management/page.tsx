@@ -1,7 +1,7 @@
 import React from 'react'
 
 
-import EventManagement from './component/eventsDetails'
+import EventManagement from './_component/eventsDetails'
 
 const page = () => {
   return (

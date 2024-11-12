@@ -196,7 +196,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
       }
 
       const response = await axiosInstanceMultipart.put(
-        `/updatePerformerProfile/${performerDetails?.userId}`,
+        `/performer/updatePerformerProfile/${performerDetails?.userId}`,
         formDataToSubmit,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
             console.log(user,'user is')
 
             // Fetch user data to verify block status
-            const response = await axiosInstance.get(`/getUser/${user.id}`);
+            const response = await axiosInstance.get(`/user/getUser/${user.id}`);
             const userData = response.data.response;
 
             if (user.role === 'user') {

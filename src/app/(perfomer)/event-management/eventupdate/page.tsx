@@ -219,7 +219,7 @@ const EventForm: React.FC = () => {
         // Step 3: Send data to the backend API
          
         const response = await axiosInstance.post(
-          `/uploadEvents/${performerDetails?.PId}`,
+          `/performer/uploadEvents/${performerDetails?.PId}`,
           submitFormData
          
         );

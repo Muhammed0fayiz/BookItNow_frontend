@@ -4,23 +4,20 @@ import React, { useEffect, useState } from 'react';
 import { banner1, djparty, motivationspeaker, music } from '@/datas/homepagedatas';
 import UploadEventForm from '@/component/perfomerform';
 
-import axios from 'axios';
-import axiosInstance from '@/shared/axiousintance';
+// import axios from 'axios';
+// import axiosInstance from '@/shared/axiousintance';
 
-import useAuth from '@/hooks/fetchUser';
-axiosInstance
+// import useAuth from '@/hooks/fetchUser';
+import useUserStore from '@/store/useUserStore';
+
 
 const Home = () => {
   const router = useRouter()
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // const [userDetails, setUserDetails] = useState<{
-  //   id: string;
-  //   username: string;
-  //   isVerified: boolean;
-  //   waitingPermission: boolean;
-  // } | null>(null);
-  const { userDetails, loading, error } = useAuth();
+
+
+  // const { userDetails, loading, error } = useAuth();
   const toggleFormVisibility = () => {
     setIsFormVisible((prev) => !prev);
   };
@@ -29,41 +26,28 @@ const Home = () => {
     setIsMenuOpen((prev) => !prev);
   };
 
-  const getCookie = (name: string): string | undefined => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-
-    if (parts.length > 1) {
-      return parts[1].split(';')[0];
-    }
-
-    return undefined;
-  };
-
-
+ 
+  
+  const { 
+    userProfile, 
+    isLoading, 
+    error, 
+    fetchUserProfile, 
+   
+  } = useUserStore();
   useEffect(() => {
-    const cookieToken = getCookie('userToken');
-    const effectiveToken = cookieToken;
-  
-    if (effectiveToken) {
-      try {
-        const payload = effectiveToken.split('.')[1];
-        const user = JSON.parse(atob(payload));
-  
-        // Instead of calling userDetails, just verify and check the object properties
-        if (userDetails) {
-          userDetails.id = user.id;
-          userDetails.username = user.username;
-          userDetails.isVerified = user.isVerified;
-          userDetails.waitingPermission = user.waitingPermission;
-        }
-      } catch (error) {
-        console.error('Failed to parse user token:', error);
-      }
-    }
-  }, [userDetails]);
-  
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
+  }, [fetchUserProfile]);
 
+  const handlefetch=async()=>{
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
+  }
   const events = [
     { title: "Comedy Night", date: "October 12, 2024", location: "New York City", image: music.img },
     { title: "Music Fest", date: "November 5, 2024", location: "Los Angeles", image: djparty.img },
@@ -76,7 +60,7 @@ const Home = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-lg">
+       <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           {/* Left Side: Logo */}
           <div className="flex items-center space-x-6">
@@ -183,7 +167,7 @@ const Home = () => {
                   <a href="/book" className="block text-center bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300">
                     Book Now
                   </a>
-                </div>
+                </div> 
               </div>
             ))}
           </div>
@@ -199,7 +183,12 @@ const Home = () => {
           </div>
         </section>
 
-        <img src={banner1.img} alt="" className="w-full max-h-96 object-cover" />
+      
+        <img src={banner1.img} alt="" className="w-full max-h-100 object-cover" />
+    
+
+
+
 
         <section className="py-16 bg-white">
           <h3 className="text-3xl font-bold text-center mb-6 text-blue-600 animate__animated animate__fadeInUp">
@@ -209,14 +198,25 @@ const Home = () => {
             As the gateway to your events, BookItNow empowers your creativity with seamless, end-to-end solutions.
           </p>
           <div className="text-center">
-            <button
-              onClick={toggleFormVisibility}
-              className="bg-blue-600 text-white px-8 py-3 rounded-full hover:bg-blue-700 transition duration-300 animate__animated animate__fadeInUp animate__delay-2s"
-            >
-              Let's bring your event to life
-            </button>
-          </div>
-        </section>
+    {userProfile?.isVerified ? (
+      <div className="text-green-600 font-semibold animate__animated animate__fadeInUp animate__delay-2s">
+        You are a verified performer. Please visit your performer dashboard to manage events.
+      </div>
+    ) : userProfile?.waitingPermission ? (
+      <div className="text-yellow-600 font-semibold animate__animated animate__fadeInUp animate__delay-2s">
+        You are waiting for permission to become a performer.
+      </div>
+    ) : (
+      <button
+        onClick={toggleFormVisibility}
+        className="bg-blue-600 text-white px-8 py-3 rounded-full hover:bg-blue-700 transition duration-300 animate__animated animate__fadeInUp animate__delay-2s"
+      >
+        Let's bring your event to life
+      </button>
+    )}
+  </div>
+</section>
+
 
         {isFormVisible && (
           <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex justify-center items-center z-50">
@@ -227,7 +227,9 @@ const Home = () => {
               >
                 &times;
               </button>
-              <UploadEventForm onClose={toggleFormVisibility} />
+           <UploadEventForm id={userProfile?.id} onClose={toggleFormVisibility} handlefetch={handlefetch}/>
+
+
             </div>
           </div>
         )}

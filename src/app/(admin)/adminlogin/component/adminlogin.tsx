@@ -46,7 +46,7 @@ const AdminLogin: React.FC = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await axiosInstance.get('/checkSession'); // Example endpoint
+        const response = await axiosInstance.get('/admin/checkSession'); // Example endpoint
         if (response.data.isAuthenticated) {
           router.push('/dashboard');
         }
@@ -85,7 +85,7 @@ const AdminLogin: React.FC = () => {
     setIsSubmitting(true); // Disable button while submitting
 
     try {
-      const response = await axiosInstance.post('/adminLogin', adminLoginData);
+      const response = await axiosInstance.post('/admin/adminLogin', adminLoginData);
       if (response.data.success) {
         router.push('/dashboard');
       } else {

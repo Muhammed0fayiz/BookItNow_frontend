@@ -60,7 +60,7 @@ const OtpPage = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await axiosInstance.post('/verify-otp', { email, otp });
+        const response = await axiosInstance.post('/user/verify-otp', { email, otp });
         console.log('OTP verification response:', response.data);
         router.push('/auth');
       } catch (err) {
@@ -82,7 +82,7 @@ const OtpPage = () => {
     setError('');
 
     try {
-      const response = await axiosInstance.post(`/resendotp/${email}`);
+      const response = await axiosInstance.post(`/user/resendotp/${email}`);
       console.log('OTP resent:', response.data);
     } catch (err) {
       handleAxiosError(err, 'Failed to resend OTP. Please try again.');

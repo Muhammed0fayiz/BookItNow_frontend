@@ -33,7 +33,7 @@ const Verification: React.FC = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await axiosInstance.get('/checkSession');
+        const response = await axiosInstance.get('/admin/checkSession');
         if (response.data.isAuthenticated) {
           setSessionValid(true);
         } else {
@@ -54,7 +54,7 @@ const Verification: React.FC = () => {
     if (sessionValid) {
       const fetchPerformers = async () => {
         try {
-          const response = await axiosInstance.get('/getTempPerformers');
+          const response = await axiosInstance.get('/admin/getTempPerformers');
           if (response.data && response.data.data) {
             const performersData = response.data.data.map((performer: any): Performer => ({
               id: performer._id,
@@ -78,7 +78,7 @@ const Verification: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.post('/adminLogout');
+      const response = await axiosInstance.post('/admin/adminLogout');
       if (response.data.success) {
         setTimeout(() => {
           router.replace('/adminlogin');
@@ -92,9 +92,9 @@ const Verification: React.FC = () => {
   const handleVerificationStatusChange = async (id: string, status: boolean) => {
     try {
       if (status) {
-        await axiosInstance.post(`/grant-performer-permission/${id}`, { isVerified: true, isRejected: false });
+        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, { isVerified: true, isRejected: false });
       } else {
-        await axiosInstance.post(`/reject-performer-permission/${id}`, { isVerified: false, isRejected: true });
+        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, { isVerified: false, isRejected: true });
       }
       
       setPerformers(prevPerformers =>

@@ -14,7 +14,7 @@ const AdminDashboard = () => {
     try {
       console.log('handle logout')
       // Make the logout request to the backend
-      const response = await axiosInstance.post('/adminLogout');
+      const response = await axiosInstance.post('/admin/adminLogout');
   console.log('response',response)
       if (response.data.success) {
         // Wait for a brief delay, then redirect to the login page
@@ -33,7 +33,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await axiosInstance.get('/checkSession');
+        const response = await axiosInstance.get('/admin/checkSession');
         if (!response.data.isAuthenticated) {
           router.replace('/adminlogin');
         }

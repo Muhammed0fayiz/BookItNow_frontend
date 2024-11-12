@@ -1,5 +1,5 @@
 import React from 'react'
-import PerformerDashboard from './component/performer_dashboard'
+import PerformerDashboard from './_component/performer_dashboard'
 
 const page = () => {
   return (

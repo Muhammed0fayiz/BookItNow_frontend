@@ -1,5 +1,5 @@
 import React from 'react'
-import PerformerProfile from './component/performer_profile'
+import PerformerProfile from './_component/performer_profile'
 
 
 const page = () => {

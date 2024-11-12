@@ -7,6 +7,7 @@ import { loginpefomer } from '@/datas/logindatas';
 interface SidebarProps {
   isOpen: boolean;
   performerDetails: {
+    image: string;
     bandName?: string;
     imageUrl?: string;
   } | null;
@@ -60,24 +61,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
       >
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3 relative">
           {performerDetails?.imageUrl ? (
-            <Image
-              src={performerDetails.imageUrl}
-              alt={performerDetails.bandName || 'Performer'}
-              width={48}
-              height={48}
-              className="w-full h-full object-cover"
-            />
+             <img
+             src={performerDetails?.imageUrl|| performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
+             alt={performerDetails?.bandName || 'Profile Image'}
+             className="object-cover w-full h-full"
+           />
           ) : (
-            <Image
-              src={loginpefomer.img}
-              alt="Default Performer"
-              width={48}
-              height={48}
-              className="w-full h-full object-cover"
+            <img
+              src={performerDetails?.imageUrl|| performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
+              alt={performerDetails?.bandName || 'Profile Image'}
+              className="object-cover w-full h-full"
             />
           )}
         </div>
         <div>
+          <img src="performerDetail." alt="" />
           <h3 className="text-md font-semibold">
             {performerDetails?.bandName || 'Welcome Back'}
           </h3>

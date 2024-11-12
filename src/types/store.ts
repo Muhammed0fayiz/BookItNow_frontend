@@ -1,63 +1,28 @@
-// import { ReactNode } from "react";
-
-// // types/store.ts
-// export interface PerformerDetails {
-//   PId: string; // Add this line if missing
-//   userId: string;  // Add userId here
-//   imageUrl: any;
-//   bandName: string;
-//   place: string;
-//   rating: number;
-//   description: string;
-//   image: string;  // Changed from profilePic to match component usage
-//   genre: string;  // Added to match component usage
-//   totalReviews?: number;
-//   walletBalance?: number;
-//   mobileNumber: string;
-// }
 
 
+export interface ChatMessage {
+  id: number;
+  text: string;
+  sender: 'performer' | 'user'; // Define other senders if needed
+  timestamp: Date;
+}
+
+export interface ChatState {
+  messages: ChatMessage[];  // Array of chat messages
+  newMessage: string;       // Current message input
+  setNewMessage: (message: string) => void; // Method to set a new message
+  sendMessage: () => void;  // Method to send the message
+}
 
 
+export interface UIState {
+  sidebarOpen: boolean;
+  chatOpen: boolean;
+  toggleSidebar: () => void;
+  toggleChat: () => void;
+}
 
-// export interface PerformerStats {
-//   upcomingEvents: number;
-//   pastEvents: number;
-//   walletBalance: number;
-//   totalReviews: number;
-// }
-
-// export interface ChatMessage {
-//   content: ReactNode;
-//   id: number;
-//   text: string;
-//   sender: 'user' | 'performer';
-//   timestamp: Date;
-// }
-
-// export interface ChatState {
-//   messages: ChatMessage[];
-//   newMessage: string;
-//   setNewMessage: (message: string) => void;
-//   sendMessage: () => void;
-// }
-
-// export interface PerformerStore {
-//   performerDetails: PerformerDetails | null;
-//   stats: PerformerStats;
-//   messages: ChatMessage[];
-//   sidebarOpen: boolean;
-//   chatOpen: boolean;
-//   newMessage: string;
-//   fetchPerformerDetails: () => Promise<void>;
-//   toggleSidebar: () => void;
-//   toggleChat: () => void;
-//   sendMessage: (message: string) => void;
-//   handleLogout: () => void;
-// }
-// .....................................................................................
-
-// 
+// Other existing interfaces
 
 export interface PerformerDetails {
   PId: string;
@@ -113,6 +78,7 @@ export interface PerformerEventsStats {
 }
 // Event interface to match MongoDB document structure
 export interface Events {
+  createdAt:string;
   id: number;
   _id?: string;
   title: string;
@@ -139,5 +105,45 @@ export interface PerformerEventsStore {
   updateEvent: (event: Event) => Promise<void>;
   removeEvent: (eventId: string) => Promise<void>;
   fetchPerformerEventStats: () => Promise<void>;
+
 }
 
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  isVerified: boolean;
+  isBlocked: boolean;
+  isPerformerBlocked: boolean;
+  walletBalance: number;
+  profileImage?: string;
+  waitingPermission:boolean;
+}
+
+export interface UserStore {
+  userProfile: UserProfile | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  fetchUserProfile: () => Promise<void>;
+  updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  toggleUserVerification: (userId: string) => Promise<void>;
+  handleLogout: () => void;
+}
+
+
+export interface Performer {
+
+  createdAt: string | number | Date;
+  imageUrl: string | undefined;
+
+  userId: string;
+  bandName: string;
+  mobileNumber: string;
+  rating: number;
+  description: string;
+  profileImage?: string;
+  totalReviews?: number;
+  walletBalance?: number;
+  place?: string;
+}

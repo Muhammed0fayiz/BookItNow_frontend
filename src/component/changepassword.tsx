@@ -59,7 +59,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, userId
         }
 
         try {
-            const response = await axiosInstance.put(`/changePassword/${userId}`, {
+            const response = await axiosInstance.put(`/user/changePassword/${userId}`, {
                 currentPassword,
                 newPassword,
             });

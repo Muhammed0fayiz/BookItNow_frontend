@@ -204,7 +204,7 @@ const LoginSignup: React.FC = () => {
     if (validateForm()) {
       const loadingToast = toast.loading('Signing up...');
       try {
-        const response = await axiosInstance.post('/signup', signUpData);
+        const response = await axiosInstance.post('/user/signup', signUpData);
         toast.dismiss(loadingToast);
         toast.success('Sign up successful! Redirecting to OTP page...');
         
@@ -289,7 +289,7 @@ const LoginSignup: React.FC = () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
       try {
-        const response = await axiosInstance.post('/performerlogin', performerLoginData);
+        const response = await axiosInstance.post('/performer/performerlogin', performerLoginData);
         toast.dismiss(loadingToast);
   
         if (response.data && response.data.token) {
@@ -317,7 +317,7 @@ const LoginSignup: React.FC = () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
       try {
-        const response = await axiosInstance.post('/userlogin', userLoginData);
+        const response = await axiosInstance.post('/user/userlogin', userLoginData);
         toast.dismiss(loadingToast);
   
         if (response.data && response.data.token) {

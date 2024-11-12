@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstanceMultipart } from '@/shared/axiousintance';
 
 interface UploadEventFormProps {
+  id?: string; // id is optional
   onClose: () => void;
+  handlefetch:any
+  
 }
 
 interface FormErrors {
@@ -20,28 +23,15 @@ interface FormData {
   user_id: string;
 }
 
-const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
+const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose, id = "" , handlefetch}) => {
   const [formData, setFormData] = useState<FormData>({
     bandName: '',
     mobileNumber: '',
     description: '',
     video: null,
-    user_id: '',
+    user_id: id,  // Use the id prop directly
   });
   const [errors, setErrors] = useState<FormErrors>({});
-
-  useEffect(() => {
-    const cookieToken = getCookie('userToken');
-    if (cookieToken) {
-      try {
-        const payload = cookieToken.split('.')[1];
-        const user = JSON.parse(atob(payload));
-        setFormData(prev => ({ ...prev, user_id: user.id }));
-      } catch (error) {
-        console.error('Failed to parse user token:', error);
-      }
-    }
-  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -81,8 +71,6 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
     }
   
     const submitFormData = new FormData();
-    
-    // Type-safe way to append form data
     submitFormData.append('bandName', formData.bandName.trim());
     submitFormData.append('mobileNumber', formData.mobileNumber.trim());
     submitFormData.append('description', formData.description.trim());
@@ -93,8 +81,9 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
     }
   
     try {
-      const response = await axiosInstanceMultipart.post('/tempPerformer', submitFormData);
+      const response = await axiosInstanceMultipart.post('/performer/tempPerformer', submitFormData);
       console.log('Response:', response.data);
+      handlefetch()
       onClose();
     } catch (error) {
       console.error('Error uploading event:', error);
@@ -122,8 +111,9 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
   };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFormData(prev => ({ ...prev, video: e.target.files![0] }));
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setFormData(prev => ({ ...prev, video: files[0] }));
       setErrors(prev => ({ ...prev, video: undefined }));
     }
   };
@@ -131,13 +121,6 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose }) => {
   const isValidMobile = (mobile: string): boolean => {
     const mobilePattern = /^[0-9]{10}$/;
     return mobilePattern.test(mobile);
-  };
-
-  const getCookie = (name: string): string | undefined => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length > 1) return parts[1].split(';')[0];
-    return undefined;
   };
 
   return (

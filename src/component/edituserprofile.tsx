@@ -45,7 +45,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
         formData.append('profilePic', profilePic);
       }
 
-      const apiEndpoint = `/updateUserProfile/${userID}`;
+      const apiEndpoint = `/user/updateUserProfile/${userID}`;
       const response = await axiosInstanceMultipart.put(apiEndpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

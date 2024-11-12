@@ -48,7 +48,7 @@ const UserPerformerManagement = () => {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                const response = await axiosInstance.get('/checkSession');
+                const response = await axiosInstance.get('/admin/checkSession');
                 if (response.data.isAuthenticated) {
                     setSessionValid(true);
                 } else {
@@ -70,8 +70,8 @@ const UserPerformerManagement = () => {
             const fetchData = async () => {
                 try {
                     const [usersResponse, performersResponse] = await Promise.all([
-                        axiosInstance.get('/getUsers'),
-                        axiosInstance.get('/performers')
+                        axiosInstance.get('/admin/getUsers'),
+                        axiosInstance.get('/admin/performers')
                     ]);
 
                     if (Array.isArray(usersResponse.data)) {
@@ -107,7 +107,7 @@ const UserPerformerManagement = () => {
 
     const handleLogout = async () => {
         try {
-            const response = await axiosInstance.post('/adminLogout');
+            const response = await axiosInstance.post('/admin/adminLogout');
             if (response.data.success) {
                 setTimeout(() => {
                     router.replace('/adminlogin');
@@ -124,7 +124,7 @@ const UserPerformerManagement = () => {
         setUpdating(true);
         try {
             const newIsBlocked = !item.isBlocked;
-            const endpoint = isUser(item) ? `/updateUserStatus/${item.id}` : `/updatePerformerStatus/${item.userId}`;
+            const endpoint = isUser(item) ? `/admin/updateUserStatus/${item.id}` : `/admin/updatePerformerStatus/${item.userId}`;
             const payload = { isBlocked: newIsBlocked };
 
             await axiosInstance.post(endpoint, payload);
