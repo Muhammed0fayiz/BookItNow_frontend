@@ -43,7 +43,7 @@ const LoginSignup: React.FC = () => {
         console.log('dfsadfasfsadf',localStorage.getItem('token'));
         
         // Redirect to the home page or any other page
-        router.push("/user/Home");
+        router.push("/Home");
       } else {
         // Handle the case where there are no query parameters
         console.log("No user data or token found in query parameters.");
@@ -204,7 +204,7 @@ const LoginSignup: React.FC = () => {
     if (validateForm()) {
       const loadingToast = toast.loading('Signing up...');
       try {
-        const response = await axiosInstance.post('/user/signup', signUpData);
+        const response = await axiosInstance.post('/signup', signUpData);
         toast.dismiss(loadingToast);
         toast.success('Sign up successful! Redirecting to OTP page...');
         
@@ -230,61 +230,6 @@ const LoginSignup: React.FC = () => {
     }
   };
 
-  // const userLogin = async () => {
-  //   if (validateLoginForm()) {
-  //     const loadingToast = toast.loading('Logging in...');
-  //     try {
-  //       const response = await axiosInstance.post('/userlogin', userLoginData);
-       
-  //       toast.dismiss(loadingToast);
-  
-  //       if (response.data && response.data.token) {
-  //         document.cookie = `userToken=${response.data.token}; path=/; secure;`;
-  //         toast.success('Login successful!');
-  //         router.replace('/home');
-  //       } else {
-  //         toast.error('Login successful, but no token received.');
-  //       }
-  //     } catch (error: any) {
-  //       toast.dismiss(loadingToast);
-  //       if (error.response && error.response.status === 401) {
-  //         toast.error('Invalid email or password');
-  //       } else if(error.response.status==403){
-  //         console.log('403')
-  //       }
-  //       else {
-  //         toast.error('An error occurred during login. Please try again.');
-  //         console.error('An error occurred:', error);
-  //       }
-  //     }
-  //   }
-  // };
-  
-  // const performerLogin = async () => {
-  //   if (validateLoginForm()) {
-  //     const loadingToast = toast.loading('Logging in...');
-  //     try {
-  //       const response = await axiosInstance.post('/performerlogin', performerLoginData);
-  //       toast.dismiss(loadingToast);
-  
-  //       if (response.data && response.data.token) {
-  //         document.cookie = `userToken=${response.data.token}; path=/; secure;`;
-  //         toast.success('Login successful!');
-  //         router.replace('/performer-dashboard');
-  //       } else {
-  //         toast.error('Login successful, but no token received.');
-  //       }
-  //     } catch (error: any) {
-  //       toast.dismiss(loadingToast);
-  //       if (error.response && error.response.status === 401) {
-  //         toast.error('Invalid email or password');
-  //       } else {
-  //         toast.error('An error occurred during login. Please try again.');
-  //         console.error('An error occurred:', error);
-  //       }
-  //     }
-  //   }
-  // };
   const performerLogin = async () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
@@ -317,7 +262,7 @@ const LoginSignup: React.FC = () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
       try {
-        const response = await axiosInstance.post('/user/userlogin', userLoginData);
+        const response = await axiosInstance.post('/userlogin', userLoginData);
         toast.dismiss(loadingToast);
   
         if (response.data && response.data.token) {
@@ -350,6 +295,7 @@ const LoginSignup: React.FC = () => {
 
   const handleGoogle = ()=>{
     window.location.href = 'http://localhost:5000/auth/google'
+    // const response=axiosInstance.get('/auth/google')
   }
 
   return (

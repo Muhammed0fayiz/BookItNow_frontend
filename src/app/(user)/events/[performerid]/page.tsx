@@ -226,11 +226,7 @@ const PerformerDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-xl font-semibold mb-3">Performance Type</h3>
-                {/* <div className="flex flex-wrap gap-2">
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                    {performer.genre}
-                  </span>
-                </div> */}
+              
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-3">Contact Information</h3>
@@ -292,6 +288,7 @@ const PerformerDetailsPage = () => {
                 </div>
               </div>
             ))}
+           
 
             {performerEvents.length === 0 && (
               <div className="col-span-3 text-center py-12">

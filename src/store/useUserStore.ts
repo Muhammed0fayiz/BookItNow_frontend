@@ -16,7 +16,7 @@ const useUserStore = create<UserStore>((set) => ({
         const decodedPayload = JSON.parse(atob(payload));
         const userId = decodedPayload.id;
 
-        const response = await axiosInstance.get(`/user/getUser/${userId}`);
+        const response = await axiosInstance.get(`/getUser/${userId}`);
         if (response.data.response) {
           const userData: UserProfile = {
             
@@ -46,7 +46,7 @@ const useUserStore = create<UserStore>((set) => ({
       const token = document.cookie.split('; ').find(row => row.startsWith('userToken='));
       if (token) {
         const payload = token.split('=')[1];
-        const response = await axiosInstance.put('/user/updateUserProfile', { ...profile, token: payload });
+        const response = await axiosInstance.put('/updateUserProfile', { ...profile, token: payload });
         if (response.data.success) {
           // Optionally fetch the updated profile
           await useUserStore.getState().fetchUserProfile();
@@ -63,7 +63,7 @@ const useUserStore = create<UserStore>((set) => ({
   toggleUserVerification: async (userId: string) => {
     set({ isLoading: true });
     try {
-      const response = await axiosInstance.post(`/user/toggleVerification/${userId}`);
+      const response = await axiosInstance.post(`/toggleVerification/${userId}`);
       if (response.data.success) {
         await useUserStore.getState().fetchUserProfile(); // Fetch updated profile after verification change
       }

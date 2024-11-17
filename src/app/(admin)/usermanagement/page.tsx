@@ -226,6 +226,7 @@ const UserPerformerManagement = () => {
                         {[
                             { icon: faHome, text: 'Dashboard', href: '/dashboard' },
                             { icon: faUsers, text: 'User Management', href: '/usermanagement' },
+                            { icon: faUsers, text: 'Events', href: '/eventmanagement' },
                             { icon: faLock, text: 'Verification', href: '/verification' },
                             { icon: faWallet, text: 'Wallet', href: '#wallet' }
                         ].map((item, index) => (

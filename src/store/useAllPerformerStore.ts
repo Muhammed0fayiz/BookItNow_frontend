@@ -21,7 +21,7 @@ const usePerformersStore = create<PerformersState>((set) => ({
   fetchAllPerformers: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get<{ data: Performer[] }>('/user/getperformers');
+      const response = await axiosInstance.get<{ data: Performer[] }>('/getperformers');
       console.log('response', response.data.data);
       set({
         performers: response.data.data,

@@ -4,6 +4,12 @@ import { useParams, useRouter } from 'next/navigation';
 import useAllEventsStore from '@/store/useAllEvents';
 import usePerformersStore from '@/store/useAllPerformerStore';
 import { Calendar, MapPin, Clock, Share2, MessageCircle } from 'lucide-react';
+import useUserStore from '@/store/useUserStore';
+import axiosInstance from '@/shared/axiousintance';
+import EventPayment from '@/component/eventPayment';
+import BookingConfirmationModal from '@/component/bookingconfirmation';
+
+
 
 const EventDetailsPage = () => {
   const router = useRouter();
@@ -16,6 +22,34 @@ const EventDetailsPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+const [paymentError, setPaymentError] = useState('');
+const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    place: '',
+    date: '',
+    time: ''
+  });
+  const { 
+    userProfile, 
+  
+    fetchUserProfile, 
+   
+  } = useUserStore();
+  // Validation state
+  const [errors, setErrors] = useState({
+    place: '',
+    date: '',
+    time: ''
+  });
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
+  }, [fetchUserProfile]);
 
   useEffect(() => {
     fetchAllEvents();
@@ -25,9 +59,119 @@ const EventDetailsPage = () => {
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
-
+  
   const event = events.find(e => e._id === eventId);
   const performer = performers.find(p => p.userId === performerId);
+
+  // Form validation function
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      place: '',
+      date: '',
+      time: ''
+    };
+  
+    // Place validation
+    if (!formData.place.trim()) {
+      newErrors.place = 'Place is required';
+      isValid = false;
+    } else if (formData.place.trim().length < 3) {
+      newErrors.place = 'Place must be at least 3 characters';
+      isValid = false;
+    }
+  
+    // Date validation
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
+      isValid = false;
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+  
+      // Check if the selected date is in the past
+      if (selectedDate < today) {
+        newErrors.date = 'Date cannot be in the past';
+        isValid = false;
+      } else {
+        // Calculate the date 5 days from today
+        const minDate = new Date(today);
+        minDate.setDate(today.getDate() + 5);
+  
+        // Check if the selected date is at least 5 days after today
+        if (selectedDate < minDate) {
+          newErrors.date = 'Date must be at least 5 days from today';
+          isValid = false;
+        }
+      }
+    }
+  
+    // Time validation
+    if (!formData.time) {
+      newErrors.time = 'Time is required';
+      isValid = false;
+    }
+  
+    setErrors(newErrors);
+    return isValid;
+  };
+  
+
+  const handleSubmit = (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setShowConfirmation(true);
+    }
+  };
+  
+  const handlePaymentSuccess = async (paymentIntent: any) => {
+    try {
+      const response = await axiosInstance.post('/events/book', {
+        formData: formData,
+        eventId: eventId,
+        performerId: performerId,
+        userId: userProfile?.id,
+        paymentIntent: paymentIntent,
+      });
+      
+      if (response.status === 200) {
+        router.replace('/events/paymentsuccess');
+      }
+    } catch (error) {
+      setPaymentError('Booking failed. Please try again.');
+      console.error('Booking failed:', error);
+    }
+  };
+  const handleConfirmBooking = () => {
+    setShowConfirmation(false);
+    setShowPayment(true);
+  };
+  
+  const handleCancelBooking = () => {
+    setShowConfirmation(false);
+  };
+  
+  const handlePaymentError = (error: React.SetStateAction<string>) => {
+    setPaymentError(error);
+    setShowPayment(true);
+  };
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -40,8 +184,6 @@ const EventDetailsPage = () => {
 
   const goToPerformerPage = () => {
     router.push(`/events/${performer?.userId}`);
- 
-    
   };
 
   if (!event || !performer) {
@@ -57,12 +199,7 @@ const EventDetailsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Navbar */}
-        <nav className="bg-white shadow-lg sticky top-0 z-50">
-
-   
-
-
-          
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-6">
             <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
@@ -90,9 +227,7 @@ const EventDetailsPage = () => {
               About
             </a>
             <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
-              </svg>
+              <MessageCircle className="h-6 w-6" />
             </a>
             <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,26 +344,84 @@ const EventDetailsPage = () => {
                 {/* Description */}
                 <p className="text-gray-600 leading-relaxed">{event.description}</p>
 
-                {/* Event Details */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">{new Date(event.createdAt).toLocaleDateString('en-US', { 
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}</span>
+                {/* Event Details Form */}
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left side: Form */}
+                  <div className="space-y-4">
+                    {/* Place Input */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="h-5 w-5 text-blue-600" />
+                        <input
+                          type="text"
+                          name="place"
+                          value={formData.place}
+                          onChange={handleInputChange}
+                          placeholder="Enter place"
+                          className={`border ${errors.place ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                      </div>
+                      {errors.place && (
+                        <p className="text-red-500 text-sm ml-8">{errors.place}</p>
+                      )}
+                    </div>
+
+                    {/* Date Input */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                        <input
+                          type="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleInputChange}
+                          className={`border ${errors.date ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                      </div>
+                      {errors.date && (
+                        <p className="text-red-500 text-sm ml-8">{errors.date}</p>
+                      )}
+                    </div>
+
+                    {/* Time Input */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                        <input
+                          type="time"
+                          name="time"
+                          value={formData.time}
+                          onChange={handleInputChange}
+                          className={`border ${errors.time ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                      </div>
+                      {errors.time && (
+                        <p className="text-red-500 text-sm ml-8">{errors.time}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">{event.status}</span>
+
+                  {/* Right side: Event details */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-700">{new Date(event.createdAt).toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-700">{event.status}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      <span className="text-gray-700">Duration: 2 hours</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">Duration: 2 hours</span>
-                  </div>
-                </div>
+                </form>
 
                 {/* Host Information */}
                 <div className="bg-gray-50 p-4 rounded-xl">
@@ -254,18 +447,39 @@ const EventDetailsPage = () => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-4 pt-4">
-                  <button className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  <button 
+                    onClick={handleSubmit}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
                     Book Now
                   </button>
-                  {/* <button className="px-8 py-4 border-2 border-gray-200 rounded-xl hover:border-blue-600 hover:text-blue-600 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    Contact Host
-                  </button> */}
+                 
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {/* Add this before the final closing div */}
+      {/* Add this before EventPayment */}
+     
+<BookingConfirmationModal 
+  show={showConfirmation}
+  onConfirm={handleConfirmBooking}
+  onCancel={handleCancelBooking}
+  eventPrice={event.price}
+/>
+<EventPayment 
+  amount={event.price*0.1}
+  show={showPayment}
+  onSuccess={handlePaymentSuccess}
+  onError={handlePaymentError}
+/>
+{paymentError && (
+  <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+    {paymentError}
+  </div>
+)}
     </div>
   );
 };

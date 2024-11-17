@@ -22,7 +22,7 @@ const useAllEventsStore = create<EventsStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const response = await axiosInstance.get('/user/getAllEvents');
+      const response = await axiosInstance.get('/getAllEvents');
 
       if (response.status === 200) {
         set({

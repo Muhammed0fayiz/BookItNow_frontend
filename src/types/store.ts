@@ -91,6 +91,7 @@ export interface Events {
   rating: number;
   description: string;
   imageUrl: string;
+  isBlocke:boolean
 
 }
 
@@ -146,4 +147,68 @@ export interface Performer {
   totalReviews?: number;
   walletBalance?: number;
   place?: string;
+  bookingStatus?: string;
+}
+// export interface UpcomingEvent {
+
+//   eventDetails: any;
+//   id: number;
+//   title: string;
+//   category: string;
+//   price: number;
+//   teamLeader: string;
+//   teamLeaderNumber: string;
+//   rating: number;
+//   description: string;
+//   imageUrl: string;
+//   eventDate: string;  
+//   place: string
+//   performerId: string; 
+//   userId: string;
+//   time:string     
+// }
+
+// export interface UpcomingEventsStore {
+//   upcomingEvents: UpcomingEvent[];
+//   isLoading: boolean;
+//   error: string | null;
+
+//   fetchUpcomingEvents: () => Promise<void>;
+//   removeUpcomingEvent: (eventId: number) => Promise<void>;
+// }
+export interface PerformerId {
+  _id: string;
+}
+
+export interface UpcomingEvent {
+  _id: string;
+  title: string;
+  category: string;
+  userId: string;
+  performerId: PerformerId;
+  price: number;
+  status: string;
+  teamLeader: string;
+  teamLeaderNumber: string;
+  rating: number;
+  description: string;
+  imageUrl: string;
+  isblocked: boolean;
+  advancePayment: number;
+  restPayment: number;
+  time: string;
+  place: string;
+  date: string;
+  bookingStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpcomingEventsStore {
+  upcomingEvents: UpcomingEvent[];
+  isLoading: boolean;
+  error: string | null;
+  fetchAllEvents: () => Promise<void>;
+  removeUpcomingEvent: (eventId: string) => void;
+  getUserIdFromToken: () => string | null;
 }

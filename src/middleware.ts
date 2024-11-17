@@ -6,7 +6,7 @@ import axiosInstance from './shared/axiousintance';
 export async function middleware(req: NextRequest) {
     const tokenCookie = req.cookies.get('userToken');
     const token = tokenCookie ? tokenCookie.value : null;
-    const userProtectedPaths = ['/profile', '/home'];
+    const userProtectedPaths = ['/profile', '/home','/events','/upcoming-events'];
     const performerProtectedPaths = ['/performer-dashboard', '/performer-events','/performer-profile','/event-management','/eventupdate'];
     const authPath = '/auth';
 
@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
             console.log(user,'user is')
 
             // Fetch user data to verify block status
-            const response = await axiosInstance.get(`/user/getUser/${user.id}`);
+            const response = await axiosInstance.get(`/getUser/${user.id}`);
             const userData = response.data.response;
 
             if (user.role === 'user') {
@@ -77,5 +77,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events','/performer-profile','/performer-profile','/event-management','/eventupdate'],
+    matcher: ['/profile', '/home', '/auth', '/performer-dashboard', '/performer-events','/performer-profile','/performer-profile','/event-management','/eventupdate','/events','/upcoming-events'],
 };

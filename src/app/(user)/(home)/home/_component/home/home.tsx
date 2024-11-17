@@ -64,7 +64,7 @@ const Home = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           {/* Left Side: Logo */}
           <div className="flex items-center space-x-6">
-            <a href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
+            <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
               BookItNow
             </a>
           </div>
@@ -81,7 +81,7 @@ const Home = () => {
 
           {/* Full Navbar for Large Devices */}
           <div className="hidden md:flex items-center space-x-6">
-            <a href="/" className="text-gray-700 hover:text-blue-600 transition duration-300">
+            <a href="/" className="text-blue-600 font-semibold transition duration-300">
               Home
             </a>
             <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300">

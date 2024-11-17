@@ -155,7 +155,7 @@ const Profile: React.FC = () => {
 
           <ul className="space-y-6">
             <li>
-              <a href="#upcoming" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
+              <a href="/upcoming-events" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
                 Upcoming Events
               </a>
             </li>
