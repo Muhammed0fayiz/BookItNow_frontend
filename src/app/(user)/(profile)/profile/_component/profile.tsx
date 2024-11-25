@@ -75,7 +75,9 @@ const Profile: React.FC = () => {
   };
 
   // Handle logout with proper cleanup
-
+  const handleProfileClick = () => {
+    router.push('/profile');
+  };
 
   const handleLogouts = () => {
     console.log('enter logout');
@@ -137,15 +139,16 @@ const Profile: React.FC = () => {
         >
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-              <img
-                src={userProfile?.profileImage || "/default-avatar.png"}
-                alt="User Avatar"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/default-avatar.png";
-                }}
-              />
+            <img
+      src={userProfile?.profileImage || "/default-avatar.png"}
+      alt="User Avatar"
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = "/default-avatar.png";
+      }}
+      onClick={handleProfileClick}
+    />
             </div>
             <div>
               <h3 className="text-md font-semibold">{userProfile?.username || 'Guest'}</h3>
@@ -165,7 +168,7 @@ const Profile: React.FC = () => {
               </a>
             </li>
             <li>
-              <a href="#wallet" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
+              <a href="/wallet-history" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
                 Wallet
               </a>
             </li>

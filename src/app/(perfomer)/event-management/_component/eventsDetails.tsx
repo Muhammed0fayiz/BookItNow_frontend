@@ -20,6 +20,8 @@ interface Event {
   rating: number;
   description: string;
   imageUrl: string;
+  isblocked: boolean;
+  isperformerblockedevents: boolean;
 }
 
 const isValidEvent = (event: Partial<Event>): event is Event => {
@@ -64,84 +66,131 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => (
   </div>
 );
 
-const EventCard: React.FC<{
-  event: Event;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-}> = ({ event, onEdit, onDelete }) => (
-  <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-    <img
-      src={event.imageUrl}
-      alt={event.title}
-      className="w-full h-48 object-cover"
-    />
-    <div className="p-4">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-semibold">{event.title}</h3>
-        <span className="text-lg font-bold text-blue-600">
-          ${event.price.toLocaleString()}
-        </span>
-      </div>
-      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-          {event.category}
-        </span>
-      </div>
-      <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
-      <div className="border-t pt-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-semibold">Team Leader:</span>
-          <span>{event.teamLeader}</span>
-        </div>
-        <div className="flex items-center gap-2 mb-2">
-          <Phone size={16} className="text-gray-600" />
-          <span>{event.teamLeaderNumber}</span>
-        </div>
-        <RatingStars rating={event.rating} />
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        {event._id && (
-          <>
-            <button
-              onClick={() => onEdit(event._id!)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-300"
-              aria-label="Edit event"
-            >
-              <Edit2 size={18} />
-            </button>
-            <button
-              onClick={() => onDelete(event._id!)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors duration-300"
-              aria-label="Delete event"
-            >
-              <Trash2 size={18} />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  </div>
-);
-
 const EventManagementDashboard: React.FC = () => {
   const router = useRouter();
   const { events, fetchPerformerEvents, setEvents } = usePerformerEventsStore();
   const [searchTerm, setSearchTerm] = useState('');
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
-  const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
-  const { eventManagerDetails, fetchEventManagerDetails } = useEventManagerStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
 
   useEffect(() => {
     console.log('Fetching data...');
-    fetchEventManagerDetails();
     fetchPerformerDetails();
     fetchPerformerEvents();
-  }, [fetchEventManagerDetails, fetchPerformerDetails, fetchPerformerEvents]);
+  }, [fetchPerformerDetails, fetchPerformerEvents]);
 
   useEffect(() => {
     console.log('Fetched Events:', events);
   }, [events]);
+
+  const handleBlockUnblock = async (id: string | undefined) => {
+    if (!id) {
+      console.error('ID is required');
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.put(`/performer/blockUnblockEvents/${id}`);
+      if (response.status === 200) {
+        setEvents(events.map(event => {
+          if (event._id === id) {
+            return {
+              ...event,
+              isperformerblockedevents: !event.isperformerblockedevents
+            };
+          }
+          return event;
+        }));
+      }
+    } catch (error) {
+      console.error('Error blocking/unblocking event:', error);
+    }
+  };
+
+  const EventCard: React.FC<{
+    event: Event;
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+  }> = ({ event, onEdit, onDelete }) => (
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+      <div className="relative">
+        <img
+          src={event.imageUrl}
+          alt={event.title}
+          className="w-full h-48 object-cover"
+        />
+        {event.isblocked && (
+          <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-center py-1">
+            Admin Blocked Event
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-xl font-semibold">{event.title}</h3>
+          <span className="text-lg font-bold text-blue-600">
+            ₹{event.price.toLocaleString()}
+          </span>
+        </div>
+ 
+        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            {event.category}
+          </span>
+
+          <div className="flex gap-2">
+            {event.isblocked ? (
+              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                Admin Blocked
+              </span>
+            ) : (
+              <button
+                className={`px-2 py-1 rounded-full text-sm ${
+                  event.isperformerblockedevents ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                }`}
+                onClick={() => handleBlockUnblock(event._id)}
+              >
+                {event.isperformerblockedevents ? "Unblock" : "Block"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+        <div className="border-t pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold">Team Leader:</span>
+            <span>{event.teamLeader}</span>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <Phone size={16} className="text-gray-600" />
+            <span>{event.teamLeaderNumber}</span>
+          </div>
+          <RatingStars rating={event.rating} />
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          {event._id && !event.isblocked && (
+            <>
+              <button
+                onClick={() => onEdit(event._id!)}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-300"
+                aria-label="Edit event"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button
+                onClick={() => onDelete(event._id!)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors duration-300"
+                aria-label="Delete event"
+              >
+                <Trash2 size={18} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   const validEvents = events.filter(isValidEvent);
   

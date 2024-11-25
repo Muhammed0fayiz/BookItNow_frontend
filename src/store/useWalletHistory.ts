@@ -1,29 +1,29 @@
 import { create } from 'zustand';
 import axiosInstance from '@/shared/axiousintance';
-import { Events } from '@/types/store';
+import { WalletDocument } from '@/types/store';
 
-// Store interface for fetching all events
-interface EventsStore {
-  events: Events[];
+
+interface WalletHistoryStore {
+  walletHistory: WalletDocument[];
   isLoading: boolean;
   error: string | null;
 
-  // Action to fetch all events
-  fetchAllEvents: () => Promise<void>;
-  getUserIdFromToken: () => string | null; // Utility to get user ID
+
+  fetchWalletHistory: () => Promise<void>;
+  getUserIdFromToken: () => string | null; 
 }
 
-const useAllEventsStore = create<EventsStore>((set) => ({
-  events: [],
+const useWalletHistoryStore = create<WalletHistoryStore>((set) => ({
+  walletHistory: [],
   isLoading: false,
   error: null,
 
-  // Fetch all events using the ID from the token
-  fetchAllEvents: async () => {
+
+  fetchWalletHistory: async () => {
     try {
       set({ isLoading: true, error: null });
 
-      const userId = useAllEventsStore.getState().getUserIdFromToken();
+      const userId = useWalletHistoryStore.getState().getUserIdFromToken();
 
       if (!userId) {
         set({
@@ -33,11 +33,11 @@ const useAllEventsStore = create<EventsStore>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get(`/getAllEvents/${userId}`);
+      const response = await axiosInstance.get(`/getWalletHistory/${userId}`);
 
       if (response.status === 200) {
         set({
-          events: response.data || [],
+          walletHistory: response.data.data || [],
           isLoading: false,
         });
       }
@@ -50,7 +50,7 @@ const useAllEventsStore = create<EventsStore>((set) => ({
     }
   },
 
-  // Utility function to get user ID from token in cookie
+
   getUserIdFromToken: () => {
     try {
       const getCookie = (name: string): string | undefined => {
@@ -74,4 +74,4 @@ const useAllEventsStore = create<EventsStore>((set) => ({
   },
 }));
 
-export default useAllEventsStore;
+export default useWalletHistoryStore;

@@ -78,6 +78,7 @@ export interface PerformerEventsStats {
 }
 // Event interface to match MongoDB document structure
 export interface Events {
+  isListed: boolean;
   createdAt:string;
   id: number;
   _id?: string;
@@ -91,7 +92,8 @@ export interface Events {
   rating: number;
   description: string;
   imageUrl: string;
-  isBlocke:boolean
+  isblocked:boolean;
+  isperformerblockedevents:boolean
 
 }
 
@@ -149,33 +151,7 @@ export interface Performer {
   place?: string;
   bookingStatus?: string;
 }
-// export interface UpcomingEvent {
 
-//   eventDetails: any;
-//   id: number;
-//   title: string;
-//   category: string;
-//   price: number;
-//   teamLeader: string;
-//   teamLeaderNumber: string;
-//   rating: number;
-//   description: string;
-//   imageUrl: string;
-//   eventDate: string;  
-//   place: string
-//   performerId: string; 
-//   userId: string;
-//   time:string     
-// }
-
-// export interface UpcomingEventsStore {
-//   upcomingEvents: UpcomingEvent[];
-//   isLoading: boolean;
-//   error: string | null;
-
-//   fetchUpcomingEvents: () => Promise<void>;
-//   removeUpcomingEvent: (eventId: number) => Promise<void>;
-// }
 export interface PerformerId {
   _id: string;
 }
@@ -211,4 +187,21 @@ export interface UpcomingEventsStore {
   fetchAllEvents: () => Promise<void>;
   removeUpcomingEvent: (eventId: string) => void;
   getUserIdFromToken: () => string | null;
+}
+export interface AdminDetails {
+  walletAmount: number | null;
+  walletTransactionHistory: Record<string, number>;
+  totalUsers: number | null;
+  userRegistrationHistory: Record<string, number>;
+  totalPerformers: number | null;
+  performerRegistrationHistory: Record<string, number>;
+}
+export interface WalletDocument {
+  _id: string;
+  userId: string;
+  amount: number;
+  transactionType: 'debit' | 'credit';
+  role: 'user' | 'performer';
+  date: string;
+  description: string;
 }
