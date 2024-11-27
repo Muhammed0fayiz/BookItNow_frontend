@@ -33,12 +33,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
       label: 'Events Details'
     },
     {
-      path: '/slot-management',
+      path: '/performer-slotmanagement',
       icon: <Clock size={20} />,
       label: 'Slot Management'
     },
     {
-      path: '/upcoming-events',
+      path: '/performer-upcomingevent',
       icon: <Calendar size={20} />,
       label: 'Upcoming Events'
     },

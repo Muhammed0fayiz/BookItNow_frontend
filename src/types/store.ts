@@ -137,6 +137,7 @@ export interface UserStore {
 
 export interface Performer {
 
+  id: string;
   createdAt: string | number | Date;
   imageUrl: string | undefined;
 
@@ -204,4 +205,54 @@ export interface WalletDocument {
   role: 'user' | 'performer';
   date: string;
   description: string;
+}
+export interface PerformerUpcomingEvent {
+  _id: string;
+  title: string;
+  category: string;
+  userId: string;
+  username:string;
+  performerId: PerformerId;
+  price: number;
+  status: string;
+  teamLeader: string;
+  teamLeaderNumber: string;
+  rating: number;
+  description: string;
+  imageUrl: string;
+  isblocked: boolean;
+  advancePayment: number;
+  restPayment: number;
+  time: string;
+  place: string;
+  date: string;
+  bookingStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PerformerUpcomingEventsStore {
+  performerupcomingEvents: PerformerUpcomingEvent[];
+  isLoading: boolean;
+  error: string | null;
+  fetchAllEvents: () => Promise<void>;
+  removeUpcomingEvent: (eventId: string) => void;
+  getUserIdFromToken: () => string | null;
+}
+// types/store.ts
+export interface SlotMangement {
+  bookingDates: Date[];
+  unavailableDates: Date[];
+}
+
+export interface SlotStore {
+  getUserIdFromToken(): string | undefined;
+
+  slots: SlotMangement | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  fetchSlotDetails: (performerId: string) => Promise<SlotMangement>;
+
+ 
 }
