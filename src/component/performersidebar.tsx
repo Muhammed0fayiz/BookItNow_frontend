@@ -43,9 +43,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
       label: 'Upcoming Events'
     },
     {
-      path: '/event-history',
+      path: '/wallet-management',
       icon: <Clock size={20} />,
-      label: 'Event History'
+      label: 'wallet'
     }
   ];
 

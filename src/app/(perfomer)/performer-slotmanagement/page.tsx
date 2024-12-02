@@ -9,7 +9,6 @@ import Sidebar from '@/component/performersidebar';
 
 // Store Hooks
 import { useUIStore } from '@/store/useUIStore';
-
 import usePerformerStore from '@/store/usePerformerStore';
 import axiosInstance from '@/shared/axiousintance';
 import { useSlotStore } from '@/store/useslotDetails';
@@ -40,11 +39,11 @@ const PerformerDashboard: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [slotss, setSlots] = useState<Slot[]>([]);
   const { slots, fetchSlotDetails, isLoading, error } = useSlotStore();
+
   // Hooks
   const router = useRouter();
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  // const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
 
   // Memoized Calendar Days Calculation
   const calendarDays = useMemo(() => {
@@ -71,22 +70,30 @@ const PerformerDashboard: React.FC = () => {
     try {
       const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
         date: date.toISOString(),
-        action: 'add' // Consider adding an explicit action parameter
+        action: 'add'
       });
   
+      if (response.data.status === 403) {
+        alert(response.data.message || "Slot already exists or cannot be added");
+     
+        return;
+      }
+  
       if (response.data.success) {
-        // Ensure type safety
         setSlots(prevSlots => [...prevSlots, { 
           id: `slot-${Date.now()}`, 
           date, 
           isBooked: false 
         }]);
+        fetchSlotDetails('performerId');
       } else {
         alert(response.data.message || "Failed to add slot");
       }
+      fetchSlotDetails('performerId');
     } catch (error) {
       console.error("Error adding slot:", error);
-      alert("Failed to add slot. Please try again.");
+      alert('This day is already booked for an event.');
+
     }
   };
   
@@ -100,14 +107,14 @@ const PerformerDashboard: React.FC = () => {
   
       const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
         date: slotToRemove.date.toISOString(),
-        action: 'remove' // Explicit action parameter
+        action: 'remove'
       });
-  
+    
       if (response.data.success) {
         setSlots(prevSlots => prevSlots.filter(slot => slot.id !== slotId));
       } else {
         alert(response.data.message || "Failed to remove slot");
-      }
+      }  fetchSlotDetails('performerId');
     } catch (error) {
       console.error("Error removing slot:", error);
       alert("Failed to remove slot. Please try again.");
@@ -124,15 +131,15 @@ const PerformerDashboard: React.FC = () => {
 
   // Side Effects
   useEffect(() => {
-   
     fetchPerformerDetails();
-    console.log(performerDetails?.PId)
-    console.log('hello',slots)
+
   }, [fetchPerformerDetails]);
+
   useEffect(() => {
     fetchSlotDetails('performerId');
-console.log('fay',slots)
+    console.log('fayi',slots)
   }, []);
+
   // Render Calendar Grid
   const renderCalendarGrid = () => (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -167,9 +174,14 @@ console.log('fay',slots)
               
               {/* Calendar Days */}
               {days.map(date => {
-                const daySlots = slotss.filter(
-                  slot => slot.date.toDateString() === date.toDateString()
+                // Check if date is in bookingDates or unavailableDates
+                const isBookedDate = slots?.bookingDates?.some(
+                  bookDate => new Date(bookDate).toDateString() === date.toDateString()
                 );
+                const isUnavailableDate = slots?.unavailableDates?.some(
+                  unavailDate => new Date(unavailDate).toDateString() === date.toDateString()
+                );
+
                 return (
                   <div 
                     key={date.toISOString()} 
@@ -177,14 +189,13 @@ console.log('fay',slots)
                       relative p-1 
                       ${!isSameMonth(date, new Date(currentYear, month)) ? 'text-gray-300' : ''}
                       ${isToday(date) ? 'bg-blue-100 rounded-full' : ''}
+                      ${isBookedDate ? 'bg-green-200' : ''}
+                      ${isUnavailableDate ? 'bg-red-200' : ''}
                     `}
                   >
                     <span className="text-xs">
                       {date.getDate()}
                     </span>
-                    {daySlots.length > 0 && (
-                      <span className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-full"></span>
-                    )}
                     {isSameMonth(date, new Date(currentYear, month)) && (
                       <button 
                         onClick={() => setSelectedDate(date)}
@@ -216,7 +227,7 @@ console.log('fay',slots)
             </div>
             
             <div className="flex justify-between items-center mb-4">
-              <h4 className="text-md font-medium">Available Slots</h4>
+              <h4 className="text-md font-medium"> Update Slots</h4>
               <button 
                 className="text-blue-600 hover:bg-blue-100 p-2 rounded-full"
                 onClick={() => handleAddSlot(selectedDate)}
@@ -245,9 +256,9 @@ console.log('fay',slots)
                 </div>
               ))}
             
-            {slotss.filter(slot => slot.date.toDateString() === selectedDate.toDateString()).length === 0 && (
+            {/* {slotss.filter(slot => slot.date.toDateString() === selectedDate.toDateString()).length === 0 && (
               <p className="text-gray-500 text-center">No slots for this date</p>
-            )}
+            )} */}
           </div>
         </div>
       )}
@@ -264,26 +275,11 @@ console.log('fay',slots)
         </button>
       </div>
       <div className="h-80 overflow-y-auto p-4">
-        {/* {messages.map((msg: { id: React.Key | null | undefined; sender: string; text: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; }) => (
-          <div key={msg.id} className={`mb-2 ${msg.sender === 'performer' ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block p-2 rounded-lg ${msg.sender === 'performer' ? 'bg-blue-100' : 'bg-gray-200'}`}>
-              {msg.text}
-            </span>
-          </div>
-        ))} */}
+        {/* Chat messages would go here */}
       </div>
       <div className="p-4 border-t">
         <div className="flex">
-          {/* <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            className="flex-grow border rounded-l-lg p-2"
-            placeholder="Type a message..."
-          /> */}
-          {/* <button onClick={sendMessage} className="bg-blue-600 text-white p-2 rounded-r-lg">
-            <Send size={20} />
-          </button> */}
+          {/* Chat input would go here */}
         </div>
       </div>
     </div>

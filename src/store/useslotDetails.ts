@@ -14,6 +14,7 @@ export const useSlotStore = create<SlotStore>((set, get) => ({
       const getCookie = (name: string): string | undefined => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
+
         if (parts.length > 1) return parts[1].split(';')[0];
         return undefined;
       };
@@ -35,18 +36,25 @@ export const useSlotStore = create<SlotStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // If no performerId is provided, try to get it from the token
-      const userId =get().getUserIdFromToken();
+      const userId = get().getUserIdFromToken();
 
       if (!userId) {
         throw new Error('No user ID found');
       }
 
       const response = await axiosInstance.get(`/performer/getslot/${userId}`);
-      
+      console.log('Response:', response);
+
+      const data = response.data?.data || {}; // Safely access `data`
+
       // Transform the response data to match our interface
       const slotDetails: SlotMangement = {
-        bookingDates: response.data.data.bookingDates.map((date: string) => new Date(date)),
-        unavailableDates: response.data.data.unavailableDates.map((date: string) => new Date(date))
+        bookingDates: Array.isArray(data.bookingDates)
+          ? data.bookingDates.map((date: string) => new Date(date))
+          : [],
+        unavailableDates: Array.isArray(data.unavailableDates)
+          ? data.unavailableDates.map((date: string) => new Date(date))
+          : []
       };
 
       set({ 
