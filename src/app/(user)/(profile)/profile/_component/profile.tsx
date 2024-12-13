@@ -157,30 +157,30 @@ const Profile: React.FC = () => {
           </div>
 
           <ul className="space-y-6">
-            <li>
-              <a href="/upcoming-events" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
-                Upcoming Events
-              </a>
-            </li>
-            <li>
-              <a href="#history" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
-                Event History
-              </a>
-            </li>
-            <li>
-              <a href="/wallet-history" className="block text-lg hover:bg-blue-700 p-3 rounded transition duration-300">
-                Wallet
-              </a>
-            </li>
-            <li>
-              <button 
-                onClick={handleLogouts}
-                className="w-full text-left block text-lg hover:bg-blue-700 p-3 rounded transition duration-300"
-              >
-                Logout
-              </button>
-            </li>
-          </ul>
+  <li>
+    <a href="/upcoming-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+      Upcoming Events
+    </a>
+  </li>
+  <li>
+    <a href="/event-history" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+      Event History
+    </a>
+  </li>
+  <li>
+    <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+      My Wallet
+    </a>
+  </li>
+  <li>
+    <button 
+      onClick={handleLogout}
+      className="w-full text-left block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100"
+    >
+      Sign Out
+    </button>
+  </li>
+</ul>
         </aside>
 
         {/* Profile Section */}

@@ -8,7 +8,9 @@ import useUserStore from '@/store/useUserStore';
 import axiosInstance from '@/shared/axiousintance';
 import EventPayment from '@/component/eventPayment';
 import BookingConfirmationModal from '@/component/bookingconfirmation';
+import axios from 'axios';
 
+import WalletPaymentModal from '@/component/WalletPayment';
 
 
 const EventDetailsPage = () => {
@@ -25,8 +27,11 @@ const EventDetailsPage = () => {
   const [showPayment, setShowPayment] = useState(false);
 const [paymentError, setPaymentError] = useState('');
 const [showConfirmation, setShowConfirmation] = useState(false);
+const [availabilityError, setAvailabilityError] = useState('');
+const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
   // Form state
+  
   const [formData, setFormData] = useState({
     place: '',
     date: '',
@@ -118,13 +123,137 @@ const [showConfirmation, setShowConfirmation] = useState(false);
   };
   
 
-  const handleSubmit = (e: { preventDefault: () => void; }) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
+  
+    // Reset previous availability error
+    setAvailabilityError('');
+  
     if (validateForm()) {
-      setShowConfirmation(true);
+      try {
+        const response = await axiosInstance.post('/checkavailable', {
+          formData: formData,
+          eventId: eventId,
+          performerId: performerId,
+          userId: userProfile?.id,
+        });
+  
+        if (response.data.data === true) {
+          setShowConfirmation(true);
+        } else {
+          setAvailabilityError('This date is not available. Please choose another date.');
+  
+          // Clear the error message after 1 second
+          setTimeout(() => {
+            setAvailabilityError('');
+          }, 1000);
+        }
+      } catch (error) {
+        setAvailabilityError('Error checking availability. Please try again.');
+        console.error('Availability check failed:', error);
+  
+
+        setTimeout(() => {
+          setAvailabilityError('');
+        }, 1000);
+      }
     }
   };
+  const handleWalletPaymentConfirm = async () => {
+    // Reset previous errors
+    setAvailabilityError('');
+    setPaymentError('');
   
+    // Check if event exists before proceeding
+    if (!event) {
+      setPaymentError('Event details are missing');
+      setShowWalletPaymentModal(false);
+      return;
+    }
+  
+    // Perform form validation first
+    if (validateForm()) {
+      try {
+        // Check event availability
+        const response = await axiosInstance.post('/checkavailable', {
+          formData: formData,
+          eventId: eventId,
+          performerId: performerId,
+          userId: userProfile?.id,
+        });
+  
+        if (response.data.data === true) {
+          // Validate wallet balance
+          if (!userProfile?.walletBalance || 
+              (event.price * 0.1 > userProfile.walletBalance)) {
+            setPaymentError('Insufficient wallet balance');
+            setShowWalletPaymentModal(false);
+            return;
+          }
+  
+          // Proceed with wallet payment
+          try {
+            const walletPaymentResponse = await axiosInstance.post('/walletPayment', {
+              formData: formData,
+              eventId: eventId,
+              performerId: performerId,
+              userId: userProfile?.id,
+              amount: event.price * 0.1,
+            });
+  
+            if (walletPaymentResponse.status === 200) {
+              setShowWalletPaymentModal(false);
+              router.replace('/events/paymentsuccess');
+            }
+          } catch (paymentError: unknown) {
+            if (axios.isAxiosError(paymentError)) {
+              if (paymentError.response) {
+                switch (paymentError.response.status) {
+                  case 400:
+                    setPaymentError('Insufficient wallet balance');
+                    break;
+                  case 403:
+                    setPaymentError('Payment unauthorized');
+                    break;
+                  default:
+                    setPaymentError('Wallet payment failed. Please try again.');
+                }
+              }
+              // Hide wallet payment modal on any error
+              setShowWalletPaymentModal(false);
+            } else {
+              setPaymentError('An unexpected error occurred');
+              // Hide wallet payment modal on any error
+              setShowWalletPaymentModal(false);
+            }
+          }
+        } else {
+          setAvailabilityError('This date is not available. Please choose another date.');
+          setShowWalletPaymentModal(false);
+          
+          // Clear the error message after 1 second
+          setTimeout(() => {
+            setAvailabilityError('');
+          }, 1000);
+        }
+      } catch (error) {
+        setAvailabilityError('Error checking availability. Please try again.');
+        setShowWalletPaymentModal(false);
+        console.error('Availability check failed:', error);
+  
+        setTimeout(() => {
+          setAvailabilityError('');
+        }, 1000);
+      }
+    }
+  };
+
+  
+  const handleWalletPaymentClick = () => {
+    setShowWalletPaymentModal(true);
+  };
+  
+
   const handlePaymentSuccess = async (paymentIntent: any) => {
     try {
       const response = await axiosInstance.post('/events/book', {
@@ -182,6 +311,7 @@ const [showConfirmation, setShowConfirmation] = useState(false);
     console.log('Share clicked');
   };
 
+  
   const goToPerformerPage = () => {
     router.push(`/events/${performer?.userId}`);
   };
@@ -195,6 +325,8 @@ const [showConfirmation, setShowConfirmation] = useState(false);
       </div>
     );
   }
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -442,9 +574,21 @@ const [showConfirmation, setShowConfirmation] = useState(false);
                     >
                       View Profile →
                     </button>
+              
                   </div>
                 </div>
+                <div className="button-container">
+  {event.price * 0.1 <= (userProfile?.walletBalance ?? 0) && (
+    <button onClick={handleWalletPaymentConfirm}>💳 Pay with Wallet</button>
+  )}
+</div>
 
+
+                {availabilityError && (
+  <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+    {availabilityError}
+  </div>
+)}
                 {/* Action Buttons */}
                 <div className="flex space-x-4 pt-4">
                   <button 
@@ -462,7 +606,14 @@ const [showConfirmation, setShowConfirmation] = useState(false);
       </div>
       {/* Add this before the final closing div */}
       {/* Add this before EventPayment */}
-     
+      <WalletPaymentModal 
+        show={showWalletPaymentModal} 
+        onClose={() => setShowWalletPaymentModal(false)}
+        onConfirm={handleWalletPaymentConfirm}
+        amount={event?.price ? event.price * 0.1 : 0}
+        walletBalance={userProfile?.walletBalance}
+      />
+
 <BookingConfirmationModal 
   show={showConfirmation}
   onConfirm={handleConfirmBooking}

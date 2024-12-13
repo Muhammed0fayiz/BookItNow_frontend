@@ -1,5 +1,6 @@
 
 
+
 export interface ChatMessage {
   id: number;
   text: string;
@@ -177,6 +178,7 @@ export interface UpcomingEvent {
   place: string;
   date: string;
   bookingStatus: string;
+  isRated:boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -255,4 +257,63 @@ export interface SlotStore {
   fetchSlotDetails: (performerId: string) => Promise<SlotMangement>;
 
  
+}
+export interface User{
+
+  _id: string;
+  username: string;
+  email: string;
+  password: string;
+  isVerified: boolean;
+  isblocked: boolean;
+  isPerformerBlocked: boolean;
+  waitingPermission: boolean;
+
+  walletBalance?: number;
+  createdAt?: Date; 
+  updatedAt?: Date; 
+  profileImage?: string;
+}
+export interface Favorite {
+
+ 
+  _id: string;
+  title: string;
+  category: string;
+  userId: string;
+  performerId: PerformerId;
+  price: number;
+  status: string;
+  teamLeader: string;
+  teamLeaderNumber: string;
+  rating: number;
+  description: string;
+  imageUrl: string;
+  isblocked: boolean;
+  advancePayment: number;
+  restPayment: number;
+  time: string;
+  place: string;
+  date: string;
+  bookingStatus: string;
+  isRated:boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FavoritesStore {
+  favorites: Favorite[];
+  isLoading: boolean;
+  error: string | null;
+  fetchfaviriteEvents: () => Promise<void>;
+  removeFavorite: (eventId: string) => void;
+  getUserIdFromToken: () => string | null;
+}
+
+export interface ChatRoom {
+  profileImage: string;
+  userName: string;
+  performerName: string; 
+  myId: string;
+  otherId: string;
 }

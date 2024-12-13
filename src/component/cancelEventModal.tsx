@@ -27,13 +27,16 @@ const CancelEventModal = ({
     // App fees is non-refundable
     const appFees = 10;
     
-    // If less than 10 days, no refund of advance
+    // If less than 10 days, no refund
     if (daysDifference < 10) {
       return 0;
     }
     
-    // Calculate refund amount (total price minus app fees)
-    return eventPrice - appFees;
+    // Refund formula: 10% of eventPrice - appFees
+    const refund = eventPrice * 0.1 - appFees;
+    
+    // Ensure refund is not negative
+    return refund > 0 ? refund : 0;
   };
 
   const refundAmount = calculateRefundAmount();
@@ -60,6 +63,7 @@ const CancelEventModal = ({
             <ul className="space-y-2 text-sm text-yellow-700">
               <li>• App fees (₹10) is non-refundable</li>
               <li>• Cancellations less than 10 days before the event are non-refundable</li>
+              <li>• Refund is 10% of event price minus app fees (₹10)</li>
             </ul>
           </div>
 

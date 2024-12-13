@@ -1,9 +1,17 @@
-import React from 'react';
-import { LayoutDashboard, Calendar, Clock, LogOut } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { loginpefomer } from '@/datas/logindatas';
 
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  Clock, 
+  LogOut, 
+  ListChecks,  // For Event Details
+  History,     // For Event History
+  Wallet,      // For Wallet Management
+  MapPin       // For Upcoming Events
+} from 'lucide-react';
+
+import { useRouter } from 'next/navigation';
 interface SidebarProps {
   isOpen: boolean;
   performerDetails: {
@@ -29,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
     },
     {
       path: '/event-management',
-      icon: <Calendar size={20} />,
+      icon: <ListChecks size={20} />, // Changed from Calendar to ListChecks
       label: 'Events Details'
     },
     {
@@ -39,13 +47,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
     },
     {
       path: '/performer-upcomingevent',
-      icon: <Calendar size={20} />,
+      icon: <MapPin size={20} />, // Changed from Calendar to MapPin
       label: 'Upcoming Events'
     },
     {
+      path: '/performer-eventhistory',
+      icon: <History size={20} />, // Changed from Calendar to History
+      label: 'Event History'
+    },
+    {
       path: '/wallet-management',
-      icon: <Clock size={20} />,
-      label: 'wallet'
+      icon: <Wallet size={20} />, // Changed from Clock to Wallet
+      label: 'Wallet'
     }
   ];
 
@@ -60,22 +73,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
         onClick={() => handleNavigation('/performer-profile')}
       >
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3 relative">
-          {performerDetails?.imageUrl ? (
-             <img
-             src={performerDetails?.imageUrl|| performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
-             alt={performerDetails?.bandName || 'Profile Image'}
-             className="object-cover w-full h-full"
-           />
-          ) : (
-            <img
-              src={performerDetails?.imageUrl|| performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
-              alt={performerDetails?.bandName || 'Profile Image'}
-              className="object-cover w-full h-full"
-            />
-          )}
+          <img
+            src={performerDetails?.imageUrl || performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
+            alt={performerDetails?.bandName || 'Profile Image'}
+            className="object-cover w-full h-full"
+          />
         </div>
         <div>
-          <img src="performerDetail." alt="" />
           <h3 className="text-md font-semibold">
             {performerDetails?.bandName || 'Welcome Back'}
           </h3>

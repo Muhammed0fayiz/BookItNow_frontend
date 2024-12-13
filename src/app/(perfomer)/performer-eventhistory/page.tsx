@@ -1,5 +1,5 @@
 'use client'
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, MessageCircle, Send } from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
@@ -7,7 +7,8 @@ import { useUIStore } from '@/store/useUIStore';
 import { useChatStore } from '@/store/useChatStore';
 import usePerformerStore from '@/store/usePerformerStore';
 
-// import { usePerformerStore } from '@/store/usePerformerStore';
+import axiosInstance from '@/shared/axiousintance';
+import { useEventHistory } from '@/store/usePerformerEventHistory';
 
 interface DashboardSectionProps {
   title: string;
@@ -21,8 +22,106 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) 
   </div>
 );
 
+const formatTime = (timeString: string) => {
+  try {
+    if (!timeString) return 'Time not available';
+    
+    if (timeString.includes(':')) {
+      const [hours, minutes] = timeString.split(':');
+      const date = new Date();
+      date.setHours(parseInt(hours), parseInt(minutes));
+      return date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    return timeString;
+  } catch (error) {
+    console.log('Time parsing error:', error);
+    return timeString;
+  }
+};
+
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.log('Date parsing error:', error);
+    return 'Date not available';
+  }
+};
+
+const UpcomingEvents: React.FC = () => {
+  const { performerupcomingEvents } = useEventHistory();
+
+  return (
+    <DashboardSection title="Upcoming Events">
+    {performerupcomingEvents.length === 0 ? (
+      <p className="text-gray-500 text-center">No upcoming events</p>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {performerupcomingEvents.map((event) => (
+          <div 
+            key={event._id} 
+            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+          >
+            {event.imageUrl && (
+              <img 
+                src={event.imageUrl} 
+                alt={event.title} 
+                className="w-full h-48 object-cover"
+              />
+            )}
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-2">{event.title}</h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Date:</strong>  {formatDate(event.date)}</p>
+                <p><strong>Time:</strong>  {formatTime(event.time)}</p>
+                <p><strong>Place:</strong> {event.place}</p>
+                <p><strong>Category:</strong> {event.category}</p>
+                <p>
+  <strong>Status:</strong> 
+  <span 
+    style={{
+      color: event.bookingStatus === "booking" ? "green" : "red"
+    }}
+  >
+    {event.bookingStatus === "booking" ? "Completed" : "Cancelled" }
+  </span>
+</p>
+
+
+              </div>
+              <div className="mt-4 flex justify-between items-center">
+                <span className="text-green-600 font-medium">
+                ₹{event.price}
+                </span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  event.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                  event.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {event.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </DashboardSection>
+  );
+};
+
 const PerformerDashboard: React.FC = () => {
   const router = useRouter();
+  const { performerupcomingEvents, fetchAllEvents } = useEventHistory();
   
   // UI Store
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
@@ -35,19 +134,15 @@ const PerformerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchPerformerDetails();
-  }, [fetchPerformerDetails]);
+    fetchAllEvents();
+  }, [fetchPerformerDetails, fetchAllEvents]);
 
   const handleLogout = () => {
-    console.log('enter logout');
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
       router.replace('/auth');
     }, 1000);
   };
-  useEffect(() => {
-    console.log('hello', performerDetails);
-  }, []); // Add performerDetails to dependency array
-
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -75,7 +170,10 @@ const PerformerDashboard: React.FC = () => {
           </div>
         </nav>
 
-      
+        {/* Main Content Area */}
+        <main className="pt-20 p-6">
+          <UpcomingEvents />
+        </main>
 
         {/* Chat Section */}
         <div className={`fixed right-0 bottom-0 w-80 bg-white shadow-lg transition-transform duration-300 ${chatOpen ? 'translate-y-0' : 'translate-y-full'}`}>
@@ -120,6 +218,3 @@ const PerformerDashboard: React.FC = () => {
 };
 
 export default PerformerDashboard;
-
-
-

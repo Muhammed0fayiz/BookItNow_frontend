@@ -26,6 +26,7 @@ const Verification: React.FC = () => {
   const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5;
   const router = useRouter();
@@ -92,9 +93,16 @@ const Verification: React.FC = () => {
   const handleVerificationStatusChange = async (id: string, status: boolean) => {
     try {
       if (status) {
-        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, { isVerified: true, isRejected: false });
+        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, { 
+          isVerified: true, 
+          isRejected: false 
+        });
       } else {
-        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, { isVerified: false, isRejected: true });
+        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, { 
+          isVerified: false, 
+          isRejected: true,
+          rejectReason: rejectReason 
+        });
       }
       
       setPerformers(prevPerformers =>
@@ -103,6 +111,7 @@ const Verification: React.FC = () => {
         )
       );
       setConfirmationOpen(false);
+      setRejectReason('');
     } catch (error) {
       console.error('Error updating performer status:', error);
     }
@@ -111,6 +120,7 @@ const Verification: React.FC = () => {
   const openConfirmation = (performer: Performer, action: 'approve' | 'reject') => {
     setSelectedPerformer(performer);
     setAction(action);
+    setRejectReason('');
     setConfirmationOpen(true);
   };
 
@@ -294,28 +304,53 @@ const Verification: React.FC = () => {
                 <Dialog.Title className="text-lg font-bold mb-4">
                   {action === 'approve' ? 'Approve Performer' : 'Reject Performer'}
                 </Dialog.Title>
-                <p>
-                  Are you sure you want to {action === 'approve' ? 'approve' : 'reject'}{' '}
-                  {selectedPerformer?.bandName}?
-                </p>
+                {action === 'approve' ? (
+                  <p>Are you sure you want to approve {selectedPerformer?.bandName}?</p>
+                ) : (
+                  <>
+                    <p className="mb-4">Are you sure you want to reject {selectedPerformer?.bandName}?</p>
+                    <label htmlFor="reject-reason" className="block text-sm font-medium text-gray-700">
+                      Reason for Rejection
+                    </label>
+                    <textarea
+                      id="reject-reason"
+                      rows={4}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      placeholder="Please provide a reason for rejection..."
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      required
+                    />
+                  </>
+                )}
                 <div className="mt-6 flex justify-end">
-                  <button className="mr-2 text-gray-500" onClick={() => setConfirmationOpen(false)}>
+                  <button 
+                    className="mr-2 text-gray-500" 
+                    onClick={() => setConfirmationOpen(false)}
+                  >
                     Cancel
                   </button>
                   <button
-                    className={`bg-${action === 'approve' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded hover:bg-${action === 'approve' ? 'green' : 'red'}-600 transition-colors duration-200`}
-                    onClick={() => selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')}
-                  >
-                    {action === 'approve' ? 'Approve' : 'Reject'}
-                  </button>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </Dialog>
-      </Transition>
-    </div>
-  );
+             className={`bg-${action === 'approve' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded hover:bg-${action === 'approve' ? 'green' : 'red'}-600 transition-colors duration-200`}
+             onClick={() => {
+               if (action === 'reject' && !rejectReason.trim()) {
+                 // Show an error or prevent submission if no reason is provided
+                 alert('Please provide a reason for rejection');
+                 return;
+               }
+               selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')
+             }}
+           >
+             {action === 'approve' ? 'Approve' : 'Reject'}
+           </button>
+         </div>
+       </Dialog.Panel>
+     </Transition.Child>
+   </div>
+ </Dialog>
+</Transition>
+</div>
+);
 };
 
 export default Verification;
