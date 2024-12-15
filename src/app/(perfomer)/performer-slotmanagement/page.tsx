@@ -71,7 +71,7 @@ const PerformerDashboard: React.FC = () => {
       const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
         date: date.toISOString(),
         action: 'add'
-      });
+      },{withCredentials:true});
   
       if (response.data.status === 403) {
         alert(response.data.message || "Slot already exists or cannot be added");
@@ -108,7 +108,7 @@ const PerformerDashboard: React.FC = () => {
       const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
         date: slotToRemove.date.toISOString(),
         action: 'remove'
-      });
+      },{withCredentials:true});
     
       if (response.data.success) {
         setSlots(prevSlots => prevSlots.filter(slot => slot.id !== slotId));

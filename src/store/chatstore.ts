@@ -27,7 +27,7 @@ const useChatRooms = create<ChatState>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get<{ data: ChatRoom[] }>(`/chatrooms/${id}`);
+      const response = await axiosInstance.get<{ data: ChatRoom[] }>(`/chatrooms/${id}`,{withCredentials:true});
       console.log('Fetched chat rooms:', response.data.data);
       set({ chatRooms: response.data.data, isLoading: false });
     } catch (error) {

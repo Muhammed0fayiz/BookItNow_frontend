@@ -49,7 +49,7 @@ const usePerformerAllDetails = create<PerformerAllAdminStore>((set) => ({
   fetchPerformerAllDetails: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get(`/performer/performerAllDetails/${userId}`);
+      const response = await axiosInstance.get(`/performer/performerAllDetails/${userId}`,{withCredentials: true});
       if (response.status === 200) {
         set({ performerAllDetails: response.data.performerDetails, isLoading: false });
       } else {

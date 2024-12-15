@@ -97,7 +97,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
         throw new Error('No user ID found');
       }
 
-      const response = await axiosInstance.get(`/performer/getPerformerEvents/${userId}`);
+      const response = await axiosInstance.get(`/performer/getPerformerEvents/${userId}`,{withCredentials: true});
 
       if(response.status === 200) {
         set({
@@ -125,7 +125,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
       }
 
       const eventWithUserId = { ...event, userId };
-      const response = await axiosInstance.post('/api/events', eventWithUserId);
+      const response = await axiosInstance.post('/api/events', eventWithUserId,{withCredentials:true});
 
       set((state) => ({
         events: [...state.events, response.data],
@@ -145,7 +145,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const response = await axiosInstance.put(`/api/events/${event._id}`, event);
+      const response = await axiosInstance.put(`/api/events/${event._id}`, event,{withCredentials:true});
 
       set((state) => ({
         events: state.events.map((e) =>
@@ -167,7 +167,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      await axiosInstance.delete(`/performer/deleteEvent/${eventId}`);
+      await axiosInstance.delete(`/performer/deleteEvent/${eventId}`,{withCredentials:true});
 
       set((state) => ({
         events: state.events.filter((event) => event._id !== eventId),
@@ -192,7 +192,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
         throw new Error('No user ID found');
       }
 
-      const response = await axiosInstance.get(`/performer/getPerformerEventStats/${userId}`);
+      const response = await axiosInstance.get(`/performer/getPerformerEventStats/${userId}`,{withCredentials:true});
 
       set({
         stats: response.data?.stats || defaultStats,

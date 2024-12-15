@@ -204,6 +204,7 @@ const LoginSignup: React.FC = () => {
     if (validateForm()) {
       const loadingToast = toast.loading('Signing up...');
       try {
+       
         const response = await axiosInstance.post('/signup', signUpData);
         toast.dismiss(loadingToast);
         toast.success('Sign up successful! Redirecting to OTP page...');

@@ -26,7 +26,7 @@ const useAdminStore = create<AdminStore>((set) => ({
   fetchAdminDetails: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get("http://localhost:5000/admin/details");
+      const response = await axiosInstance.get("http://localhost:5000/admin/details",{withCredentials:true});
       if (response.data.success) {
         set({ adminDetails: response.data.data, isLoading: false });
       } else {

@@ -20,7 +20,7 @@ export const useFavouriteStore = create<UpcomingEventsStore>((set, get) => ({
         return;
       }
 
-      const response = await axiosInstance.get(`/favorites/${userId}`);
+      const response = await axiosInstance.get(`/favorites/${userId}`,{withCredentials: true});
       console.log('response', response);
 
       if (response.status !== 200) {

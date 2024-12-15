@@ -37,7 +37,7 @@ const useEventManagerStore = create<EventManagerState>((set, get) => ({
   fetchEvents: async () => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axios.get('/api/events');
+      const response = await axios.get('/api/events',{withCredentials:true});
       set({ events: response.data });
     } catch (error) {
       set({ error: (error as Error).message });
@@ -48,7 +48,7 @@ const useEventManagerStore = create<EventManagerState>((set, get) => ({
   addEvent: async (event) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axios.post('/api/events', event);
+      const response = await axios.post('/api/events', event,{withCredentials:true});
       set((state) => ({ events: [...state.events, response.data] }));
     } catch (error) {
       set({ error: (error as Error).message });
@@ -59,7 +59,7 @@ const useEventManagerStore = create<EventManagerState>((set, get) => ({
   removeEvent: async (eventId) => {
     try {
       set({ isLoading: true, error: null });
-      await axios.delete(`/api/events/${eventId}`);
+      await axios.delete(`/api/events/${eventId}`,{withCredentials:true});
       set((state) => ({ events: state.events.filter((event) => event.id !== eventId) }));
     } catch (error) {
       set({ error: (error as Error).message });
@@ -70,7 +70,7 @@ const useEventManagerStore = create<EventManagerState>((set, get) => ({
   updateEvent: async (event) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axios.put(`/api/events/${event.id}`, event);
+      const response = await axios.put(`/api/events/${event.id}`, event,{withCredentials:true});
       set((state) => ({ events: state.events.map((e) => (e.id === event.id ? response.data : e)) }));
     } catch (error) {
       set({ error: (error as Error).message });
@@ -81,7 +81,7 @@ const useEventManagerStore = create<EventManagerState>((set, get) => ({
   fetchEventManagerDetails: async () => {
     try {
       set({ isLoading: true, error: null });
-      const response = await axios.get('/api/event-manager');
+      const response = await axios.get('/api/event-manager',{withCredentials:true});
       set({ eventManagerDetails: response.data });
     } catch (error) {
       set({ error: (error as Error).message });

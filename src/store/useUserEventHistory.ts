@@ -13,7 +13,7 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
-        const response = await axiosInstance.get(`/eventHistory/${userId}`);
+        const response = await axiosInstance.get(`/eventHistory/${userId}`,{withCredentials: true});
         // Transform the response data to match our interface if needed
         const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
           ...event,

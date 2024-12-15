@@ -15,7 +15,7 @@ export const useEventHistory = create<PerformerUpcomingEventsStore>((set, get) =
       const userId = get().getUserIdFromToken();
       if (userId) {
         
-        const response = await axiosInstance.get(`/performer/eventhistory/${userId}`);
+        const response = await axiosInstance.get(`/performer/eventhistory/${userId}`,{withCredentials: true});
         const events: PerformerUpcomingEvent[] = response.data.events.map((event: any) => ({
           ...event,
           date: new Date(event.date).toISOString(),

@@ -56,7 +56,7 @@ const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
     
     try {
       setCancellingEventId(selectedEvent._id);
-      const response = await axiosInstance.post(`/cancelevent/${selectedEvent._id}`);
+      const response = await axiosInstance.post(`/cancelevent/${selectedEvent._id}`,{withCredentials:true});
   
      
     } catch (error) {

@@ -42,7 +42,7 @@ export const useSlotStore = create<SlotStore>((set, get) => ({
         throw new Error('No user ID found');
       }
 
-      const response = await axiosInstance.get(`/performer/getslot/${userId}`);
+      const response = await axiosInstance.get(`/performer/getslot/${userId}`,{withCredentials: true});
       console.log('Response:', response);
 
       const data = response.data?.data || {}; // Safely access `data`

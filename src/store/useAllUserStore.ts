@@ -24,7 +24,7 @@ const useusersStore = create<UserState>((set) => ({
         set({ error: 'Failed to retrieve user ID', isLoading: false });
         return;
       }
-      const response = await axiosInstance.get<{ data: User[] }>(`/performer/getusers/${id}`);
+      const response = await axiosInstance.get<{ data: User[] }>(`/performer/getusers/${id}`,{withCredentials:true});
       set({ users: response.data.data, isLoading: false });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to fetch users', isLoading: false });

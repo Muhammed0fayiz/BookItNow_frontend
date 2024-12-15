@@ -90,7 +90,7 @@ const EventManagementDashboard: React.FC = () => {
     }
 
     try {
-      const response = await axiosInstance.put(`/performer/blockUnblockEvents/${id}`);
+      const response = await axiosInstance.put(`/performer/blockUnblockEvents/${id}`,{withCredentials:true});
       if (response.status === 200) {
         setEvents(events.map(event => {
           if (event._id === id) {

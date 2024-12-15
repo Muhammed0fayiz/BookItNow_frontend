@@ -79,7 +79,7 @@ const UpcomingEvents: React.FC = () => {
     }
 
     try {
-      const response = await axiosInstance.post(`/performer/cancelevent/${eventId}`);
+      const response = await axiosInstance.post(`/performer/cancelevent/${eventId}`,{withCredentials:true});
   
       if (response.status === 200) {
         console.log("Event canceled successfully:", response.data);

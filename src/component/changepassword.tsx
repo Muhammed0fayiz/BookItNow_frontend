@@ -59,10 +59,10 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, userId
         }
 
         try {
-            const response = await axiosInstance.put(`/user/changePassword/${userId}`, {
+            const response = await axiosInstance.put(`/changePassword/${userId}`, {
                 currentPassword,
                 newPassword,
-            });
+            },{withCredentials:true});
 
             if (response.data.success) {
                 // Immediately close the modal if the password change is successful

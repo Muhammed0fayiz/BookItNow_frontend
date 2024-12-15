@@ -262,8 +262,8 @@ const EventForm: React.FC = () => {
                 console.log(`${performerDetails.PId}/${id}`,'ffffffffffffffffffayi')
                 const response = await axiosInstance.put(
                     `/performer/editEvents/${performerDetails.PId}/${id}`,
-                    submitFormData
-                );
+                    submitFormData,
+                    {withCredentials:true});
 
                 // Reset form and show success message
                 setFormData(INITIAL_FORM_STATE);

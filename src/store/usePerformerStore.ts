@@ -32,7 +32,7 @@ const usePerformerStore = create<PerformerStore>((set) => ({
         const decodedPayload = JSON.parse(atob(payload));
         const userId = decodedPayload.id;
 
-        const response = await axiosInstance.get(`/performer/getPerformer/${userId}`);
+        const response = await axiosInstance.get(`/performer/getPerformer/${userId}`,{withCredentials: true});
         if (response.data.response) {
           const performerData: PerformerDetails = {
             PId:userId,

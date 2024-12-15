@@ -90,7 +90,7 @@ const EventHistory: React.FC = () => {
       await axiosInstance.post(`/add-rating/${selectedEvent._id}`, {
         eventId: selectedEvent._id,
         rating, 
-      });
+      },{withCredentials:true});
   
    
       setIsRatingModalOpen(false);

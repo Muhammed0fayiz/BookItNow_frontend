@@ -136,7 +136,7 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
           eventId: eventId,
           performerId: performerId,
           userId: userProfile?.id,
-        });
+        },{withCredentials:true});
   
         if (response.data.data === true) {
           setShowConfirmation(true);
@@ -180,7 +180,7 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
           eventId: eventId,
           performerId: performerId,
           userId: userProfile?.id,
-        });
+        },{withCredentials:true});
   
         if (response.data.data === true) {
           // Validate wallet balance
@@ -199,7 +199,7 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
               performerId: performerId,
               userId: userProfile?.id,
               amount: event.price * 0.1,
-            });
+            },{withCredentials:true});
   
             if (walletPaymentResponse.status === 200) {
               setShowWalletPaymentModal(false);
@@ -262,7 +262,7 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
         performerId: performerId,
         userId: userProfile?.id,
         paymentIntent: paymentIntent,
-      });
+      },{withCredentials:true});
       
       if (response.status === 200) {
         router.replace('/events/paymentsuccess');

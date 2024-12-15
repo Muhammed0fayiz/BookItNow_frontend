@@ -220,7 +220,7 @@ const EventForm: React.FC = () => {
          
         const response = await axiosInstance.post(
           `/performer/uploadEvents/${performerDetails?.PId}`,
-          submitFormData
+          submitFormData,{withCredentials:true}
          
         );
   

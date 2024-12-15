@@ -33,7 +33,7 @@ const useWalletHistoryStore = create<WalletHistoryStore>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get(`/getWalletHistory/${userId}`);
+      const response = await axiosInstance.get(`/getWalletHistory/${userId}`,{withCredentials: true});
 
       if (response.status === 200) {
         set({
