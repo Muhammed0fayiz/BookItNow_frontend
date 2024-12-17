@@ -1,21 +1,24 @@
 'use client'
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, MessageCircle, Send } from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useChatStore } from '@/store/useChatStore';
 import usePerformerStore from '@/store/usePerformerStore';
 import useWalletHistoryStore from '@/store/useWalletHistory';
 import axiosInstance from '@/shared/axiousintance';
 import usePerformerAllDetails from '@/store/usePerformerAllDetails';
-
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { 
   PerformanceOverviewCard, 
   EventHistoryChart, 
   WalletTransactionChart, 
   UpcomingEventsPieChart 
 } from '@/component/DashboardCharts';
+import { faDownload } from '@fortawesome/free-solid-svg-icons';
 
 const PerformerDashboard: React.FC = () => {
   const router = useRouter();
@@ -26,7 +29,8 @@ const PerformerDashboard: React.FC = () => {
   const { performerAllDetails, fetchPerformerAllDetails } = usePerformerAllDetails();
   const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
   const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
-
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   // Fetch data on component mount
   useEffect(() => {
     const userId = usePerformerAllDetails.getState().getUserIdFromToken();
@@ -44,7 +48,42 @@ const PerformerDashboard: React.FC = () => {
       router.replace('/auth');
     }, 1000);
   };
+  const handleDownloadReport = async () => {
+    if (!startDate || !endDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
 
+    try {
+ 
+
+      const response = await axiosInstance.get(`/performer/downloadReport/${performerDetails?.PId}`, {
+        params: { 
+          startDate, 
+          endDate 
+        },
+        responseType: 'blob'
+      });
+      
+
+      // Create a link element to download the file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `admin_report_${startDate}_to_${endDate}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Report downloaded successfully');
+    } catch (error) {
+      toast.error('Failed to download report');
+      console.error('Error downloading report:', error);
+    }
+  };
+  const chating=()=>{
+    router.push('/chatsession')
+  }
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
@@ -69,7 +108,7 @@ const PerformerDashboard: React.FC = () => {
               onClick={toggleChat} 
               className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300"
             >
-              <MessageCircle size={24} />
+              <MessageCircle size={24} onClick={chating}/>
             </button>
           </div>
         </nav>
@@ -77,6 +116,35 @@ const PerformerDashboard: React.FC = () => {
         {/* Dashboard Content */}
         <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>
           {/* Performance Overview */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 flex items-center justify-between">
+            <div className="flex space-x-4 items-center">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="border rounded-md px-2 py-1 w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="border rounded-md px-2 py-1 w-full"
+                />
+              </div>
+              <button 
+                onClick={handleDownloadReport}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 mt-6"
+              >
+                <FontAwesomeIcon icon={faDownload} />
+                <span>Download Report</span>
+              </button>
+            </div>
+          </div>
           <section className="mb-6">
             <h2 className="text-2xl font-bold mb-4 text-gray-800">Performance Overview</h2>
             <PerformanceOverviewCard />
@@ -117,50 +185,6 @@ const PerformerDashboard: React.FC = () => {
           </section>
         </div>
 
-        {/* Chat Section */}
-        <div 
-          className={`fixed right-0 bottom-0 w-80 bg-white shadow-lg transition-transform duration-300 
-            ${chatOpen ? 'translate-y-0' : 'translate-y-full'} z-30`}
-        >
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-            <h3 className="font-semibold">Chat</h3>
-            <button onClick={toggleChat} className="text-white">
-              <Menu size={20} />
-            </button>
-          </div>
-          <div className="h-80 overflow-y-auto p-4">
-            {messages.map((msg: any) => (
-              <div 
-                key={msg.id} 
-                className={`mb-2 ${msg.sender === 'performer' ? 'text-right' : 'text-left'}`}
-              >
-                <span 
-                  className={`inline-block p-2 rounded-lg 
-                    ${msg.sender === 'performer' ? 'bg-blue-100' : 'bg-gray-200'}`}
-                >
-                  {msg.text}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="p-4 border-t">
-            <div className="flex">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-grow border rounded-l-lg p-2"
-                placeholder="Type a message..."
-              />
-              <button 
-                onClick={sendMessage} 
-                className="bg-blue-600 text-white p-2 rounded-r-lg"
-              >
-                <Send size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Mobile Overlay */}
@@ -170,6 +194,17 @@ const PerformerDashboard: React.FC = () => {
           onClick={toggleSidebar}
         ></div>
       )}
+      <ToastContainer 
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
     </div>
   );
 };

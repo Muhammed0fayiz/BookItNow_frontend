@@ -217,13 +217,13 @@ const EventForm: React.FC = () => {
         });
   
         // Step 3: Send data to the backend API
-         
+         console.log('data',submitFormData)
         const response = await axiosInstance.post(
           `/performer/uploadEvents/${performerDetails?.PId}`,
-          submitFormData,{withCredentials:true}
+          submitFormData
          
         );
-  
+  console.log('res',response)
         // Reset form and show success
         setFormData(INITIAL_FORM_STATE);
         setImagePreview(null);

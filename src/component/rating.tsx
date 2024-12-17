@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface RatingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (rating: number, review?: string) => void;
+  onSubmit: (rating: number, review: string) => void; // Changed review to be required
   eventTitle: string;
   id: string;
 }
@@ -22,16 +22,22 @@ const RatingModal: React.FC<RatingModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+  
     if (!rating) {
       setError('Please select a rating.');
+      return;
+    }
+
+    if (!review || review.trim().length < 5) {
+      setError('Please provide a detailed review (minimum 5 characters).');
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
     try {
-      // Submit the rating and review
-      await onSubmit(rating, review);
+     
+      await onSubmit(rating, review.trim());
       onClose();
     } catch (err) {
       console.error('Error submitting rating:', err);
@@ -72,12 +78,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-        {/* <textarea
-          placeholder="Write a review (optional)"
+        <textarea
+          placeholder="Write a review (required)"
           value={review}
           onChange={(e) => setReview(e.target.value)}
           className="w-full border rounded-md p-2 mb-4 focus:ring-blue-500 focus:border-blue-500"
-        /> */}
+          required
+        />
 
         <button
           onClick={handleSubmit}

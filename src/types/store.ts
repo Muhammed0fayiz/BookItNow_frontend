@@ -274,14 +274,11 @@ export interface User{
   updatedAt?: Date; 
   profileImage?: string;
 }
-export interface Favorite {
-
- 
-  _id: string;
+export interface FavoriteEvent {
+  _id?: string;
   title: string;
   category: string;
   userId: string;
-  performerId: PerformerId;
   price: number;
   status: string;
   teamLeader: string;
@@ -290,25 +287,21 @@ export interface Favorite {
   description: string;
   imageUrl: string;
   isblocked: boolean;
-  advancePayment: number;
-  restPayment: number;
-  time: string;
-  place: string;
-  date: string;
-  bookingStatus: string;
-  isRated:boolean;
-  createdAt: string;
-  updatedAt: string;
+  isperformerblockedevents: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface FavoritesStore {
-  favorites: Favorite[];
+  favoriteEvents: any[];
+  favorites: FavoriteEvent[];
   isLoading: boolean;
   error: string | null;
-  fetchfaviriteEvents: () => Promise<void>;
+  fetchfavoriteEvents: () => Promise<void>;
   removeFavorite: (eventId: string) => void;
   getUserIdFromToken: () => string | null;
 }
+
 
 export interface ChatRoom {
   profileImage: string;

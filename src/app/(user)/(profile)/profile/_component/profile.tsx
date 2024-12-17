@@ -5,6 +5,7 @@ import EditProfileForm from '@/component/edituserprofile';
 import ChangePasswordForm from '@/component/changepassword';
 import useUserStore from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
+import { loginImage } from '@/datas/logindatas';
 
 const Profile: React.FC = () => {
   const router = useRouter();
@@ -140,12 +141,12 @@ const Profile: React.FC = () => {
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
             <img
-      src={userProfile?.profileImage || "/default-avatar.png"}
+      src={userProfile?.profileImage ||  loginImage.img}
       alt="User Avatar"
       className="w-full h-full object-cover"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
-        target.src = "/default-avatar.png";
+        target.src =  loginImage.img;
       }}
       onClick={handleProfileClick}
     />
@@ -168,6 +169,11 @@ const Profile: React.FC = () => {
     </a>
   </li>
   <li>
+              <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+              Favorite-events
+              </a>
+            </li>
+  <li>
     <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
       My Wallet
     </a>
@@ -188,15 +194,16 @@ const Profile: React.FC = () => {
           <div className={`bg-white rounded-lg shadow-lg p-8 relative w-full max-w-md ${sidebarOpen ? 'md:opacity-100' : ''}`}>
             <div className="relative flex justify-center mb-6">
               <div className="w-32 h-32 rounded-full overflow-hidden border-8 border-white shadow-lg absolute -top-16">
-                <img
-                  src={userProfile?.profileImage || "/default-avatar.png"}
-                  alt="User Avatar"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/default-avatar.png";
-                  }}
-                />
+              <img
+  src={userProfile?.profileImage || loginImage.img}
+  alt="User Avatar"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement;
+    target.src = loginImage.img;
+  }}
+/>
+
               </div>
             </div>
         

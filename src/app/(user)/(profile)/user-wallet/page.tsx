@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import useUserStore from '@/store/useUserStore';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import useWalletHistoryStore from '@/store/useWalletHistory';
+import { loginImage } from '@/datas/logindatas';
 
 interface Transaction {
   _id: string;
@@ -102,12 +103,12 @@ const UserWallet: React.FC = () => {
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
             <img
-      src={userProfile?.profileImage || "/default-avatar.png"}
+      src={userProfile?.profileImage ||loginImage.img}
       alt="User Avatar"
       className="w-full h-full object-cover"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
-        target.src = "/default-avatar.png";
+        target.src =loginImage.img;
       }}
       onClick={handleProfileClick}
     />
@@ -129,6 +130,11 @@ const UserWallet: React.FC = () => {
       Event History
     </a>
   </li>
+  <li>
+       <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+              Favorite-events
+              </a>
+            </li>
   <li>
     <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
       My Wallet

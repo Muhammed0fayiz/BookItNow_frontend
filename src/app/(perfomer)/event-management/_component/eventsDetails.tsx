@@ -82,7 +82,9 @@ const EventManagementDashboard: React.FC = () => {
   useEffect(() => {
     console.log('Fetched Events:', events);
   }, [events]);
-
+  const chatting=()=>{
+    router.push('/chatsession')
+  }
   const handleBlockUnblock = async (id: string | undefined) => {
     if (!id) {
       console.error('ID is required');
@@ -219,7 +221,7 @@ const EventManagementDashboard: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        const response = await axiosInstance.post(`/performer/deleteEvent/${eventId}`);
+        const response = await axiosInstance.delete(`/performer/deleteEvent/${eventId}`);
         if (response.status === 200) {
           const updatedEvents = events.filter(event => event._id !== eventId);
           setEvents(updatedEvents);
@@ -257,7 +259,7 @@ const EventManagementDashboard: React.FC = () => {
               className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300"
               aria-label="Toggle chat"
             >
-              <MessageCircle size={24} />
+              <MessageCircle size={24} onClick={chatting} />
             </button>
           </div>
         </nav>

@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import useAllEventsStore from '@/store/useAllEvents';
 import usePerformersStore from '@/store/useAllPerformerStore';
-
+import useUserStore from '@/store/useUserStore';
+import axiosInstance from '@/shared/axiousintance';
 // Interfaces for type safety
 interface Events {
   createdAt: string;
@@ -45,13 +46,24 @@ const PerformerDetailsPage = () => {
   const { performers, fetchAllPerformers } = usePerformersStore();
   const [activeTab, setActiveTab] = useState<'about' | 'events'>('about');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const { 
+    userProfile, 
+    isLoading, 
+    error, 
+    fetchUserProfile, 
+    handleLogout 
+  } = useUserStore();
   // Fetch events and performers on component mount
   useEffect(() => {
     fetchAllEvents();
     fetchAllPerformers();
   }, [fetchAllEvents, fetchAllPerformers]);
-  
+    useEffect(() => {
+      const loadUserProfile = async () => {
+        await fetchUserProfile();
+      };
+      loadUserProfile();
+    }, [fetchUserProfile]);
   // Toggle mobile menu
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
@@ -79,9 +91,19 @@ const PerformerDetailsPage = () => {
     router.replace('/profile');
   };
 
-  const startChatWithPerformer = () => {
-    router.push(`/chat/${performerId}`);
+  const startChatWithPerformer = async () => {
+    try {
+      
+      await axiosInstance.post(`/chatwithPerformer/${userProfile?.id}/${performerId}`);
+      
+    
+      router.push('/chat');
+    } catch (error) {
+      console.error('Error starting chat:', error);
+     
+    }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50">

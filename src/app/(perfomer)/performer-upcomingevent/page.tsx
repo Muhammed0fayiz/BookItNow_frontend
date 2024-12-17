@@ -205,7 +205,9 @@ const PerformerDashboard: React.FC = () => {
       router.replace('/auth');
     }, 1000);
   };
-
+  const chatting=()=>{
+    router.push('/chatsession')
+  }
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar Component */}
@@ -227,7 +229,7 @@ const PerformerDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
           <div className="flex items-center">
             <button onClick={toggleChat} className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300">
-              <MessageCircle size={24} />
+              <MessageCircle size={24} onClick={chatting}/>
             </button>
           </div>
         </nav>

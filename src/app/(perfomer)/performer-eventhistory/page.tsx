@@ -1,5 +1,6 @@
 'use client'
 import React, { ReactNode, useEffect, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { Menu, MessageCircle, Send } from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
@@ -136,7 +137,9 @@ const PerformerDashboard: React.FC = () => {
     fetchPerformerDetails();
     fetchAllEvents();
   }, [fetchPerformerDetails, fetchAllEvents]);
-
+  const chatting=()=>{
+    router.push('/chatsession')
+  }
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
@@ -165,7 +168,7 @@ const PerformerDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
           <div className="flex items-center">
             <button onClick={toggleChat} className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300">
-              <MessageCircle size={24} />
+              <MessageCircle size={24} onClick={chatting}/>
             </button>
           </div>
         </nav>

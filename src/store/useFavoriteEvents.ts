@@ -1,29 +1,28 @@
-// store/useUpcomingEventsStore.ts
+
 import { create } from 'zustand';
-import { UpcomingEvent, UpcomingEventsStore } from '@/types/store';
+import { FavoritesStore, FavoriteEvent } from '@/types/store';
 import axiosInstance from '@/shared/axiousintance';
 
-export const useFavouriteStore = create<UpcomingEventsStore>((set, get) => ({
-  upcomingEvents: [],
+export const useFavoritesStore = create<FavoritesStore>((set, get) => ({
+  favoriteEvents: [],
+  favorites: [],
   isLoading: false,
   error: null,
 
-  fetchAllEvents: async () => {
+  fetchfavoriteEvents: async () => {
     set({ isLoading: true, error: null });
     try {
       const userId = get().getUserIdFromToken();
       if (!userId) {
-        set({
-          error: 'Unable to retrieve user ID. Please log in again.',
-          isLoading: false,
-        });
+        set({ error: 'Failed to fetch user ID from token', isLoading: false });
         return;
       }
+  
+      const response = await axiosInstance.get(`/favorites/${userId}`, { withCredentials: true });
+  
+      console.log('res', response.data.data);
 
-      const response = await axiosInstance.get(`/favorites/${userId}`,{withCredentials: true});
-      console.log('response', response);
-
-      if (response.status !== 200) {
+            if (response.status !== 200) {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
 
@@ -31,31 +30,27 @@ export const useFavouriteStore = create<UpcomingEventsStore>((set, get) => ({
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: Expected an array.');
       }
-
- 
-
-      const events: UpcomingEvent[] = data.map((event: any) => ({
+  
+      const favorites: FavoriteEvent[] = data.map((event: any) => ({
         ...event,
+        // Validate and ensure dates are properly formatted as strings or null
         date: event.date ? new Date(event.date).toISOString() : null,
         createdAt: event.createdAt ? new Date(event.createdAt).toISOString() : null,
         updatedAt: event.updatedAt ? new Date(event.updatedAt).toISOString() : null,
       }));
-
-
-      set({
-        upcomingEvents: events,
-        isLoading: false,
-        error: null,
-      });
+  
+      set({ favoriteEvents:favorites, isLoading: false });
     } catch (error) {
-      console.error('Error fetching upcoming events:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch upcoming events';
-      set({
-        error: errorMessage,
-        isLoading: false,
-        upcomingEvents: [],
-      });
+      set({ error: 'Failed to fetch favorite events', isLoading: false });
+      console.error('Error fetching favorite events:', error);
     }
+  },
+  
+
+  removeFavorite: (eventId: string) => {
+    set((state) => ({
+      favorites: state.favorites.filter((event) => event._id !== eventId),
+    }));
   },
 
   getUserIdFromToken: () => {
@@ -68,22 +63,15 @@ export const useFavouriteStore = create<UpcomingEventsStore>((set, get) => ({
       };
 
       const token = getCookie('userToken');
-      if (!token) throw new Error('Token not found');
-
-      const payload = token.split('.')[1];
-      const decodedPayload = JSON.parse(atob(payload));
-      if (!decodedPayload.id) throw new Error('User ID not found in token payload');
-
-      return decodedPayload.id;
+      if (token) {
+        const payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        return decodedPayload.id;
+      }
+      return null;
     } catch (error) {
       console.error('Error extracting user ID from token:', error);
       return null;
     }
-  },
-
-  removeUpcomingEvent: (eventId: string) => {
-    set((state) => ({
-      upcomingEvents: state.upcomingEvents.filter((event) => event._id !== eventId),
-    }));
   },
 }));

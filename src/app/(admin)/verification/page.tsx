@@ -28,6 +28,7 @@ const Verification: React.FC = () => {
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const [rejectReason, setRejectReason] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rejectReasonError, setRejectReasonError] = useState('');
   const itemsPerPage = 5;
   const router = useRouter();
 
@@ -319,8 +320,9 @@ const Verification: React.FC = () => {
                       placeholder="Please provide a reason for rejection..."
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
-                      required
+                 
                     />
+                    {rejectReasonError && <p className="text-red-500 text-sm">{rejectReasonError}</p>}
                   </>
                 )}
                 <div className="mt-6 flex justify-end">
@@ -334,8 +336,13 @@ const Verification: React.FC = () => {
              className={`bg-${action === 'approve' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded hover:bg-${action === 'approve' ? 'green' : 'red'}-600 transition-colors duration-200`}
              onClick={() => {
                if (action === 'reject' && !rejectReason.trim()) {
-                 // Show an error or prevent submission if no reason is provided
-                 alert('Please provide a reason for rejection');
+                
+                setRejectReasonError('Please provide a reason for rejection');
+
+            
+                setTimeout(() => {
+                  setRejectReasonError('');
+                }, 1000);
                  return;
                }
                selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')

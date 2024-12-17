@@ -3,7 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useAllEventsStore from '@/store/useAllEvents';
 import usePerformersStore from '@/store/useAllPerformerStore';
-
+import { useFavoritesStore } from '@/store/useFavoriteEvents';
+import axiosInstance from '@/shared/axiousintance';
+import useUserStore from '@/store/useUserStore';
+import { ObjectId } from 'mongoose';
 const categories = [
   { id: 'all', name: 'All Events' },
   { id: 'music', name: 'Music' },
@@ -18,15 +21,28 @@ const EventsPage = () => {
   const [activeTab, setActiveTab] = useState<string>('events');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-
+  const { 
+    userProfile, 
+    fetchUserProfile, 
+    handleLogout 
+  } = useUserStore();
   const { events, isLoading, error, fetchAllEvents } = useAllEventsStore();
   const { performers, fetchAllPerformers } = usePerformersStore();
-
+ const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore();
   useEffect(() => {
     fetchAllEvents();
     fetchAllPerformers();
   }, [fetchAllEvents, fetchAllPerformers]);
-
+  useEffect(() => {
+      const loadUserProfile = async () => {
+        await fetchUserProfile();
+      };
+      loadUserProfile();
+    }, [fetchUserProfile]);
+ useEffect(() => {
+    fetchfavoriteEvents();
+    console.log('upcomingfavorit', favoriteEvents);
+  }, [fetchfavoriteEvents]);
   const toggleMenu = () => {
     setIsMenuOpen(prev => !prev);
   };
@@ -45,9 +61,15 @@ const EventsPage = () => {
     performer.bandName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  function handleWishlist(_id: string | undefined): void {
-    throw new Error('Function not implemented.');
-  }
+  const handleWishlist = async (id: string | undefined) => {
+    try {
+   
+      const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${id}`);
+      console.log('Wishlist updated:', response.data);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -214,11 +236,11 @@ const EventsPage = () => {
             <button 
               onClick={() => handleWishlist(event._id)} 
               className="absolute top-4 right-4 z-10 focus:outline-none"
-            >wish
-              {/* <svg 
+            >
+              <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 className={`h-7 w-7 ${
-                  wishlistedEvents.includes(event._id) 
+                  favoriteEvents.includes(event._id) 
                     ? 'text-red-500 fill-current' 
                     : 'text-gray-300 hover:text-red-300'
                 }`}
@@ -232,7 +254,7 @@ const EventsPage = () => {
                   strokeWidth={2} 
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
                 />
-              </svg> */}
+              </svg>
             </button>
 
             <img src={event.imageUrl} alt={event.title} className="w-full h-48 object-cover" />

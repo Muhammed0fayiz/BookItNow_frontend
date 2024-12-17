@@ -3,16 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useUserStore from '@/store/useUserStore';
-import { useFavouriteStore } from '@/store/useFavoriteEvents';
+import { useFavoritesStore } from '@/store/useFavoriteEvents';
 import axiosInstance from '@/shared/axiousintance';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import RatingModal from '@/component/rating';
+import { loginImage } from '@/datas/logindatas';
 
 const EventHistory: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { userProfile, isLoading, error, fetchUserProfile } = useUserStore();
-  const { upcomingEvents, fetchAllEvents } = useFavouriteStore();
+  const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore();
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -22,9 +23,9 @@ const EventHistory: React.FC = () => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    fetchAllEvents();
-    console.log('upcoming', upcomingEvents);
-  }, [fetchAllEvents]);
+    fetchfavoriteEvents();
+    console.log('upcoming', favoriteEvents);
+  }, [fetchfavoriteEvents]);
 
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
@@ -42,13 +43,25 @@ const EventHistory: React.FC = () => {
   };
 
   const handleBookEvent = (eventId: string) => {
-    console.log(`Booking event with ID: ${eventId}`);
-    // Add logic to handle event booking here
+   
+
+
   };
 
-  const handleRemoveFavorite = (eventId: string) => {
-    
-    console.log(`Removed event with ID: ${eventId} from favorites`);
+  const handleRemoveFavorite = async (eventId: string) => {
+    try {
+      const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${eventId}`);
+      
+      if (response.status === 200) {
+        // Optimistically update the local state by filtering out the removed event
+        useFavoritesStore.setState(prevState => ({
+          favoriteEvents: prevState.favoriteEvents.filter(event => event._id !== eventId)
+        }));
+      }
+    } catch (error) {
+      console.error('Error removing favorite event:', error);
+      // Optionally show an error message to the user
+    }
   };
 
   const formatTime = (timeString: string) => {
@@ -145,12 +158,12 @@ const EventHistory: React.FC = () => {
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
               <img
-                src={userProfile?.profileImage || '/default-avatar.png'}
+                src={userProfile?.profileImage || loginImage.img}
                 alt="User Avatar"
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/default-avatar.png';
+                  target.src = loginImage.img;
                 }}
                 onClick={handleProfileClick}
               />
@@ -170,6 +183,11 @@ const EventHistory: React.FC = () => {
             <li>
               <a href="/event-history" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
                 Event History
+              </a>
+            </li>
+            <li>
+              <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+              Favorite-events
               </a>
             </li>
             <li>
@@ -194,7 +212,7 @@ const EventHistory: React.FC = () => {
        
 
           <div className="grid grid-cols-1 ml-[250px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {upcomingEvents && upcomingEvents.map((event: any) => (
+            {favoriteEvents && favoriteEvents.map((event: any) => (
               <div 
                 key={event._id}
                 className={getEventCardClass(event.bookingStatus)}
@@ -238,8 +256,9 @@ const EventHistory: React.FC = () => {
 </div>
 
                   <div className="mt-4 flex justify-between items-center">
-                    <button
-                      onClick={() => handleBookEvent(event._id)}
+              
+              <button
+                      onClick={() => router.push(`/events/${event.userId}/${event._id}`)}
                       className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition"
                     >
                       Book Again

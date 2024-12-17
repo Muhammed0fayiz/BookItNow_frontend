@@ -7,7 +7,7 @@ import { useUserEventHistory } from '@/store/useUserEventHistory';
 import axiosInstance from '@/shared/axiousintance';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import RatingModal from '@/component/rating';
-
+import { loginImage } from '@/datas/logindatas';
 const EventHistory: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -89,7 +89,7 @@ const EventHistory: React.FC = () => {
      
       await axiosInstance.post(`/add-rating/${selectedEvent._id}`, {
         eventId: selectedEvent._id,
-        rating, 
+        rating,review
       },{withCredentials:true});
   
    
@@ -177,12 +177,12 @@ const EventHistory: React.FC = () => {
           <div className="flex items-center mb-8">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
               <img
-                src={userProfile?.profileImage || "/default-avatar.png"}
+                src={userProfile?.profileImage || loginImage.img}
                 alt="User Avatar"
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = "/default-avatar.png";
+                  target.src = loginImage.img;
                 }}
                 onClick={handleProfileClick}
               />
@@ -204,6 +204,12 @@ const EventHistory: React.FC = () => {
                 Event History
               </a>
             </li>
+            <li>
+              <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
+              Favorite-events
+              </a>
+            </li>
+         
             <li>
               <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
                 My Wallet
