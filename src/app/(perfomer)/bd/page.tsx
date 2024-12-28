@@ -2,14 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import mongoose from 'mongoose';
-
-import { Menu, MessageCircle, Send, User, Search, Heart } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
+import { Menu, MessageCircle, Send, Search } from 'lucide-react';
 import axiosInstance from '@/shared/axiousintance';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useUIStore } from '@/store/useUIStore';
 import Sidebar from '@/component/performersidebar';
 import useChatRooms from '@/store/chatstore';
-import { io, Socket } from "socket.io-client";
 
 export interface ChatRoom {
   profileImage: string;
@@ -34,9 +33,9 @@ interface Message {
 
 const ChatSession: React.FC = () => {
   const router = useRouter();
-   const socket = useRef<Socket | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
-  const { performerDetails, fetchPerformerDetails } = usePerformerStore();
+  const socketRef = useRef<Socket | null>(null);
+  const { performerDetails } = usePerformerStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,58 +45,60 @@ const ChatSession: React.FC = () => {
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
   const { sidebarOpen, toggleSidebar } = useUIStore();
 
-  // Socket connection and event handling
+  // Initialize Socket.IO connection
   useEffect(() => {
-    // Establish socket connection
-    socket.current = io('http://localhost:5000', {
-      auth: {
-        token: localStorage.getItem('token') // Include authentication token if needed
-      }
+    console.log('sokent')
+    socketRef.current = io('http://localhost:5000', {
+      withCredentials: true
     });
-    
-    // Handle connection
-    socket.current.on('connect', () => {
-      console.log('Socket connected');
-      // Emit user connection event with user ID
-      if (performerDetails?.PId) {
-        socket.current?.emit('register', { userId: performerDetails?.PId });
-      }
-    });
-    
-    // Handle receiving messages
-    socket.current.on('message', (newMessage: Message) => {
-      // Only add message if it's for the current chat room
-      if (selectedChatRoom && 
-          (newMessage.senderId.toString() === selectedChatRoom.otherId || 
-           newMessage.receiverId.toString() === selectedChatRoom.otherId)) {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-      }
-    });
- 
-
-    // Handle connection errors
-    socket.current.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-    });
-
-
-
-    // Cleanup socket connection on component unmount
+    console.log('sokent')
+    // Clean up on unmount
     return () => {
-      socket.current?.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
-  }, [performerDetails?.PId, selectedChatRoom]);
+  }, []);
+
+  // Connect user to Socket.IO when chat room is selected
+  useEffect(() => {
+    if (selectedChatRoom && socketRef.current) {
+      socketRef.current.emit('userConnected', selectedChatRoom.myId);
+
+      // Listen for new messages
+      socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+        setMessages(prevMessages => [...prevMessages, {
+          _id: new mongoose.Types.ObjectId().toString(),
+          roomId: selectedChatRoom.otherId,
+          senderId: new mongoose.Types.ObjectId(senderId),
+          receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+          message: message,
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          __v: 0,
+          role: 'receiver'
+        }]);
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('receiveMessage');
+      }
+    };
+  }, [selectedChatRoom]);
+
+  // Fetch initial chat rooms and messages
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
- useEffect(()=>{
-    console.log('fayiz',performerDetails?.PId)
-  })
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedChatRoom) {
         try {
-          const response = await axiosInstance.get(`/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`);
+          const response = await axiosInstance.get(`/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, { withCredentials: true });
           setMessages(response.data.data || []);
         } catch (error) {
           console.error('Error fetching messages:', error);
@@ -108,22 +109,24 @@ const ChatSession: React.FC = () => {
     fetchMessages();
   }, [selectedChatRoom]);
 
+  // Auto-scroll to latest message
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedChatRoom, messages]);
-
-  const handleLogout = () => {
-    document.cookie = 'userToken=; Max-Age=0; path=/;';
-    setTimeout(() => {
-      router.replace('/auth');
-    }, 1000);
-  };
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() !== '' && selectedChatRoom) {
+    if (newMessage.trim() !== '' && selectedChatRoom && socketRef.current) {
       try {
+        // Send message to server via HTTP
         const response = await axiosInstance.post(`/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, {
           message: newMessage,
+        }, { withCredentials: true });
+
+        // Emit message via Socket.IO
+        socketRef.current.emit('sendMessage', {
+          senderId: selectedChatRoom.myId,
+          receiverId: selectedChatRoom.otherId,
+          message: newMessage
         });
 
         if (response.data) {
@@ -147,7 +150,12 @@ const ChatSession: React.FC = () => {
       }
     }
   };
-
+  const handleLogout = () => {
+    document.cookie = 'userToken=; Max-Age=0; path=/;';
+    setTimeout(() => {
+      router.replace('/auth');
+    }, 1000);
+  };
   const filteredChatRooms = chatRooms.filter(room => 
     room.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     room.performerName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -288,6 +296,7 @@ const ChatSession: React.FC = () => {
                         <MessageCircle size={64} className="text-indigo-400 mb-4" />
                         <p className="text-xl font-semibold text-indigo-700 mb-2">
                           Welcome to <span className="text-purple-600">BookItNow</span> Chat
+                         
                         </p>
                         <p className="text-indigo-500 max-w-md">
                           Select a chat to start messaging. Connect, communicate, and make your bookings smooth and easy.

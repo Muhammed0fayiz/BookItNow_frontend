@@ -5,6 +5,7 @@ import axiosInstance from '@/shared/axiousintance';
 
 export const useUpcomingEventsStore = create<PerformerUpcomingEventsStore>((set, get) => ({
   performerupcomingEvents: [],
+  totalCount: 0,
   isLoading: false,
   error: null,
 
@@ -15,13 +16,15 @@ export const useUpcomingEventsStore = create<PerformerUpcomingEventsStore>((set,
       const userId = get().getUserIdFromToken();
       if (userId) {
         const response = await axiosInstance.get(`/performer/upcomingevents/${userId}`,{withCredentials: true});
+        console.log('res',response.data.events)
         const events: PerformerUpcomingEvent[] = response.data.events.map((event: any) => ({
           ...event,
           date: new Date(event.date).toISOString(),
           createdAt: new Date(event.createdAt).toISOString(),
           updatedAt: new Date(event.updatedAt).toISOString(),
         }));
-        set({ performerupcomingEvents: events, isLoading: false });
+        set({ performerupcomingEvents: events, 
+          totalCount: response.data.totalCount,isLoading: false });
       } else {
         set({ error: 'Unable to fetch user ID from token', isLoading: false });
       }

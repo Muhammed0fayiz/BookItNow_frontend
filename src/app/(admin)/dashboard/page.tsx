@@ -35,10 +35,25 @@ const AdminDashboard = () => {
   };
 
   const handleDownloadReport = async () => {
-    if (!startDate || !endDate) {
-      toast.error('Please select both start and end dates');
-      return;
-    }
+  if (!startDate || !endDate) {
+       toast.error('Please select both start and end dates');
+       return;
+     }
+   
+     const today = new Date();
+     const selectedStartDate = new Date(startDate);
+     const selectedEndDate = new Date(endDate);
+   
+   
+     if (selectedStartDate > today) {
+       toast.error('Start date cannot be in the future');
+       return;
+     }
+   
+     if (selectedStartDate > selectedEndDate) {
+       toast.error('Start date cannot be after end date');
+       return;
+     }
 
     try {
       const response = await axiosInstance.get('/admin/downloadReport', {

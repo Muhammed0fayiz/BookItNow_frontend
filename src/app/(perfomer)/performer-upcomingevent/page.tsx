@@ -6,8 +6,9 @@ import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import { useChatStore } from '@/store/useChatStore';
 import usePerformerStore from '@/store/usePerformerStore';
-import { useUpcomingEventsStore } from '@/store/useperformerupcomingevent';
+import { useUpcomingEventsStore} from '@/store/useperformerupcomingevent';
 import axiosInstance from '@/shared/axiousintance';
+import { UpcomingEvent } from '@/types/store';
 
 
 interface DashboardSectionProps {
@@ -58,11 +59,15 @@ const formatDate = (dateString: string) => {
 };
 
 const UpcomingEvents: React.FC = () => {
-  const { performerupcomingEvents, fetchAllEvents } = useUpcomingEventsStore();
+  const { performerupcomingEvents, fetchAllEvents,totalCount } = useUpcomingEventsStore();
   const [cancelConfirmation, setCancelConfirmation] = useState<{ [key: string]: boolean }>({});
-
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const { performerDetails, fetchPerformerDetails } = usePerformerStore();
   const handleCancelEvent = async (eventId: string, eventDate: string) => {
-    // Check if event is less than 6 days away
+
     const eventDateTime = new Date(eventDate);
     const currentDate = new Date();
     const daysDifference = Math.ceil((eventDateTime.getTime() - currentDate.getTime()) / (1000 * 3600 * 24));
@@ -100,14 +105,65 @@ const UpcomingEvents: React.FC = () => {
       console.error("Error canceling the event:", error);
     }
   };
+
+    useEffect(() => {
+   
+      const pages = Math.ceil(totalCount / 8); 
+      setTotalPages(pages); 
+    }, [totalCount]); 
+  useEffect(() => {
+    fetchPerformerDetails();
+    fetchAllEvents();
+   
+  }, [fetchPerformerDetails, fetchAllEvents]);
+  const handlePreviousClick = () => {
+    const newPage = Math.max(1, currentPage - 1);
+    paginationEvent(newPage); // Fetch events for the new page
+  };
+  
+  const handleNextClick = () => {
+    const newPage = Math.min(totalPages, currentPage + 1);
+    paginationEvent(newPage); // Fetch events for the new page
+  };
+  
+  const paginationEvent = async (page: number) => {
+    try {
+      console.log('Fetching events for page:', page);
+      setIsLoadingEvents(true);
+      const response = await axiosInstance.get(
+        `/performer/performerUpcomingEvents/${performerDetails?.PId}?page=${page}`,
+        { withCredentials: true }
+      );
+  
+      const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
+        ...event,
+        date: new Date(event.date).toISOString(),
+        createdAt: new Date(event.createdAt).toISOString(),
+        updatedAt: new Date(event.updatedAt).toISOString(),
+      }));
+  
+      setEvents(events);
+      setCurrentPage(page); // Update the current page state
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+  
+    useEffect(() => {
+    if (performerupcomingEvents) {
+      setEvents(performerupcomingEvents);
+    }
+  }, [performerupcomingEvents]);
   
   return (
     <DashboardSection title="Upcoming Events">
-    {performerupcomingEvents.length === 0 ? (
+    {events.length === 0 ? (
       <p className="text-gray-500 text-center">No upcoming events</p>
     ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {performerupcomingEvents.map((event) => (
+        {events.map((event) => (
           <div 
             key={event._id} 
             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
@@ -149,7 +205,7 @@ const UpcomingEvents: React.FC = () => {
                         onClick={() => handleCancelEvent(event._id, event.date)}
                         className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-colors duration-200"
                       >
-                        Confirm Cancel
+                        Confirm
                       </button>
                       <button
                         onClick={() => setCancelConfirmation(prev => {
@@ -172,18 +228,59 @@ const UpcomingEvents: React.FC = () => {
                   )}
                 </div>
               )}
+              
             </div>
           </div>
+          
         ))}
+     
       </div>
+      
+     
     )}
+         <div className="flex justify-center items-center space-x-2 mt-6">
+   <button
+      onClick={handlePreviousClick} // Using the handlePreviousClick function
+      disabled={currentPage === 1 || isLoadingEvents} // Disable if it's the first page or loading
+      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+    >
+      Previous
+    </button>
+            
+          {[...Array(totalPages)].map((_, index) => (
+  <button
+    key={index + 1}
+    onClick={() => paginationEvent(index + 1)} // Call paginationEvent with the page number
+    disabled={isLoadingEvents}
+    className={`px-4 py-2 rounded-md text-sm font-medium
+      ${currentPage === index + 1
+        ? 'bg-blue-600 text-white'
+        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      } transition-colors duration-300`}
+  >
+    {index + 1}
+  </button>
+))}
+
+              <button
+      onClick={handleNextClick} // Using the handleNextClick function
+      disabled={currentPage === totalPages || isLoadingEvents} // Disable if it's the last page or loading
+      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+    >
+      Next
+    </button>
+          </div>
+    
   </DashboardSection>
   );
 };
 
 const PerformerDashboard: React.FC = () => {
+  
   const router = useRouter();
-  const { performerupcomingEvents, fetchAllEvents } = useUpcomingEventsStore();
+  const { performerupcomingEvents, fetchAllEvents,totalCount } = useUpcomingEventsStore();
   
   // UI Store
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
@@ -194,10 +291,14 @@ const PerformerDashboard: React.FC = () => {
   // Chat Store
   const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
 
+
+  
   useEffect(() => {
     fetchPerformerDetails();
     fetchAllEvents();
+   
   }, [fetchPerformerDetails, fetchAllEvents]);
+
 
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
@@ -208,6 +309,7 @@ const PerformerDashboard: React.FC = () => {
   const chatting=()=>{
     router.push('/chatsession')
   }
+ 
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar Component */}
@@ -216,6 +318,7 @@ const PerformerDashboard: React.FC = () => {
         performerDetails={performerDetails}
         onLogout={handleLogout}
       />
+    
 
       {/* Main Content */}
       <div className="flex-1 md:ml-64">
@@ -232,11 +335,12 @@ const PerformerDashboard: React.FC = () => {
               <MessageCircle size={24} onClick={chatting}/>
             </button>
           </div>
-        </nav>
+        </nav>  
 
         {/* Main Content Area */}
         <main className="pt-20 p-6">
           <UpcomingEvents />
+        
         </main>
 
         {/* Chat Section */}

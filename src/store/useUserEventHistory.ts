@@ -5,6 +5,7 @@ import axiosInstance from '@/shared/axiousintance';
 
 export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
   upcomingEvents: [],
+  totalCount:0,
   isLoading: false,
   error: null,
 
@@ -22,7 +23,7 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
           createdAt: new Date(event.createdAt).toISOString(),
           updatedAt: new Date(event.updatedAt).toISOString()
         }));
-        set({ upcomingEvents: events, isLoading: false });
+        set({ upcomingEvents: events,totalCount: response.data.totalCount, isLoading: false });
       } else {
         set({ error: 'Failed to fetch user ID from token', isLoading: false });
       }

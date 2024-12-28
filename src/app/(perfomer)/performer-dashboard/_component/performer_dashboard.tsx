@@ -53,6 +53,21 @@ const PerformerDashboard: React.FC = () => {
       toast.error('Please select both start and end dates');
       return;
     }
+  
+    const today = new Date();
+    const selectedStartDate = new Date(startDate);
+    const selectedEndDate = new Date(endDate);
+  
+  
+    if (selectedStartDate > today) {
+      toast.error('Start date cannot be in the future');
+      return;
+    }
+  
+    if (selectedStartDate > selectedEndDate) {
+      toast.error('Start date cannot be after end date');
+      return;
+    }
 
     try {
  
@@ -70,7 +85,7 @@ const PerformerDashboard: React.FC = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `admin_report_${startDate}_to_${endDate}.xlsx`);
+      link.setAttribute('download', `performer_report_${startDate}_to_${endDate}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();

@@ -14,61 +14,115 @@ interface UserProfile {
   username?: string;
   profileImage?: string;
 }
+interface Events{
+upcomingEvent:UpcomingEvent[]
+}
 
 const UpcomingEvents: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const { upcomingEvents, fetchAllEvents } = useUpcomingEventsStore();
+  const { upcomingEvents, fetchAllEvents,totalCount } = useUpcomingEventsStore();
   const { userProfile, isLoading, error, fetchUserProfile } = useUserStore();
   const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
+const [events, setEvents] = useState<UpcomingEvent[]>([]);
+const [currentPage, setCurrentPage] = useState(1);
+const [totalPages, setTotalPages] = useState<number>(0);
 
+const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   useEffect(() => {
     const loadUserProfile = async () => {
       await fetchUserProfile();
     };
     loadUserProfile();
   }, [fetchUserProfile]);
-
+  useEffect(() => {
+    if (upcomingEvents) {
+      setEvents(upcomingEvents);
+    }
+  }, [upcomingEvents]);
   useEffect(() => {
     fetchAllEvents();
+    
   }, [fetchAllEvents]);
-
+  useEffect(() => {
+    console.log('upcoming', upcomingEvents);
+    const pages = Math.ceil(totalCount / 8); 
+    setTotalPages(pages); 
+  }, [upcomingEvents, totalCount]); 
+  
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
       router.replace('/auth');
     }, 1000);
   };
-
+  const handlePreviousClick = () => {
+    const newPage = Math.max(1, currentPage - 1);
+    paginationEvent(newPage); // Fetch events for the new page
+  };
+  
+  const handleNextClick = () => {
+    const newPage = Math.min(totalPages, currentPage + 1);
+    paginationEvent(newPage); // Fetch events for the new page
+  };
+  
+  const paginationEvent = async (page: number) => {
+    try {
+      console.log('Fetching events for page:', page);
+      setIsLoadingEvents(true);
+      const response = await axiosInstance.get(
+        `/userUpcomingEvents/${userProfile?.id}?page=${page}`,
+        { withCredentials: true }
+      );
+  
+      const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
+        ...event,
+        date: new Date(event.date).toISOString(),
+        createdAt: new Date(event.createdAt).toISOString(),
+        updatedAt: new Date(event.updatedAt).toISOString(),
+      }));
+  
+      setEvents(events);
+      setCurrentPage(page); // Update the current page state
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+  
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
   const handleCancelEvent = async (event: UpcomingEvent) => {
-    setSelectedEvent(event);
-    setIsModalOpen(true);
+    setSelectedEvent(event); // Select the event to be canceled
+    setIsModalOpen(true);    // Open the confirmation modal
   };
   
   const confirmCancellation = async () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent) return; 
     
     try {
-      setCancellingEventId(selectedEvent._id);
-      const response = await axiosInstance.post(`/cancelevent/${selectedEvent._id}`,{withCredentials:true});
-  
+      setCancellingEventId(selectedEvent._id); 
+      const response = await axiosInstance.post(
+        `/cancelevent/${selectedEvent._id}`,
+        { withCredentials: true }
+      );
+      
+     
+      console.log('Cancellation response:', response.data);
      
     } catch (error) {
       console.error('Error cancelling event:', error);
-      
       alert('Failed to cancel event. Please try again.');
     } finally {
-      setCancellingEventId(null);
-      setIsModalOpen(false);
-      setSelectedEvent(null);
-      fetchAllEvents()
+      setCancellingEventId(null); 
+      setIsModalOpen(false);      
+      setSelectedEvent(null);    
+      paginationEvent(currentPage); 
     }
   };
 
@@ -216,9 +270,11 @@ const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
         </aside>
 
         {/* Events Section */}
+   
         <div className={`flex-1 ${sidebarOpen ? 'md:ml-64' : ''} p-4 mt-2`}>
           <div className="grid grid-cols-1 ml-[250px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {upcomingEvents && upcomingEvents.map((event: UpcomingEvent) => (
+            {events && events.map((event: UpcomingEvent) => (
+              
               <div 
                 key={event._id}
                 className={getEventCardClass(event.bookingStatus)}
@@ -231,8 +287,9 @@ const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
                     </div>
                   </div>
                 )}
-
+ 
                 <div className="relative h-32">
+                {/* <button onClick={paginationEvent}>fayiz mannani</button> */}
                   <img
                     src={event.imageUrl || "/event-placeholder.jpg"}
                     alt={event.title}
@@ -343,7 +400,40 @@ const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
           </div>
         </div>
       </div>
+   <div className="flex justify-center items-center space-x-2 mt-6">
+   <button
+      onClick={handlePreviousClick} // Using the handlePreviousClick function
+      disabled={currentPage === 1 || isLoadingEvents} // Disable if it's the first page or loading
+      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+    >
+      Previous
+    </button>
+            
+          {[...Array(totalPages)].map((_, index) => (
+  <button
+    key={index + 1}
+    onClick={() => paginationEvent(index + 1)} // Call paginationEvent with the page number
+    disabled={isLoadingEvents}
+    className={`px-4 py-2 rounded-md text-sm font-medium
+      ${currentPage === index + 1
+        ? 'bg-blue-600 text-white'
+        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      } transition-colors duration-300`}
+  >
+    {index + 1}
+  </button>
+))}
 
+              <button
+      onClick={handleNextClick} // Using the handleNextClick function
+      disabled={currentPage === totalPages || isLoadingEvents} // Disable if it's the last page or loading
+      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+    >
+      Next
+    </button>
+          </div>
       {/* Overlay for Mobile View */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden" onClick={toggleSidebar}></div>

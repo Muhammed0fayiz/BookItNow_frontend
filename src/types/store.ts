@@ -4,15 +4,15 @@
 export interface ChatMessage {
   id: number;
   text: string;
-  sender: 'performer' | 'user'; // Define other senders if needed
+  sender: 'performer' | 'user'; 
   timestamp: Date;
 }
 
 export interface ChatState {
-  messages: ChatMessage[];  // Array of chat messages
-  newMessage: string;       // Current message input
-  setNewMessage: (message: string) => void; // Method to set a new message
-  sendMessage: () => void;  // Method to send the message
+  messages: ChatMessage[]; 
+  newMessage: string;      
+  setNewMessage: (message: string) => void; 
+  sendMessage: () => void; 
 }
 
 
@@ -181,10 +181,12 @@ export interface UpcomingEvent {
   isRated:boolean;
   createdAt: string;
   updatedAt: string;
+  count:number
 }
 
 export interface UpcomingEventsStore {
   upcomingEvents: UpcomingEvent[];
+  totalCount: number;
   isLoading: boolean;
   error: string | null;
   fetchAllEvents: () => Promise<void>;
@@ -228,13 +230,16 @@ export interface PerformerUpcomingEvent {
   time: string;
   place: string;
   date: string;
+  isRated:boolean;
   bookingStatus: string;
   createdAt: string;
   updatedAt: string;
+  count:number
 }
 
 export interface PerformerUpcomingEventsStore {
   performerupcomingEvents: PerformerUpcomingEvent[];
+  totalCount: number;
   isLoading: boolean;
   error: string | null;
   fetchAllEvents: () => Promise<void>;
