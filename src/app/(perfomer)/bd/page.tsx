@@ -63,10 +63,13 @@ const ChatSession: React.FC = () => {
   // Connect user to Socket.IO when chat room is selected
   useEffect(() => {
     if (selectedChatRoom && socketRef.current) {
+      alert(`chat room ${selectedChatRoom.myId}`  )
       socketRef.current.emit('userConnected', selectedChatRoom.myId);
 
       // Listen for new messages
       socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+        // alert(`msg is ${messageData}`)
+        // console.log("msg is 🙂",messageData)
         setMessages(prevMessages => [...prevMessages, {
           _id: new mongoose.Types.ObjectId().toString(),
           roomId: selectedChatRoom.otherId,

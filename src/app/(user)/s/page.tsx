@@ -7,7 +7,7 @@ import useUserStore from '@/store/useUserStore';
 import useChatRooms from '@/store/chatstore';
 import mongoose from 'mongoose';
 import { Send } from 'lucide-react';
-import { io, Socket } from "socket.io-client";
+import { io, Socket } from 'socket.io-client';
 
 // Updated Message interface to match backend structure
 interface Message {
@@ -32,10 +32,10 @@ export interface ChatRoom {
 }
 
 const Chat = () => {
-  const socket = useRef<Socket | null>(null);
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const socketRef = useRef<Socket | null>(null);
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
@@ -48,59 +48,57 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Socket connection and event handling
   useEffect(() => {
-    // Establish socket connection
-    socket.current = io('http://localhost:5000', {
-      auth: {
-        token: localStorage.getItem('token') // Include authentication token if needed
-      }
+    console.log('sokent')
+    socketRef.current = io('http://localhost:5000', {
+      withCredentials: true
     });
-    
-    // Handle connection
-    socket.current.on('connect', () => {
-      console.log('Socket connected');
-      // Emit user connection event with user ID
-      if (userProfile?.id) {
-        socket.current?.emit('register', { userId: userProfile.id });
-      }
-    });
-    
-    // Handle receiving messages
-    socket.current.on('message', (newMessage: Message) => {
-      // Only add message if it's for the current chat room
-      if (selectedChatRoom && 
-          (newMessage.senderId.toString() === selectedChatRoom.otherId || 
-           newMessage.receiverId.toString() === selectedChatRoom.otherId)) {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-      }
-    });
- 
-
-    // Handle connection errors
-    socket.current.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-    });
-
-
-
-    // Cleanup socket connection on component unmount
+    console.log('sokent')
+    // Clean up on unmount
     return () => {
-      socket.current?.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
-  }, [userProfile?.id, selectedChatRoom]);
+  }, []);
 
-  // Fetch chat rooms on component mount
+    useEffect(() => {
+      if (selectedChatRoom && socketRef.current) {
+        alert(`chat room ${selectedChatRoom.myId}`  )
+        socketRef.current.emit('userConnected', selectedChatRoom.myId);
+  
+        // Listen for new messages
+        socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+          setMessages(prevMessages => [...prevMessages, {
+            _id: new mongoose.Types.ObjectId().toString(),
+            roomId: selectedChatRoom.otherId,
+            senderId: new mongoose.Types.ObjectId(senderId),
+            receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+            message: message,
+            timestamp: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __v: 0,
+            role: 'receiver'
+          }]);
+        });
+      }
+  
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.off('receiveMessage');
+        }
+      };
+    }, [selectedChatRoom]);
+
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch user profile on component mount
   useEffect(() => {
     const loadUserProfile = async () => {
       await fetchUserProfile();
@@ -108,7 +106,6 @@ const Chat = () => {
     loadUserProfile();
   }, [fetchUserProfile]);
 
-  // Fetch messages when a chat room is selected
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedChatRoom && userProfile?.id) {
@@ -125,31 +122,35 @@ const Chat = () => {
     fetchMessages();
   }, [selectedChatRoom, userProfile]);
 
-  // Toggle mobile menu
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
-  
-  // Navigate to profile page
   const profilePage = () => router.replace('/profile');
 
-  // Send message handler
   const handleSendMessage = async () => {
-    if (newMessage.trim() && selectedChatRoom && userProfile?.id) {
+    if (newMessage.trim() && selectedChatRoom) {
       try {
-        // Prepare message object
-        const messageData = {
-          senderId: userProfile.id,
-          receiverId: selectedChatRoom.otherId,
-          message: newMessage,
-          timestamp: new Date()
-        };
+        if (!userProfile?.id) {
+          console.error('User profile not found');
+          return;
+        }
+        await axiosInstance.post(
+          `/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
+          { message: newMessage }
+        );
+        const messageData = { senderId :userProfile.id, receiverId:selectedChatRoom.otherId, newMessage };
 
-        // Emit message through socket
-        socket.current?.emit('send-message', messageData);
+        if(socketRef.current)
 
-        // Optimistically add message to UI
+          socketRef.current.emit('sendMessage', {
+            senderId: selectedChatRoom.myId,
+            receiverId: selectedChatRoom.otherId,
+            message: newMessage
+          });
+        
+        
+        // Optimistically add the new message to the messages array
         const newMessageObj: Message = {
           _id: `temp-${Date.now()}`,
-          roomId: '', 
+          roomId: '', // You might want to set this appropriately
           senderId: new mongoose.Types.ObjectId(userProfile.id),
           receiverId: new mongoose.Types.ObjectId(selectedChatRoom.otherId),
           message: newMessage,
@@ -159,16 +160,7 @@ const Chat = () => {
           __v: 0
         };
         
-        // Add message to local state
         setMessages(prevMessages => [...prevMessages, newMessageObj]);
-        
-        // Send message via API as backup
-        await axiosInstance.post(
-          `/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
-          { message: newMessage }
-        );
-
-        // Clear input
         setNewMessage('');
       } catch (error) {
         console.error('Error sending message:', error);
@@ -176,7 +168,6 @@ const Chat = () => {
     }
   };
 
-  // Handle enter key press in message input
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSendMessage();
@@ -185,7 +176,7 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
+      {/* Navbar remains the same as in previous code */}
       <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           {/* Left Side: Logo */}
@@ -212,7 +203,10 @@ const Chat = () => {
             </a>
             <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300">
               Events
+             
             </a>
+           
+
             <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
               About
             </a>
@@ -255,7 +249,7 @@ const Chat = () => {
                 <a href="/chat" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
                   Chat
                 </a>
-                <a className="text-gray-700 hover:text-blue-600 transition duration-300" onClick={profilePage}>
+                <a  className="text-gray-700 hover:text-blue-600 transition duration-300"onClick={profilePage}>
                   Profile
                 </a>
               </div>
@@ -263,13 +257,12 @@ const Chat = () => {
           </div>
         )}
       </nav>
-
       {/* Main Content */}
       <main className="flex flex-col items-center justify-center py-0 px-4 md:px-8">
         <div className="flex flex-col w-full md:w-3/4 bg-white shadow-lg rounded-lg">
           <div className="flex">
             {/* Chat Rooms List */}
-            <div className="w-1/4 border-r p-4 bg-gray-100">
+            <div className="w-1/4  border-r p-4 bg-gray-100">
               <h3 className="text-lg font-semibold mb-4">Chat Rooms</h3>
               <ul>
                 {chatRooms.map((chatRoom) => (
@@ -309,6 +302,7 @@ const Chat = () => {
                   <div>
                     <h2 className="text-xl font-bold text-blue-800">
                       {selectedChatRoom.userName}
+                      
                     </h2>
                     <p className="text-sm text-gray-600">{selectedChatRoom.performerName}</p>
                   </div>
@@ -316,40 +310,42 @@ const Chat = () => {
               )}
               
               {/* Messages Container */}
-              <div className="flex-grow h-80 overflow-y-auto border rounded-md p-4 bg-gray-50 space-y-3">
-                {!selectedChatRoom ? (
-                  <p className="text-gray-700 text-center font-medium">
-                    <span className="text-blue-500 font-bold">BookItNow</span> provides an interactive{" "}
-                    <span className="text-green-500">chatting feature</span>. You can easily chat with the{" "}
-                    <span className="text-purple-500">Performer</span> to discuss details and more.
-                  </p>
-                ) : (
-                  messages.map((message) => (
-                    <div 
-                      key={message._id} 
-                      className={`flex ${
-                        message.senderId.toString() === userProfile?.id 
-                          ? 'justify-end' 
-                          : 'justify-start'
-                      }`}
-                    >
-                      <div 
-                        className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
-                          message.senderId.toString() === userProfile?.id 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-black'
-                        }`}
-                      >
-                        {message.message}
-                        <div className="text-xs mt-1 opacity-70 text-right">
-                          {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+          {/* Messages Container */}
+<div className="flex-grow h-80 overflow-y-auto border rounded-md p-4 bg-gray-50 space-y-3">
+  {!selectedChatRoom ? (
+    <p className="text-gray-700 text-center font-medium">
+      <span className="text-blue-500 font-bold">BookItNow</span> provides an interactive{" "}
+      <span className="text-green-500">chatting feature</span>. You can easily chat with the{" "}
+      <span className="text-purple-500">Performer</span> to discuss details and more.
+    </p>
+  ) : (
+    messages.map((message) => (
+      <div 
+        key={message._id} 
+        className={`flex ${
+          message.senderId.toString() === userProfile?.id 
+            ? 'justify-end' 
+            : 'justify-start'
+        }`}
+      >
+        <div 
+          className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
+            message.senderId.toString() === userProfile?.id 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 text-black'
+          }`}
+        >
+          {message.message}
+          <div className="text-xs mt-1 opacity-70 text-right">
+            {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+  <div ref={messagesEndRef} />
+</div>
+
               
               {/* Message Input */}
               {selectedChatRoom && (
@@ -366,9 +362,9 @@ const Chat = () => {
                     onClick={handleSendMessage}
                     className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 transition-colors"
                   >
-                   
                     <Send size={24} />
                   </button>
+                
                 </div>
               )}
             </div>
