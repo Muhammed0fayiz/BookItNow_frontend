@@ -9,16 +9,10 @@ import { UpcomingEvent } from '@/types/store';
 import axiosInstance from '@/shared/axiousintance';
 import CancelEventModal from '@/component/cancelEventModal';
 import { loginImage } from '@/datas/logindatas';
-
-interface UserProfile {
-  username?: string;
-  profileImage?: string;
-}
-interface Events{
-upcomingEvent:UpcomingEvent[]
-}
+import { Calendar } from 'lucide-react';
 
 const UpcomingEvents: React.FC = () => {
+
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { upcomingEvents, fetchAllEvents,totalCount } = useUpcomingEventsStore();
@@ -49,7 +43,7 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   }, [fetchAllEvents]);
   useEffect(() => {
     console.log('upcoming', upcomingEvents);
-    const pages = Math.ceil(totalCount / 8); 
+    const pages = Math.ceil(totalCount / 9); 
     setTotalPages(pages); 
   }, [upcomingEvents, totalCount]); 
   
@@ -98,8 +92,8 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
     setSidebarOpen(!sidebarOpen);
   };
   const handleCancelEvent = async (event: UpcomingEvent) => {
-    setSelectedEvent(event); // Select the event to be canceled
-    setIsModalOpen(true);    // Open the confirmation modal
+    setSelectedEvent(event); 
+    setIsModalOpen(true);   
   };
   
   const confirmCancellation = async () => {
@@ -196,26 +190,27 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Top Navbar */}
-      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 flex justify-between items-center px-6 py-4 z-50 h-16">
-        <a href="/home">
-          <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Enhanced Top Navbar */}
+      <nav className="bg-white shadow-lg fixed top-0 left-0 right-0 flex justify-between items-center px-6 py-4 z-50 h-16">
+        <a href="/home" className="flex items-center space-x-2">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            BookItNow
+          </h1>
         </a>
         <div className="flex space-x-4 items-center">
-          <a href="/chat" className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300">
-            <i className="fas fa-comments"></i>
+          <a href="/chat" className="text-blue-600 hover:bg-blue-50 p-3 rounded-full transition duration-300">
+            <i className="fas fa-comments text-lg"></i>
           </a>
-          <button className="md:hidden text-blue-600" onClick={toggleSidebar}>
-            <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
+          <button className="md:hidden text-blue-600 p-2" onClick={toggleSidebar}>
+            <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'} text-lg`}></i>
           </button>
         </div>
       </nav>
 
-      {/* Main Content Container */}
       <div className="flex pt-16">
-        {/* Sidebar */}
-        <aside 
+        {/* ... existing sidebar code ... */}
+ <aside 
           className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}
         >
@@ -268,18 +263,32 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   </li>
 </ul>
         </aside>
+        {/* Enhanced Events Section */}
+        <div className={`flex-1 ${sidebarOpen ? 'md:ml-64' : ''} p-6 mt-2`}>
+          {/* Page Header */}
+          <div className="mb-8 ml-64">
+            <div className="flex items-center space-x-3 mb-2">
+              <Calendar className="w-8 h-8 text-blue-600" />
+              <h2 className="text-2xl font-bold text-gray-800">Upcoming Events</h2>
+            </div>
+            <p className="text-gray-600 ml-11">
+              {totalCount > 0 
+                ? `Showing ${events.length} of ${totalCount} upcoming events`
+                : 'No upcoming events found'}
+            </p>
+          </div>
 
-        {/* Events Section */}
-   
-        <div className={`flex-1 ${sidebarOpen ? 'md:ml-64' : ''} p-4 mt-2`}>
-          <div className="grid grid-cols-1 ml-[250px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {events && events.map((event: UpcomingEvent) => (
-              
-              <div 
-                key={event._id}
-                className={getEventCardClass(event.bookingStatus)}
-              >
-                {/* Cancelled Overlay */}
+          {/* Events Grid */}
+          <div className="grid grid-cols-1 ml-[250px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {events && events.length > 0 ? (
+              events.map((event: UpcomingEvent) => (
+                // ... existing event card code with enhanced styling ...
+                <div 
+                  key={event._id}
+                  className={`${getEventCardClass(event.bookingStatus)} hover:shadow-xl transition-all duration-300`}
+                >
+                  {/* ... rest of your event card content ... */}
+                    {/* Cancelled Overlay */}
                 {event.bookingStatus === 'cancelled' && (
                   <div className="absolute inset-0 bg-gray-200 bg-opacity-30 z-10 flex flex-col items-center justify-center">
                     <div className="bg-red-600 text-white px-4 py-2 rounded-md transform -rotate-12 shadow-lg">
@@ -395,46 +404,71 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
                   </button>
                   )}
                 </div>
+                </div>
+              ))
+            ) : (
+              // No Events State
+              <div className="col-span-full flex flex-col items-center justify-center py-16 px-4">
+                <div className="bg-blue-50 rounded-full p-6 mb-4">
+                  <Calendar className="w-12 h-12 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Upcoming Events</h3>
+                <p className="text-gray-600 text-center mb-6">
+                  You don't have any upcoming events scheduled. Browse our events page to find something interesting!
+                </p>
+                <a 
+                  href="/home" 
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center space-x-2"
+                >
+                  <i className="fas fa-search"></i>
+                  <span>Browse Events</span>
+                </a>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      </div>
-   <div className="flex justify-center items-center space-x-2 mt-6">
-   <button
-      onClick={handlePreviousClick} // Using the handlePreviousClick function
-      disabled={currentPage === 1 || isLoadingEvents} // Disable if it's the first page or loading
-      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
-    >
-      Previous
-    </button>
-            
-          {[...Array(totalPages)].map((_, index) => (
-  <button
-    key={index + 1}
-    onClick={() => paginationEvent(index + 1)} // Call paginationEvent with the page number
-    disabled={isLoadingEvents}
-    className={`px-4 py-2 rounded-md text-sm font-medium
-      ${currentPage === index + 1
-        ? 'bg-blue-600 text-white'
-        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-      } transition-colors duration-300`}
-  >
-    {index + 1}
-  </button>
-))}
+
+          {/* Enhanced Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-8 mb-6">
+              <button
+                onClick={handlePreviousClick}
+                disabled={currentPage === 1 || isLoadingEvents}
+                className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                          bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
+              >
+                <i className="fas fa-chevron-left mr-2"></i>
+                Previous
+              </button>
+              
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => paginationEvent(index + 1)}
+                  disabled={isLoadingEvents}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300
+                    ${currentPage === index + 1
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
 
               <button
-      onClick={handleNextClick} // Using the handleNextClick function
-      disabled={currentPage === totalPages || isLoadingEvents} // Disable if it's the last page or loading
-      className="px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
-    >
-      Next
-    </button>
-          </div>
-      {/* Overlay for Mobile View */}
+                onClick={handleNextClick}
+                disabled={currentPage === totalPages || isLoadingEvents}
+                className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                          bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
+              >
+                Next
+                <i className="fas fa-chevron-right ml-2"></i>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden" onClick={toggleSidebar}></div>
       )}

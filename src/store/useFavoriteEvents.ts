@@ -1,10 +1,10 @@
-
 import { create } from 'zustand';
 import { FavoritesStore, FavoriteEvent } from '@/types/store';
 import axiosInstance from '@/shared/axiousintance';
 
 export const useFavoritesStore = create<FavoritesStore>((set, get) => ({
   favoriteEvents: [],
+  totalCount: 0,
   favorites: [],
   isLoading: false,
   error: null,
@@ -20,32 +20,34 @@ export const useFavoritesStore = create<FavoritesStore>((set, get) => ({
   
       const response = await axiosInstance.get(`/favorites/${userId}`, { withCredentials: true });
   
-      console.log('res', response.data.data);
-
-            if (response.status !== 200) {
+      if (response.status !== 200) {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
 
       const data = response.data.data;
+      const totalCount = response.data.totalCount;  // Assuming the API returns totalCount
+      
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: Expected an array.');
       }
   
       const favorites: FavoriteEvent[] = data.map((event: any) => ({
         ...event,
-        // Validate and ensure dates are properly formatted as strings or null
         date: event.date ? new Date(event.date).toISOString() : null,
         createdAt: event.createdAt ? new Date(event.createdAt).toISOString() : null,
         updatedAt: event.updatedAt ? new Date(event.updatedAt).toISOString() : null,
       }));
   
-      set({ favoriteEvents:favorites, isLoading: false });
+      set({ 
+        favoriteEvents: favorites,
+        totalCount,  // Update totalCount
+        isLoading: false 
+      });
     } catch (error) {
       set({ error: 'Failed to fetch favorite events', isLoading: false });
       console.error('Error fetching favorite events:', error);
     }
   },
-  
 
   removeFavorite: (eventId: string) => {
     set((state) => ({

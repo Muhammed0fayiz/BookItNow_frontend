@@ -299,6 +299,7 @@ export interface FavoriteEvent {
 
 export interface FavoritesStore {
   favoriteEvents: any[];
+  totalCount: number;
   favorites: FavoriteEvent[];
   isLoading: boolean;
   error: string | null;

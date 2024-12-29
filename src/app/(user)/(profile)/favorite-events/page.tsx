@@ -53,14 +53,14 @@ const EventHistory: React.FC = () => {
       const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${eventId}`);
       
       if (response.status === 200) {
-        // Optimistically update the local state by filtering out the removed event
+      
         useFavoritesStore.setState(prevState => ({
           favoriteEvents: prevState.favoriteEvents.filter(event => event._id !== eventId)
         }));
       }
     } catch (error) {
       console.error('Error removing favorite event:', error);
-      // Optionally show an error message to the user
+    
     }
   };
 
@@ -251,25 +251,30 @@ const EventHistory: React.FC = () => {
                   </p>
           
                   <div>
-  <p>{event.isblocked ? 'Yes' : 'No'}</p>
-  <p>{event.isperformerblockedevents ? 'Yes' : 'No'}</p>
+
 </div>
 
-                  <div className="mt-4 flex justify-between items-center">
-              
-              <button
-                      onClick={() => router.push(`/events/${event.userId}/${event._id}`)}
-                      className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition"
-                    >
-                      Book Again
-                    </button>
-                    <button
-                      onClick={() => handleRemoveFavorite(event._id)}
-                      className="text-red-600 text-sm hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
+<div className="mt-4 flex justify-between items-center">
+  {event.isblocked || event.isperformerblockedevents ? (
+    <p className="text-red-600 text-sm font-semibold">
+      Cannot book 
+    </p>
+  ) : (
+    <button
+      onClick={() => router.push(`/events/${event.userId}/${event._id}`)}
+      className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm hover:bg-blue-700 transition"
+    >
+      Book Now
+    </button>
+  )}
+  <button
+    onClick={() => handleRemoveFavorite(event._id)}
+    className=   "  text-red-600 text-sm hover:underline"
+  >
+    Remove
+  </button>
+</div>
+
                 </div>
               </div>
             ))}

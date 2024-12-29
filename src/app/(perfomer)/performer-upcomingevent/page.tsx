@@ -233,7 +233,7 @@ const UpcomingEvents: React.FC = () => {
           </div>
           
         ))}
-     
+    
       </div>
       
      
