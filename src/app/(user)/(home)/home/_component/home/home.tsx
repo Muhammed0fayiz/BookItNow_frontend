@@ -3,20 +3,20 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { banner1, djparty, motivationspeaker, music } from '@/datas/homepagedatas';
 import UploadEventForm from '@/component/perfomerform';
-
-// import axios from 'axios';
-// import axiosInstance from '@/shared/axiousintance';
-
-// import useAuth from '@/hooks/fetchUser';
 import useUserStore from '@/store/useUserStore';
+
+import useChatNotifications from '@/store/useChatNotification';
 
 
 const Home = () => {
   const router = useRouter()
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  useChatNotifications();
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
   // const { userDetails, loading, error } = useAuth();
   const toggleFormVisibility = () => {
     setIsFormVisible((prev) => !prev);
@@ -97,9 +97,12 @@ const Home = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
               </svg>
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                3
-              </span>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+
             </a>
             <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -152,6 +155,7 @@ const Home = () => {
             className="mt-8 inline-block bg-white text-blue-600 px-8 py-3 rounded-full shadow-lg hover:bg-blue-100 transition duration-300 animate__animated animate__fadeInUp animate__delay-2s"
           >
             Explore Events
+          
           </a>
         </header>
 

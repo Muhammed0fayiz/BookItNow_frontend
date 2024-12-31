@@ -6,7 +6,7 @@ import usePerformersStore from '@/store/useAllPerformerStore';
 import { useFavoritesStore } from '@/store/useFavoriteEvents';
 import axiosInstance from '@/shared/axiousintance';
 import useUserStore from '@/store/useUserStore';
-import { ObjectId } from 'mongoose';
+
 const categories = [
   { id: 'all', name: 'All Events' },
   { id: 'music', name: 'Music' },
@@ -15,57 +15,84 @@ const categories = [
   { id: 'sports', name: 'Sports' }
 ];
 
+const ITEMS_PER_PAGE = 6;
+
 const EventsPage = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('events');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const { 
-    userProfile, 
-    fetchUserProfile, 
-    handleLogout 
-  } = useUserStore();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const { userProfile, fetchUserProfile, handleLogout } = useUserStore();
   const { events, isLoading, error, fetchAllEvents } = useAllEventsStore();
   const { performers, fetchAllPerformers } = usePerformersStore();
- const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore();
+  const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore();
+
   useEffect(() => {
     fetchAllEvents();
     fetchAllPerformers();
   }, [fetchAllEvents, fetchAllPerformers]);
+
   useEffect(() => {
-      const loadUserProfile = async () => {
-        await fetchUserProfile();
-      };
-      loadUserProfile();
-    }, [fetchUserProfile]);
- useEffect(() => {
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
     fetchfavoriteEvents();
-    console.log('upcomingfavorit', favoriteEvents);
   }, [fetchfavoriteEvents]);
+
   const toggleMenu = () => {
     setIsMenuOpen(prev => !prev);
   };
 
-  // Filter events based on category and search query
-  const filteredEvents = events.filter(event => {
+  // Filter events based on category, search query, and sort by price
+  // Change the sort function in filteredAndSortedEvents
+  const filteredAndSortedEvents = events
+  .filter(event => {
     const matchesCategory = selectedCategory === 'all' || event.category.toLowerCase() === selectedCategory;
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.description.toLowerCase().includes(searchQuery.toLowerCase());
+                       event.description.toLowerCase().includes(searchQuery.toLowerCase());
     const isActive = event.status === 'active';
     return matchesCategory && matchesSearch && isActive;
+  })
+  .sort((a, b) => {
+   
+    return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
   });
 
-  // Filter performers based on band name
+
   const filteredPerformers = performers.filter(performer => 
     performer.bandName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+
+  const totalPages = Math.ceil(filteredAndSortedEvents.length / ITEMS_PER_PAGE);
+  const paginatedEvents = filteredAndSortedEvents.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setCurrentPage(1);
+  };
+
   const handleWishlist = async (id: string | undefined) => {
     try {
-   
       const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${id}`);
       console.log('Wishlist updated:', response.data);
+      fetchfavoriteEvents(); // Refresh favorites after toggle
     } catch (error) {
       console.error('Error toggling wishlist:', error);
     }
@@ -147,8 +174,6 @@ const EventsPage = () => {
       </nav>
 
       <main>
-     
-
         {/* Header Section */}
         <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
           <div className="container mx-auto px-4">
@@ -168,147 +193,179 @@ const EventsPage = () => {
             </div>
           </div>
         </header>
-           {/* Tab Navigation */}
-           <div className="bg-white shadow-sm">
-  <div className="container mx-auto px-4">
-    <div className="flex justify-center space-x-8 py-4">
-      <button
-        onClick={() => setActiveTab('events')}
-        className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
-          activeTab === 'events' 
-            ? 'bg-blue-600 text-white' 
-            : 'text-gray-600 hover:bg-gray-100'
-        }`}
-      >
-        Events
-      </button>
-      <button
-        onClick={() => setActiveTab('performers')}
-        className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
-          activeTab === 'performers' 
-            ? 'bg-blue-600 text-white' 
-            : 'text-gray-600 hover:bg-gray-100'
-        }`}
-      >
-        Performers
-      </button>
-    </div>
-  </div>
-</div>
 
-        <div className="container mx-auto px-4 py-8">
-          {/* Show category filters only for events */}
-          {activeTab === 'events' && (
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-6 py-2 rounded-full transition duration-300 ${
-                    selectedCategory === category.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Events Section */}
-          {activeTab === 'events' && (
-  <>
-    {isLoading ? (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading events...</p>
-      </div>
-    ) : error ? (
-      <div className="text-center py-12">
-        <p className="text-red-600">{error}</p>
-      </div>
-    ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredEvents.map((event) => (
-          <div key={event._id} className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all hover:scale-105 relative">
-            {/* Wishlist Heart Button */}
-            <button 
-              onClick={() => handleWishlist(event._id)} 
-              className="absolute top-4 right-4 z-10 focus:outline-none"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className={`h-7 w-7 ${
-                  favoriteEvents.includes(event._id) 
-                    ? 'text-red-500 fill-current' 
-                    : 'text-gray-300 hover:text-red-300'
+        {/* Tab Navigation */}
+        <div className="bg-white shadow-sm">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center space-x-8 py-4">
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  activeTab === 'events' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
                 }`}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-                />
-              </svg>
-            </button>
-
-            <img src={event.imageUrl} alt={event.title} className="w-full h-48 object-cover" />
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-xl font-semibold">{event.title}</h3>
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="ml-1 text-gray-600">{event.rating.toFixed(1)}</span>
-                </div>
-              </div>
-              
-              <p className="text-gray-600 mb-4">{event.description}</p>
-              
-              <div className="space-y-2">
-                <p className="text-gray-600">
-                  <span className="font-semibold">Price:</span> {event.price}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">Category:</span> {event.category}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">Team Leader:</span> {event.teamLeader}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">Contact:</span> {event.teamLeaderNumber}
-                </p>
-                <p className="text-gray-600">
-                  <span className="font-semibold">Posted:</span> {new Date(event.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              
-              <button 
-                onClick={() => router.push(`/events/${event.userId}/${event._id}`)}
-                className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+                Events
+              </button>
+              <button
+                onClick={() => setActiveTab('performers')}
+                className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  activeTab === 'performers' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
               >
-                Book Now
+                Performers
               </button>
             </div>
           </div>
-        ))}
-      </div>
-    )}
+        </div>
 
-    {/* No Events Results Message */}
-    {!isLoading && !error && filteredEvents.length === 0 && (
-      <div className="text-center py-12">
-        <p className="text-gray-600">No events found matching your criteria.</p>
-      </div>
-    )}
-  </>
-)}
+        <div className="container mx-auto px-4 py-8">
+          {/* Events Section */}
+          {activeTab === 'events' && (
+            <>
+              {/* Categories */}
+              <div className="flex flex-wrap justify-center gap-4 mb-8">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-6 py-2 rounded-full transition duration-300 ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sorting and Pagination Controls */}
+              <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                <button
+                  onClick={toggleSortOrder}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 mb-4 sm:mb-0"
+                >
+                  <span>Price</span>
+                  {sortOrder === 'asc' ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+
+                <div className="flex justify-center space-x-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Events Grid */}
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading events...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <p className="text-red-600">{error}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {paginatedEvents.map((event) => (
+                    <div key={event._id} className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all hover:scale-105 relative">
+                      <button 
+                        onClick={() => handleWishlist(event._id)} 
+                        className="absolute top-4 right-4 z-10 focus:outline-none"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`h-7 w-7 ${
+                            favoriteEvents.includes(event._id) 
+                              ? 'text-red-500 fill-current' 
+                              : 'text-gray-300 hover:text-red-300'
+                          }`}
+                          fill="none" 
+                          viewBox="0 0 2424" stroke="currentColor">
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                          />
+                        </svg>
+                      </button>
+
+                      <img src={event.imageUrl} alt={event.title} className="w-full h-48 object-cover" />
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-semibold">{event.title}</h3>
+                          <div className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            <span className="ml-1 text-gray-600">{event.rating.toFixed(1)}</span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-4">{event.description}</p>
+                        
+                        <div className="space-y-2">
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Price:</span> {event.price}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Category:</span> {event.category}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Team Leader:</span> {event.teamLeader}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Contact:</span> {event.teamLeaderNumber}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-semibold">Posted:</span> {new Date(event.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        
+                        <button 
+                          onClick={() => router.push(`/events/${event.userId}/${event._id}`)}
+                          className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+                        >
+                          Book Now
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Events Results Message */}
+              {!isLoading && !error && paginatedEvents.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">No events found matching your criteria.</p>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Performers Section */}
           {activeTab === 'performers' && (
