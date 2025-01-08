@@ -6,6 +6,7 @@ import UploadEventForm from '@/component/perfomerform';
 import useUserStore from '@/store/useUserStore';
 
 import useChatNotifications from '@/store/useChatNotification';
+import axiosInstance from '@/shared/axiousintance';
 
 
 const Home = () => {
@@ -15,6 +16,7 @@ const Home = () => {
   const {  totalUnreadMessage, notifications, fetchNotifications } =
   useChatNotifications();
   useEffect(() => {
+   
     fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
   }, [fetchNotifications]);
   // const { userDetails, loading, error } = useAuth();

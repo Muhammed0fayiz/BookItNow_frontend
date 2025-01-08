@@ -9,7 +9,7 @@ import useEventManagerStore from '@/store/useEventManagerStore';
 import usePerformerStore from '@/store/usePerformerStore';
 import usePerformerEventsStore from '@/store/usePerformerEvents';
 import axiosInstance from '@/shared/axiousintance';
-
+import useChatNotifications from '@/store/useChatNotification';
 interface Event {
   _id?: string;
   title: string;
@@ -72,7 +72,12 @@ const EventManagementDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  
+  useChatNotifications();
+    useEffect(() => {
+        fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+      }, [fetchNotifications]);
   useEffect(() => {
     console.log('Fetching data...');
     fetchPerformerDetails();
@@ -82,9 +87,7 @@ const EventManagementDashboard: React.FC = () => {
   useEffect(() => {
     console.log('Fetched Events:', events);
   }, [events]);
-  const chatting=()=>{
-    router.push('/chatsession')
-  }
+
   const handleBlockUnblock = async (id: string | undefined) => {
     if (!id) {
       console.error('ID is required');
@@ -259,8 +262,20 @@ const EventManagementDashboard: React.FC = () => {
               className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300"
               aria-label="Toggle chat"
             >
-              <MessageCircle size={24} onClick={chatting} />
+              
+              <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+            </a>
+              
             </button>
+          
           </div>
         </nav>
 
@@ -274,6 +289,7 @@ const EventManagementDashboard: React.FC = () => {
                 <Plus size={20} />
                 Create New Event
               </button>
+            
 
               <div className="relative flex-grow">
                 <input

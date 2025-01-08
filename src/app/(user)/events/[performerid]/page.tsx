@@ -5,6 +5,7 @@ import useAllEventsStore from '@/store/useAllEvents';
 import usePerformersStore from '@/store/useAllPerformerStore';
 import useUserStore from '@/store/useUserStore';
 import axiosInstance from '@/shared/axiousintance';
+import useChatNotifications from '@/store/useChatNotification';
 // Interfaces for type safety
 interface Events {
   createdAt: string;
@@ -53,6 +54,8 @@ const PerformerDetailsPage = () => {
     fetchUserProfile, 
     handleLogout 
   } = useUserStore();
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  useChatNotifications();
   // Fetch events and performers on component mount
   useEffect(() => {
     fetchAllEvents();
@@ -68,7 +71,9 @@ const PerformerDetailsPage = () => {
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
-
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
   // Find the specific performer
   const performer = performers.find(p => p.userId === performerId);
   
@@ -142,9 +147,11 @@ const PerformerDetailsPage = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H5z" />
               </svg>
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                3
-              </span>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
             </a>
             <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

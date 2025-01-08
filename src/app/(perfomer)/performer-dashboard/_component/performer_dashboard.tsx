@@ -11,6 +11,7 @@ import useWalletHistoryStore from '@/store/useWalletHistory';
 import axiosInstance from '@/shared/axiousintance';
 import usePerformerAllDetails from '@/store/usePerformerAllDetails';
 import { toast, ToastContainer } from 'react-toastify';
+import useChatNotifications from '@/store/useChatNotification';
 import 'react-toastify/dist/ReactToastify.css';
 import { 
   PerformanceOverviewCard, 
@@ -31,6 +32,12 @@ const PerformerDashboard: React.FC = () => {
   const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  
+  useChatNotifications();
+    useEffect(() => {
+        fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+      }, [fetchNotifications]);
   // Fetch data on component mount
   useEffect(() => {
     const userId = usePerformerAllDetails.getState().getUserIdFromToken();
@@ -96,9 +103,7 @@ const PerformerDashboard: React.FC = () => {
       console.error('Error downloading report:', error);
     }
   };
-  const chating=()=>{
-    router.push('/chatsession')
-  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
@@ -123,7 +128,16 @@ const PerformerDashboard: React.FC = () => {
               onClick={toggleChat} 
               className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300"
             >
-              <MessageCircle size={24} onClick={chating}/>
+                 <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+            </a>
             </button>
           </div>
         </nav>

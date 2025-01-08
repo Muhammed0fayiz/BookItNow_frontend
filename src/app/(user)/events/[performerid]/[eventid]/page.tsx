@@ -9,7 +9,7 @@ import axiosInstance from '@/shared/axiousintance';
 import EventPayment from '@/component/eventPayment';
 import BookingConfirmationModal from '@/component/bookingconfirmation';
 import axios from 'axios';
-
+import useChatNotifications from '@/store/useChatNotification';
 import WalletPaymentModal from '@/component/WalletPayment';
 
 
@@ -55,7 +55,11 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
     };
     loadUserProfile();
   }, [fetchUserProfile]);
-
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  useChatNotifications();
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
   useEffect(() => {
     fetchAllEvents();
     fetchAllPerformers();
@@ -359,7 +363,15 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
               About
             </a>
             <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <MessageCircle className="h-6 w-6" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+
             </a>
             <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

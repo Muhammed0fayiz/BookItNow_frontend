@@ -10,6 +10,8 @@ import axiosInstance from '@/shared/axiousintance';
 import CancelEventModal from '@/component/cancelEventModal';
 import { loginImage } from '@/datas/logindatas';
 import { Calendar } from 'lucide-react';
+import useChatNotifications from '@/store/useChatNotification';
+import InitialLoading from '@/component/loading';
 
 const UpcomingEvents: React.FC = () => {
 
@@ -24,8 +26,31 @@ const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
 const [events, setEvents] = useState<UpcomingEvent[]>([]);
 const [currentPage, setCurrentPage] = useState(1);
 const [totalPages, setTotalPages] = useState<number>(0);
-
+const [isInitialLoading, setIsInitialLoading] = useState(true);
 const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+const {  totalUnreadMessage, notifications, fetchNotifications } =
+useChatNotifications();
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setIsInitialLoading(true);
+      try {
+        await Promise.all([
+          fetchUserProfile(),
+          fetchAllEvents(),
+          fetchNotifications()
+        ]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    
+    loadInitialData();
+  }, [fetchUserProfile, fetchAllEvents, fetchNotifications]);
   useEffect(() => {
     const loadUserProfile = async () => {
       await fetchUserProfile();
@@ -164,12 +189,8 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
       : baseClasses;
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  if (isInitialLoading) {
+    return <InitialLoading />;
   }
 
   if (error) {
@@ -188,7 +209,6 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Enhanced Top Navbar */}
@@ -199,9 +219,17 @@ const [isLoadingEvents, setIsLoadingEvents] = useState(false);
           </h1>
         </a>
         <div className="flex space-x-4 items-center">
-          <a href="/chat" className="text-blue-600 hover:bg-blue-50 p-3 rounded-full transition duration-300">
-            <i className="fas fa-comments text-lg"></i>
-          </a>
+      
+        <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+            </a>
           <button className="md:hidden text-blue-600 p-2" onClick={toggleSidebar}>
             <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'} text-lg`}></i>
           </button>

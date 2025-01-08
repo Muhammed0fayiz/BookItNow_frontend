@@ -6,7 +6,7 @@ import ChangePasswordForm from '@/component/changepassword';
 import useUserStore from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
 import { loginImage } from '@/datas/logindatas';
-
+import useChatNotifications from '@/store/useChatNotification';
 const Profile: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -21,7 +21,11 @@ const Profile: React.FC = () => {
     fetchUserProfile, 
     handleLogout 
   } = useUserStore();
-
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  useChatNotifications();
+    useEffect(() => {
+      fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+    }, [fetchNotifications]);
   // Fetch user profile on mount and after any updates
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -122,9 +126,16 @@ const Profile: React.FC = () => {
           <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
         </a>
         <div className="flex space-x-4 items-center">
-          <a href="/chat" className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300">
-            <i className="fas fa-comments"></i>
-          </a>
+        <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+            </a>
           <button className="md:hidden text-blue-600" onClick={toggleSidebar}>
             <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
           </button>

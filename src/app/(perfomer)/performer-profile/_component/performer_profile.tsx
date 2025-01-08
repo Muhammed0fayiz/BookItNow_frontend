@@ -156,9 +156,7 @@ const PerformerProfileContainer: React.FC = () => {
   const handleChangePassword = () => {
     setIsChangePasswordModalOpen(true);
   };
-  const chatting=()=>{
-    router.push('/chatsession')
-  }
+ 
   const handleLogout = () => {
     console.log('enter logout');
     document.cookie = 'userToken=; Max-Age=0; path=/;';

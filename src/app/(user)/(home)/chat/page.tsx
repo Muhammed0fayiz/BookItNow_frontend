@@ -8,6 +8,7 @@ import useChatRooms from '@/store/chatstore';
 import mongoose from 'mongoose';
 import { Send } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import useChatNotifications from '@/store/useChatNotification';
 
 // Updated Message interface to match backend structure
 interface Message {
@@ -39,7 +40,8 @@ const Chat = () => {
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-
+  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  useChatNotifications();
   const { fetchUserProfile, userProfile } = useUserStore();
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
 
@@ -47,7 +49,9 @@ const Chat = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
   useEffect(() => {
     console.log('sokent')
     socketRef.current = io('http://localhost:5000', {
@@ -62,13 +66,14 @@ const Chat = () => {
     };
   }, []);
 
-    useEffect(() => {
-      if (selectedChatRoom && socketRef.current) {
-    
-        socketRef.current.emit('userConnected', selectedChatRoom.myId);
-  
-        // Listen for new messages
-        socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+  useEffect(() => {
+    if (selectedChatRoom && socketRef.current) {
+      socketRef.current.emit('userConnected', selectedChatRoom.myId);
+
+      // Updated message handling logic
+      socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+        // Only add message if it's from the currently selected chat room
+        if (selectedChatRoom.otherId === senderId) {
           setMessages(prevMessages => [...prevMessages, {
             _id: new mongoose.Types.ObjectId().toString(),
             roomId: selectedChatRoom.otherId,
@@ -81,15 +86,20 @@ const Chat = () => {
             __v: 0,
             role: 'receiver'
           }]);
-        });
-      }
-  
-      return () => {
-        if (socketRef.current) {
-          socketRef.current.off('receiveMessage');
+        } else {
+          // Optionally, you could update a notification counter for the other chat room
+          console.log(`Received message from ${senderId} while chatting with ${selectedChatRoom.otherId}`);
         }
-      };
-    }, [selectedChatRoom]);
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('receiveMessage');
+      }
+    };
+  }, [selectedChatRoom]);
+
 
   useEffect(() => {
     fetchAllChatRooms();
@@ -110,6 +120,7 @@ const Chat = () => {
     const fetchMessages = async () => {
       if (selectedChatRoom && userProfile?.id) {
         try {
+          const online=await axiosInstance.post(`/onlineUser/${userProfile.id}/${selectedChatRoom.otherId}`)
           const response = await axiosInstance.get(
             `/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
           );
@@ -198,7 +209,7 @@ const Chat = () => {
 
           {/* Full Navbar for Large Devices */}
           <div className="hidden md:flex items-center space-x-6">
-            <a href="/" className="text-blue-600 font-semibold transition duration-300">
+            <a href="/home" className="text-blue-600 font-semibold transition duration-300">
               Home
             </a>
             <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300">
@@ -214,9 +225,11 @@ const Chat = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
               </svg>
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                3
-              </span>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
             </a>
             <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
