@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { Send } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import useChatNotifications from '@/store/useChatNotification';
+import useSocketStore from '@/store/useSocketStore ';
 
 // Updated Message interface to match backend structure
 interface Message {
@@ -36,7 +37,6 @@ const Chat = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
-  const socketRef = useRef<Socket | null>(null);
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
@@ -44,6 +44,7 @@ const Chat = () => {
   useChatNotifications();
   const { fetchUserProfile, userProfile } = useUserStore();
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
+  const { socket } = useSocketStore();
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -52,26 +53,13 @@ const Chat = () => {
   useEffect(() => {
     fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
   }, [fetchNotifications]);
-  useEffect(() => {
-    console.log('sokent')
-    socketRef.current = io('http://localhost:5000', {
-      withCredentials: true
-    });
-    console.log('sokent')
-    // Clean up on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+
 
   useEffect(() => {
-    if (selectedChatRoom && socketRef.current) {
-      socketRef.current.emit('userConnected', selectedChatRoom.myId);
+    if (selectedChatRoom && socket) {
 
       // Updated message handling logic
-      socketRef.current.on('receiveMessage', ({ senderId, message }) => {
+      socket.on('receiveMessage', ({ senderId, message }) => {
         // Only add message if it's from the currently selected chat room
         if (selectedChatRoom.otherId === senderId) {
           setMessages(prevMessages => [...prevMessages, {
@@ -94,11 +82,11 @@ const Chat = () => {
     }
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.off('receiveMessage');
+      if (socket) {
+        socket.off('receiveMessage');
       }
     };
-  }, [selectedChatRoom]);
+  }, [selectedChatRoom,socket]);
 
 
   useEffect(() => {
@@ -125,6 +113,7 @@ const Chat = () => {
             `/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
           );
           setMessages(response.data.data || []);
+          
         } catch (error) {
           console.error('Error fetching messages:', error);
         }
@@ -149,9 +138,9 @@ const Chat = () => {
         );
         const messageData = { senderId :userProfile.id, receiverId:selectedChatRoom.otherId, newMessage };
 
-        if(socketRef.current)
+        if(socket)
 
-          socketRef.current.emit('sendMessage', {
+          socket.emit('sendMessage', {
             senderId: selectedChatRoom.myId,
             receiverId: selectedChatRoom.otherId,
             message: newMessage

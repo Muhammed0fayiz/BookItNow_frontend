@@ -10,6 +10,9 @@ import { useUIStore } from '@/store/useUIStore';
 import Sidebar from '@/component/performersidebar';
 import useChatRooms from '@/store/chatstore';
 import useChatNotifications from '@/store/useChatNotification';
+import useSocketStore from '@/store/useSocketStore ';
+
+
 export interface ChatRoom {
   profileImage: string;
   userName: string;
@@ -34,8 +37,7 @@ interface Message {
 const ChatSession: React.FC = () => {
   const router = useRouter();
   const messageEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
-  const { performerDetails } = usePerformerStore();
+  const { performerDetails, fetchPerformerDetails } = usePerformerStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,64 +46,56 @@ const ChatSession: React.FC = () => {
 
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
   const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { socket } = useSocketStore();
   const {  totalUnreadMessage, notifications, fetchNotifications } =
   
   useChatNotifications();
     useEffect(() => {
+
         fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
       }, [fetchNotifications]);
   // Initialize Socket.IO connection
-  useEffect(() => {
-    console.log('sokent')
-    socketRef.current = io('http://localhost:5000', {
-      withCredentials: true
-    });
-    console.log('sokent')
-    // Clean up on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+
 
   // Connect user to Socket.IO when chat room is selected
-  useEffect(() => {
-    if (selectedChatRoom && socketRef.current) {
-
-      socketRef.current.emit('userConnected', selectedChatRoom.myId);
-
-      // Listen for new messages
-      socketRef.current.on('receiveMessage', ({ senderId, message }) => {
-        // alert(`msg is ${messageData}`)
-        // console.log("msg is 🙂",messageData)
-        setMessages(prevMessages => [...prevMessages, {
-          _id: new mongoose.Types.ObjectId().toString(),
-          roomId: selectedChatRoom.otherId,
-          senderId: new mongoose.Types.ObjectId(senderId),
-          receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-          message: message,
-          timestamp: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __v: 0,
-          role: 'receiver'
-        }]);
-      });
+useEffect(() => {
+    if (selectedChatRoom && socket && performerDetails?.PId) {
+        socket.on('receiveMessage', ({ senderId, message }) => {
+            setMessages(prevMessages => [
+                ...prevMessages,
+                {
+                    _id: new mongoose.Types.ObjectId().toString(),
+                    roomId: selectedChatRoom.otherId,
+                    senderId: new mongoose.Types.ObjectId(senderId),
+                    receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+                    message: message,
+                    timestamp: new Date(),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    __v: 0,
+                    role: 'receiver',
+                },
+            ]);
+        });
     }
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.off('receiveMessage');
-      }
+        if (socket) {
+            socket.off('receiveMessage');
+        }
     };
-  }, [selectedChatRoom]);
+}, [selectedChatRoom, socket, performerDetails]);
+
 
   // Fetch initial chat rooms and messages
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
-
+  useEffect(() => {
+    console.log('Fetching data...');
+    fetchPerformerDetails();
+    fetchPerformerDetails();
+  }, [fetchPerformerDetails, fetchPerformerDetails]);
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedChatRoom) {
@@ -123,7 +117,7 @@ const ChatSession: React.FC = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() !== '' && selectedChatRoom && socketRef.current) {
+    if (newMessage.trim() !== '' && selectedChatRoom && socket) {
       try {
         // Send message to server via HTTP
         const response = await axiosInstance.post(`/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, {
@@ -131,7 +125,8 @@ const ChatSession: React.FC = () => {
         }, { withCredentials: true });
 
         // Emit message via Socket.IO
-        socketRef.current.emit('sendMessage', {
+        console.log("xc:😍",selectedChatRoom.myId)
+        socket.emit('sendMessage', {
           senderId: selectedChatRoom.myId,
           receiverId: selectedChatRoom.otherId,
           message: newMessage
