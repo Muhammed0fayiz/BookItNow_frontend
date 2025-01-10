@@ -81,7 +81,9 @@ const EventsPage = () => {
         setEvents(response.data.events || []);
         setTotalCount(response.data.totalCount || 0);
         setCurrentPage(response.data.currentPage || 1);
-        setTotalPages(response.data.totalPages || 1);
+        console.log('he',response.data.totalCount);
+        const pages = Math.ceil(response.data.totalCount /6);
+        setTotalPages(pages || 1);
       } else {
         // Clear the events if no data
         setEvents([]);
@@ -179,7 +181,82 @@ const EventsPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       {/* ... (keep existing navigation JSX) ... */}
+      <nav className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-6">
+            <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
+              BookItNow
+            </a>
+          </div>
 
+          <div className="flex md:hidden">
+            <button
+              onClick={toggleMenu}
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              Menu
+            </button>
+          </div>
+
+          <div className="hidden md:flex items-center space-x-6">
+            <a href="/home" className="text-gray-700 hover:text-blue-600 transition duration-300">
+              Home
+            </a>
+            <a href="/events" className="text-blue-600 font-semibold transition duration-300">
+              Events
+            </a>
+            <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
+              About
+            </a>
+            <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+              </svg>
+              {totalUnreadMessage > 0 && (
+  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+    {totalUnreadMessage}
+  </span>
+)}
+            </a>
+            <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
+            <div className="fixed right-0 top-0 w-64 h-full bg-white shadow-lg z-50">
+              <button
+                className="absolute top-4 right-4 text-gray-600"
+                onClick={toggleMenu}
+              >
+                &times;
+              </button>
+              <div className="flex flex-col p-6">
+                <a href="/home" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                  Home
+                </a>
+                <a href="/events" className="text-blue-600 font-semibold transition duration-300 mb-4">
+                  Events
+                </a>
+                <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                  About
+                </a>
+                <a href="/chat" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                  Chat
+                </a>
+                <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
+                  Profile
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
       <main>
         {/* Header Section */}
         <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
@@ -200,7 +277,33 @@ const EventsPage = () => {
             </div>
           </div>
         </header>
-
+   {/* Tab Navigation */}
+   <div className="bg-white shadow-sm">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center space-x-8 py-4">
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  activeTab === 'events' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Events
+              </button>
+              <button
+                onClick={() => setActiveTab('performers')}
+                className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  activeTab === 'performers' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Performers
+              </button>
+            </div>
+          </div>
+        </div>
         <div className="container mx-auto px-4 py-8">
           {/* Events Section */}
           {activeTab === 'events' && (
@@ -343,11 +446,25 @@ const EventsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredPerformers.map((performer) => (
                 <div key={performer.userId} className="bg-white rounded-lg shadow-lg p-6 text-center">
-                  {/* Performer card content */}
-                  {/* ... (keep existing performer card JSX) ... */}
+                  <img
+                    src={performer.profileImage || '/default-profile.jpg'}
+                    alt={performer.bandName}
+                    className="w-32 h-32 rounded-full mx-auto mb-4"
+                  />
+                  <h3 className="text-xl font-semibold">{performer.bandName}</h3>
+                  <p className="text-gray-600">{performer.description}</p>
+                  <p className="text-gray-600"><strong>Location:</strong> {performer.place}</p>
+                  <p className="text-gray-600"><strong>Rating:</strong> {performer.rating} / 5</p>
+                  <button
+                    onClick={() => router.push(`/events/${performer.userId}`)}
+                    className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+                  >
+                    View Profile
+                  </button>
                 </div>
               ))}
 
+              {/* No Performers Results Message */}
               {filteredPerformers.length === 0 && (
                 <div className="text-center py-12 col-span-3">
                   <p className="text-gray-600">No performers found matching your criteria.</p>

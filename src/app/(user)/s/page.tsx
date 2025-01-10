@@ -1,13 +1,36 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import useAllEventsStore from '@/store/useAllEvents';
-import usePerformersStore from '@/store/useAllPerformerStore';
-import { useFavoritesStore } from '@/store/useFavoriteEvents';
-import axiosInstance from '@/shared/axiousintance';
 import useUserStore from '@/store/useUserStore';
 import useChatNotifications from '@/store/useChatNotification';
-import { number } from 'zod';
+import axiosInstance from '@/shared/axiousintance';
+import { useFavoritesStore } from '@/store/useFavoriteEvents';
+import usePerformersStore from '@/store/useAllPerformerStore';
+
+interface Event {
+  _id?: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  category: string;
+  rating: number;
+  teamLeader: string;
+  teamLeaderNumber: string;
+  createdAt: string;
+  userId: string;
+  status: string;
+}
+
+interface Performer {
+  userId: string;
+  bandName: string;
+  description: string;
+  profileImage: string;
+  place: string;
+  rating: number;
+}
+
 const categories = [
   { id: 'all', name: 'All Events' },
   { id: 'music', name: 'Music' },
@@ -16,120 +39,163 @@ const categories = [
   { id: 'sports', name: 'Sports' }
 ];
 
-const ITEMS_PER_PAGE = 6;
-
 const EventsPage = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('events');
-
-
-  const [currentPage, setCurrentPage] = useState(1);
-
-
-  const { userProfile, fetchUserProfile, handleLogout } = useUserStore();
-  const { events, isLoading, error, fetchAllEvents } = useAllEventsStore();
-  const { performers, fetchAllPerformers } = usePerformersStore();
+  const { userProfile, fetchUserProfile } = useUserStore();
   const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore();
+  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
+  const { performers, fetchAllPerformers } = usePerformersStore();
 
+  // Performer states
+  const [filteredPerformers, setFilteredPerformers] = useState<Performer[]>([]);
+  const [performerLoading, setPerformerLoading] = useState(true);
+  const [performerError, setPerformerError] = useState<string | null>(null);
+  const [performerTotalCount, setPerformerTotalCount] = useState(0);
+  const [performerCurrentPage, setPerformerCurrentPage] = useState(1);
+  const [performerTotalPages, setPerformerTotalPages] = useState(1);
+  const [performerSortOrder, setPerformerSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Event states
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
+  // Filter states
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-const [searchQuery, setSearchQuery] = useState<string>('');
-const [selectedCategory, setSelectedCategory] = useState<string>('all');
-const [page,setpage]=useState<number>(1)
-const [Count,setCount]=useState<number>(0)
+  // Fetch events with filters
+  const fetchFilteredEvents = async () => {
+ 
+    
+    if (!userProfile?.id) {
+      console.log('User profile not yet loaded');
+      return;
+    }
 
-
-
-
-
-
-
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
-  useChatNotifications();
-  useEffect(() => {
-    fetchAllEvents();
-    fetchAllPerformers();
-  }, [fetchAllEvents, fetchAllPerformers]);
-  useEffect(() => {
-    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
-  }, [fetchNotifications]);
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      await fetchUserProfile();
-    };
-    loadUserProfile();
-  }, [fetchUserProfile]);
-
-  useEffect(() => {
-    fetchfavoriteEvents();
-  }, [fetchfavoriteEvents]);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(prev => !prev);
+    setIsLoading(true);
+    setError(null);
+  
+    try {
+    
+      const response = await axiosInstance.get(`/getFilteredEvents/${userProfile?.id}`, {
+        params: {
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          order: sortOrder,
+          page: currentPage,
+          search: searchQuery || undefined,
+        },
+      });
+  
+      if (response.data) {
+        setEvents(response.data.events || []);
+        setTotalCount(response.data.totalCount || 0);
+        setCurrentPage(response.data.currentPage || 1);
+        const pages = Math.ceil(response.data.totalCount / 6);
+        setTotalPages(pages || 1);
+      } else {
+        setEvents([]);
+        setTotalCount(0);
+        setTotalPages(1);
+      }
+    } catch (err) {
+      setError('Error fetching events');
+      setEvents([]);
+      setTotalCount(0);
+      setTotalPages(1);
+    } finally {
+      setIsLoading(false);
+    }
   };
-useEffect(()=>{
-  console.log('helo');
-  getFilteredEvents()
+
+  // Fetch performers with filters
+  const fetchFilteredPerformers = async () => {
+    if (!userProfile?.id) {
+      console.log('User profile not yet loaded');
+      return;
+    }
+
+    setPerformerLoading(true);
+    setPerformerError(null);
+    
+    try {
+      const response = await axiosInstance.get(`/getFilteredPerformers/${userProfile.id}`, {
+        params: {
+          order: performerSortOrder,
+          page: performerCurrentPage,
+          search: searchQuery || undefined,
+        },
+      });
   
-})
+      if (response.data) {
+        setFilteredPerformers(response.data.performers || []);
+        setPerformerTotalCount(response.data.totalCount || 0);
+        setPerformerCurrentPage(response.data.currentPage || 1);
+        const pages = Math.ceil(response.data.totalCount / 6);
+        setPerformerTotalPages(pages || 1);
+      } else {
+        setFilteredPerformers([]);
+        setPerformerTotalCount(0);
+        setPerformerTotalPages(1);
+      }
+    } catch (err) {
+      setPerformerError('Error fetching performers');
+      setFilteredPerformers([]);
+      setPerformerTotalCount(0);
+      setPerformerTotalPages(1);
+    } finally {
+      setPerformerLoading(false);
+    }
+  };
 
-const getFilteredEvents = async () => {
-  try {
-    const response = await axiosInstance.get('/getFilteredEvents', {
-      params: {
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        order: sortOrder, 
-        page: page,
-        search: searchQuery || undefined, 
-      },
-    });
+  // Initial data loading
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await fetchUserProfile();
+        await Promise.all([
+          fetchNotifications(),
+          fetchfavoriteEvents(),
+          fetchAllPerformers()
+        ]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    
+    loadInitialData();
+  }, []);
 
+  // Effect for events
+  useEffect(() => {
+    if (userProfile?.id) {
+      fetchFilteredEvents();
+    }
+  }, [userProfile?.id, selectedCategory, sortOrder, currentPage, searchQuery]);
 
-    const { events, totalCount, currentPage, totalPages } = response.data;
-    setCount(totalCount)
-    console.log({ events, totalCount, currentPage, totalPages });
-  } catch (error) {
-    console.error('Error fetching filtered events:', error);
-  }
-};
+  // Effect for performers
+  useEffect(() => {
+    if (userProfile?.id && activeTab === 'performers') {
+      fetchFilteredPerformers();
+    }
+  }, [userProfile?.id, activeTab, performerCurrentPage, performerSortOrder, searchQuery]);
 
+  // Event handlers
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+    setPerformerCurrentPage(1);
+  };
 
-
-
-  
-
-  // Filter events based on category, search query, and sort by price
-  // Change the sort function in filteredAndSortedEvents
-  const filteredAndSortedEvents = events
-  .filter(event => {
-    const matchesCategory = selectedCategory === 'all' || event.category.toLowerCase() === selectedCategory;
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const isActive = event.status === 'active';
-    return matchesCategory && matchesSearch && isActive;
-  })
-  .sort((a, b) => {
-   
-    return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-  });
-
-
-  const filteredPerformers = performers.filter(performer => 
-    performer.bandName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-const totalPages = Math.ceil(Count /6);
-  // const totalPages = Math.ceil(filteredAndSortedEvents.length / ITEMS_PER_PAGE);
-  const paginatedEvents = filteredAndSortedEvents.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setCurrentPage(1);
   };
 
   const toggleSortOrder = () => {
@@ -137,19 +203,52 @@ const totalPages = Math.ceil(Count /6);
     setCurrentPage(1);
   };
 
+  const togglePerformerSortOrder = () => {
+    setPerformerSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setPerformerCurrentPage(1);
+  };
+
   const handleWishlist = async (id: string | undefined) => {
+    if (!userProfile?.id || !id) return;
+    
     try {
-      const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${id}`);
-      console.log('Wishlist updated:', response.data);
-      fetchfavoriteEvents(); // Refresh favorites after toggle
+      await axiosInstance.post(`/toggleFavoriteEvent/${userProfile.id}/${id}`);
+      await fetchfavoriteEvents();
     } catch (error) {
       console.error('Error toggling wishlist:', error);
     }
   };
 
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePerformerPageChange = (pageNumber: number) => {
+    setPerformerCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(prev => !prev);
+  };
+
+  // Loading state
+  if (!userProfile?.id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
+      {/* ... (keep existing navigation JSX) ... */}
       <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-6">
@@ -176,6 +275,7 @@ const totalPages = Math.ceil(Count /6);
             </a>
             <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
               About
+    
             </a>
             <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -226,7 +326,6 @@ const totalPages = Math.ceil(Count /6);
           </div>
         )}
       </nav>
-
       <main>
         {/* Header Section */}
         <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
@@ -242,14 +341,13 @@ const totalPages = Math.ceil(Count /6);
                   : "Search performers by band name..."}
                 className="w-full px-4 py-2 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
           </div>
         </header>
-
-        {/* Tab Navigation */}
-        <div className="bg-white shadow-sm">
+   {/* Tab Navigation */}
+   <div className="bg-white shadow-sm">
           <div className="container mx-auto px-4">
             <div className="flex justify-center space-x-8 py-4">
               <button
@@ -275,7 +373,6 @@ const totalPages = Math.ceil(Count /6);
             </div>
           </div>
         </div>
-
         <div className="container mx-auto px-4 py-8">
           {/* Events Section */}
           {activeTab === 'events' && (
@@ -285,7 +382,7 @@ const totalPages = Math.ceil(Count /6);
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => handleCategoryChange(category.id)}
                     className={`px-6 py-2 rounded-full transition duration-300 ${
                       selectedCategory === category.id
                         ? 'bg-blue-600 text-white'
@@ -303,16 +400,7 @@ const totalPages = Math.ceil(Count /6);
                   onClick={toggleSortOrder}
                   className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 mb-4 sm:mb-0"
                 >
-                  <span>Sort</span>
-                  {sortOrder === 'asc' ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  )}
+                  <span>Sort by Price: {sortOrder === 'asc' ? 'Low to High' : 'High to Low'}</span>
                 </button>
 
                 <div className="flex justify-center space-x-2">
@@ -344,9 +432,10 @@ const totalPages = Math.ceil(Count /6);
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {paginatedEvents.map((event) => (
+               
+                  {events.map((event) => (
                     <div key={event._id} className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all hover:scale-105 relative">
-                      <button 
+                       <button 
                         onClick={() => handleWishlist(event._id)} 
                         className="absolute top-4 right-4 z-10 focus:outline-none"
                       >
@@ -413,7 +502,7 @@ const totalPages = Math.ceil(Count /6);
               )}
 
               {/* No Events Results Message */}
-              {!isLoading && !error && paginatedEvents.length === 0 && (
+              {!isLoading && !error && events.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-600">No events found matching your criteria.</p>
                 </div>
@@ -421,42 +510,90 @@ const totalPages = Math.ceil(Count /6);
             </>
           )}
 
-          {/* Performers Section */}
-          {activeTab === 'performers' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPerformers.map((performer) => (
-                <div key={performer.userId} className="bg-white rounded-lg shadow-lg p-6 text-center">
-                  <img
-                    src={performer.profileImage || '/default-profile.jpg'}
-                    alt={performer.bandName}
-                    className="w-32 h-32 rounded-full mx-auto mb-4"
-                  />
-                  <h3 className="text-xl font-semibold">{performer.bandName}</h3>
-                  <p className="text-gray-600">{performer.description}</p>
-                  <p className="text-gray-600"><strong>Location:</strong> {performer.place}</p>
-                  <p className="text-gray-600"><strong>Rating:</strong> {performer.rating} / 5</p>
-                  <button
-                    onClick={() => router.push(`/events/${performer.userId}`)}
-                    className="mt-4 w-full bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
-                  >
-                    View Profile
-                  </button>
-                </div>
-              ))}
+{activeTab === 'performers' && (
+    <>
+      {/* Sorting and Pagination Controls for Performers */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+        <button
+          onClick={togglePerformerSortOrder}
+          className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 mb-4 sm:mb-0"
+        >
+          <span>Sort by Rating: {performerSortOrder === 'asc' ? 'Low to High' : 'High to Low'}</span>
+        </button>
 
-              {/* No Performers Results Message */}
-              {filteredPerformers.length === 0 && (
-                <div className="text-center py-12 col-span-3">
-                  <p className="text-gray-600">No performers found matching your criteria.</p>
-                </div>
-              )}
+        <div className="flex justify-center space-x-2">
+          {Array.from({ length: performerTotalPages }, (_, i) => i + 1).map((pageNum) => (
+            <button
+              key={pageNum}
+              onClick={() => handlePerformerPageChange(pageNum)}
+              className={`px-3 py-1 rounded-md ${
+                performerCurrentPage === pageNum
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Performers Grid */}
+      {performerLoading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading performers...</p>
+        </div>
+      ) : performerError ? (
+        <div className="text-center py-12">
+          <p className="text-red-600">{performerError}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredPerformers.map((performer) => (
+            <div key={performer.userId} className="bg-white rounded-lg shadow-lg p-6 text-center transform transition-all hover:scale-105">
+              <img
+                src={performer.profileImage || '/default-profile.jpg'}
+                alt={performer.bandName}
+                className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+              />
+              <h3 className="text-xl font-semibold mb-2">{performer.bandName}</h3>
+              <p className="text-gray-600 mb-3">{performer.description}</p>
+              <div className="flex items-center justify-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span className="ml-1 text-gray-600">{performer.rating.toFixed(1)}</span>
+              </div>
+              <p className="text-gray-600 mb-4"><strong>Location:</strong> {performer.place}</p>
+              <button
+                onClick={() => router.push(`/events/${performer.userId}`)}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+              >
+                View Profile
+              </button>
             </div>
-          )}
+          ))}
+        </div>
+      )}
+
+      {/* No Performers Results Message */}
+      {!performerLoading && !performerError && filteredPerformers.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-600">No performers found matching your criteria.</p>
+        </div>
+      )}
+    </>
+  )}
+  
         </div>
       </main>
 
       <footer className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-8 mt-16">
         <p>&copy; 2024 BookItNow. All rights reserved.</p>
+        <h1>he;{totalCount}</h1>
+   
+      
       </footer>
     </div>
   );
