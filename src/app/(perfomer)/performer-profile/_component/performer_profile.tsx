@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, History, LogOut, Music, Star, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/component/ui/card';
-import { PerformerDetails, PerformerStats } from '@/types/store';
+import { PerformerDetails } from '@/types/store';
 import usePerformerStore from '@/store/usePerformerStore';
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import ChangePasswordForm from '@/component/changepassword';
 import EditPerformerProfileForm from '@/component/editPerformerProfile';
+import { useEventHistory } from '@/store/usePerformerEventHistory';
+import { useUpcomingEventsStore } from '@/store/useperformerupcomingevent';
+import useUserStore from '@/store/useUserStore';
+import usePerformerAllDetails from '@/store/usePerformerAllDetails';
 
 interface StatCardProps {
   icon: React.ElementType;
@@ -25,7 +29,6 @@ interface ProfileButtonProps {
 
 interface PerformerProfileProps {
   performerDetails: PerformerDetails | null;
-  stats?: PerformerStats;
   onUpdateProfile: () => void;
   onChangePassword: () => void;
 }
@@ -59,22 +62,34 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, variant, childre
 
 const PerformerProfile: React.FC<PerformerProfileProps> = ({
   performerDetails,
-  stats = {
-    upcomingEvents: 0,
-    pastEvents: 0,
-    walletBalance: 0,
-    totalReviews: 0
-  },
   onUpdateProfile,
   onChangePassword,
 }) => {
+  const { fetchAllEvents: fetchEventHistoryEvents, totalCount: eventHistoryTotalCount } = useEventHistory();
+  const { fetchAllEvents: fetchUpcomingEvents, totalCount: upcomingEventsTotalCount } = useUpcomingEventsStore();
+
+  const { performerAllDetails, fetchPerformerAllDetails } = usePerformerAllDetails();
+
+
+  const { userProfile } = useUserStore();
   const statCards = [
-    { icon: Calendar, label: 'Upcoming Events', value: stats.upcomingEvents },
-    { icon: History, label: 'Past Events', value: stats.pastEvents },
-    { icon: Wallet, label: 'Wallet Balance', value: `₹${stats.walletBalance}` },
+    { icon: Calendar, label: 'Upcoming Events', value: upcomingEventsTotalCount|| 10 },
+    { icon: History, label: 'Past Events', value:  eventHistoryTotalCount|| 0 },
+    { icon: Wallet, label: 'Wallet Balance', value: `₹${userProfile?.walletBalance?.toFixed(2) || '0.00'}` },
     { icon: Star, label: 'Total Reviews', value: performerDetails?.totalReviews || 0 },
   ];
+  useEffect(()=>{
+fetchEventHistoryEvents()
+fetchUpcomingEvents()
+  },[fetchEventHistoryEvents,fetchUpcomingEvents])
+  useEffect(() => {
+    const userId = usePerformerAllDetails.getState().getUserIdFromToken();
+    if (userId) {
+      fetchPerformerAllDetails(userId);
 
+   
+    }
+  }, []);
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       <div className="flex flex-col md:flex-row gap-6">
@@ -83,7 +98,7 @@ const PerformerProfile: React.FC<PerformerProfileProps> = ({
           {/* Profile Image */}
           <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
             <img
-              src={performerDetails?.imageUrl|| performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
+              src={performerDetails?.imageUrl || performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
               alt={performerDetails?.bandName || 'Profile Image'}
               className="object-cover w-full h-full"
             />
@@ -98,7 +113,6 @@ const PerformerProfile: React.FC<PerformerProfileProps> = ({
             <Music size={18} />
             <span>{performerDetails?.mobileNumber || 'Genre not specified'}</span>
           </div>
-         
 
           <div className="flex items-center gap-2 text-gray-600 mb-2">
             <Calendar size={18} />
@@ -141,13 +155,23 @@ const PerformerProfile: React.FC<PerformerProfileProps> = ({
 const PerformerProfileContainer: React.FC = () => {
   const router = useRouter();
   const { sidebarOpen, toggleSidebar } = useUIStore();
-  const { performerDetails, stats, fetchPerformerDetails, handleLogout: storeHandleLogout } = usePerformerStore();
+  const { performerDetails, fetchPerformerDetails } = usePerformerStore();
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
-
-  React.useEffect(() => {
-    fetchPerformerDetails();
-  }, [fetchPerformerDetails]);
+  const { userProfile, fetchUserProfile } = useUserStore();
+  const { totalCount, fetchAllEvents } = useUpcomingEventsStore();
+  const eventHistory = useEventHistory();
+  
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await Promise.all([
+        fetchPerformerDetails(),
+        fetchUserProfile(),
+        fetchAllEvents(),
+      ]);
+    };
+    loadInitialData();
+  }, [fetchPerformerDetails, fetchUserProfile, fetchAllEvents]);
 
   const handleUpdateProfile = () => {
     setIsEditProfileModalOpen(true);
@@ -156,9 +180,8 @@ const PerformerProfileContainer: React.FC = () => {
   const handleChangePassword = () => {
     setIsChangePasswordModalOpen(true);
   };
- 
+
   const handleLogout = () => {
-    console.log('enter logout');
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
       router.replace('/auth');
@@ -191,7 +214,6 @@ const PerformerProfileContainer: React.FC = () => {
         <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>
           <PerformerProfile
             performerDetails={performerDetails}
-            stats={stats}
             onUpdateProfile={handleUpdateProfile}
             onChangePassword={handleChangePassword}
           />
@@ -218,14 +240,14 @@ const PerformerProfileContainer: React.FC = () => {
             <div className="fixed inset-0 bg-black opacity-50 z-50" onClick={handleOverlayClick}></div>
             <div className="fixed inset-0 flex justify-center items-center z-50 p-4" onClick={handleOverlayClick}>
               <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-              <EditPerformerProfileForm
-  performerDetails={performerDetails}
-  onClose={() => setIsEditProfileModalOpen(false)}
-  onSuccess={() => {
-    setIsEditProfileModalOpen(false);
-    fetchPerformerDetails(); // Refresh profile data after update
-  }}
-/>
+                <EditPerformerProfileForm
+                  performerDetails={performerDetails}
+                  onClose={() => setIsEditProfileModalOpen(false)}
+                  onSuccess={() => {
+                    setIsEditProfileModalOpen(false);
+                    fetchPerformerDetails();
+                  }}
+                />
               </div>
             </div>
           </>

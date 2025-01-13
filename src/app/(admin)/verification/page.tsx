@@ -184,7 +184,7 @@ const Verification: React.FC = () => {
               { icon: faUsers, text: 'User Management', href: '/usermanagement' },
               { icon: faUsers, text: 'Events', href: '/eventmanagement' },
               { icon: faLock, text: 'Verification', href: '/verification' },
-              { icon: faWallet, text: 'Wallet', href: '#wallet' }
+              // { icon: faWallet, text: 'Wallet', href: '#wallet' }
             ].map((item, index) => (
               <li key={index}>
                 <a href={item.href} className="flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">

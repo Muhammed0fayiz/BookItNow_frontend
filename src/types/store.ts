@@ -245,6 +245,7 @@ export interface PerformerUpcomingEventsStore {
   fetchAllEvents: () => Promise<void>;
   removeUpcomingEvent: (eventId: string) => void;
   getUserIdFromToken: () => string | null;
+  
 }
 // types/store.ts
 export interface SlotMangement {

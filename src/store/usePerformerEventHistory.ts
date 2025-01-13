@@ -7,6 +7,8 @@ export const useEventHistory = create<PerformerUpcomingEventsStore>((set, get) =
   performerupcomingEvents: [],
   isLoading: false,
   error: null,
+  totalCount: 0,
+  
 
   // Fetch all upcoming events for the performer
   fetchAllEvents: async () => {
@@ -22,7 +24,8 @@ export const useEventHistory = create<PerformerUpcomingEventsStore>((set, get) =
           createdAt: new Date(event.createdAt).toISOString(),
           updatedAt: new Date(event.updatedAt).toISOString(),
         }));
-        set({ performerupcomingEvents: events, isLoading: false });
+        set({ performerupcomingEvents: events,
+          totalCount:response.data.totalCount, isLoading: false });
       } else {
         set({ error: 'Unable to fetch user ID from token', isLoading: false });
       }

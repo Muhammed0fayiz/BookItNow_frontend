@@ -16,6 +16,9 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
       if (userId) {
         const response = await axiosInstance.get(`/eventHistory/${userId}`,{withCredentials: true});
         // Transform the response data to match our interface if needed
+      console.log('dddd',response.data.totalCount,'erssfdsajf');
+      
+        
         const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
           ...event,
           // Ensure dates are properly formatted as strings
@@ -32,6 +35,9 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
       console.error('Error fetching upcoming events:', error);
     }
   },
+
+
+  
 
   getUserIdFromToken: () => {
     try {

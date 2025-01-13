@@ -2,15 +2,28 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faBars, faTimes, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '@/shared/axiousintance';
 import useAllEventsAdminStore from '@/store/useAllEventsAdmin';
 
 const EventManagement = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 10;
+  
   const router = useRouter();
   const { events, fetchAllEvents } = useAllEventsAdminStore();
+
+  // Calculate pagination values
+  const indexOfLastEvent = currentPage * eventsPerPage;
+  const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+  const currentEvents = events.slice(indexOfFirstEvent, indexOfLastEvent);
+  const totalPages = Math.ceil(events.length / eventsPerPage);
+
+  const handlePageChange = (pageNumber: React.SetStateAction<number>) => {
+    setCurrentPage(pageNumber);
+  };
 
   const handleLogout = async () => {
     try {
@@ -19,8 +32,6 @@ const EventManagement = () => {
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
-      } else {
-        console.error('Logout failed:', response.data.message);
       }
     } catch (error) {
       console.error('Error during logout:', error);
@@ -51,6 +62,7 @@ const EventManagement = () => {
   useEffect(() => {
     fetchAllEvents();
   }, [fetchAllEvents]);
+
   const blockunblock = async (_id: string | undefined) => {
     if (!_id) {
       console.error('Event ID is undefined. Cannot block/unblock event.');
@@ -58,22 +70,15 @@ const EventManagement = () => {
     }
   
     try {
-      console.log('Event ID:', _id);
-      
-      // Make the API call with the event ID
       const response = await axiosInstance.post(`/admin/blockUnblockEvents/${_id}`);
-  if(response.status==200){
- 
-    fetchAllEvents();
-  }
-      // Handle the response as needed
-      console.log(response.data);
+      if(response.status === 200) {
+        fetchAllEvents();
+      }
     } catch (error) {
       console.error('Error blocking/unblocking event:', error);
     }
   };
-  
-  
+
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   if (loading) {
@@ -111,7 +116,6 @@ const EventManagement = () => {
               { icon: faUsers, text: 'User Management', href: '/usermanagement' },
               { icon: faUsers, text: 'Events', href: '/eventmanagement' },
               { icon: faLock, text: 'Verification', href: '/verification' },
-              { icon: faWallet, text: 'Wallet', href: '#wallet' }
             ].map((item, index) => (
               <li key={index}>
                 <a href={item.href} className="flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
@@ -120,7 +124,6 @@ const EventManagement = () => {
                 </a>
               </li>
             ))}
-            {/* Logout item now triggers handleLogout */}
             <li>
               <button onClick={handleLogout} className="w-full text-left flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
                 <FontAwesomeIcon icon={faSignOutAlt} className="mr-3" />
@@ -140,14 +143,12 @@ const EventManagement = () => {
         </header>
 
         <main className="p-6">
-        
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white shadow rounded-lg">
               <thead>
                 <tr>
                   <th className="py-3 px-4 border-b">Title</th>
                   <th className="py-3 px-4 border-b">Category</th>
-                 
                   <th className="py-3 px-4 border-b">Price</th>
                   <th className="py-3 px-4 border-b">Status</th>
                   <th className="py-3 px-4 border-b">Team Leader</th>
@@ -157,42 +158,68 @@ const EventManagement = () => {
                 </tr>
               </thead>
               <tbody>
-  {events.map((event) => (
-    <tr key={event._id} className="border-b text-center">
-      <td className="py-3 px-4">{event.title}</td>
-      <td className="py-3 px-4">{event.category}</td>
-      <td className="py-3 px-4">{event.price}</td>
-      <td
-  className={`py-3 px-4 ${
-    event.isblocked ? "text-red-500" : "text-green-500"
-  }`}
->
-  {event.isblocked ? "Inactive" : "Active"}
-</td>
-
-      <td className="py-3 px-4">{event.teamLeader}</td>
-      <td className="py-3 px-4">{event.teamLeaderNumber}</td>
-      <td className="py-3 px-4">
-        <img src={event.imageUrl} alt={event.title} className="w-12 h-12 object-cover mx-auto" />
-      </td>
-      <td className="py-3 px-4">
-      <button 
-  onClick={() => blockunblock(event._id)}
-  className={`py-2 px-4 rounded font-semibold ${
-    event.isblocked
-      ? "bg-green-500 text-white hover:bg-green-600"
-      : "bg-red-500 text-white hover:bg-red-600"
-  }`}
->
-  {event.isblocked ? "Unblock" : "Block"}
-</button>
-
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                {currentEvents.map((event) => (
+                  <tr key={event._id} className="border-b text-center">
+                    <td className="py-3 px-4">{event.title}</td>
+                    <td className="py-3 px-4">{event.category}</td>
+                    <td className="py-3 px-4">{event.price}</td>
+                    <td className={`py-3 px-4 ${event.isblocked ? "text-red-500" : "text-green-500"}`}>
+                      {event.isblocked ? "Inactive" : "Active"}
+                    </td>
+                    <td className="py-3 px-4">{event.teamLeader}</td>
+                    <td className="py-3 px-4">{event.teamLeaderNumber}</td>
+                    <td className="py-3 px-4">
+                      <img src={event.imageUrl} alt={event.title} className="w-12 h-12 object-cover mx-auto" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <button 
+                        onClick={() => blockunblock(event._id)}
+                        className={`py-2 px-4 rounded font-semibold ${
+                          event.isblocked
+                            ? "bg-green-500 text-white hover:bg-green-600"
+                            : "bg-red-500 text-white hover:bg-red-600"
+                        }`}
+                      >
+                        {event.isblocked ? "Unblock" : "Block"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            <div className="mt-4 flex justify-center items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <FontAwesomeIcon icon={faChevronLeft} />
+              </button>
+              
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === index + 1
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <FontAwesomeIcon icon={faChevronRight} />
+              </button>
+            </div>
           </div>
         </main>
       </div>

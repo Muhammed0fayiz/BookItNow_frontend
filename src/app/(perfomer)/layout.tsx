@@ -44,14 +44,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
        
         try {
           
+
+          const isOnline = await axiosInstance.get(
+            `/checkOnline/${senderId}/${performerDetails?.PId}`
+          );
+if(isOnline.data.onlineUser==false){
+  const response = await axiosInstance.get(`/getUser/${senderId}`, { withCredentials: true });
+  const userData = response.data.response;
+  setNotifications(prev => [...prev, {
+    bandName: userData.username,
+    profileImage: userData.profileImage,
+    message: message
+  }]);
+}else{
+  console.log("User is online. Skipping performer data fetch.");
+}
           
-          const response = await axiosInstance.get(`/getUser/${senderId}`, { withCredentials: true });
-          const userData = response.data.response;
-          setNotifications(prev => [...prev, {
-            bandName: userData.username,
-            profileImage: userData.profileImage,
-            message: message
-          }]);
+         
         } catch (error) {
           console.error('Error fetching performer data:', error);
         }

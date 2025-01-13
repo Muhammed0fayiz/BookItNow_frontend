@@ -55,6 +55,20 @@ const Chat = () => {
   }, [fetchNotifications]);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   useEffect(() => {
     if (selectedChatRoom && socket) {
 
@@ -112,8 +126,13 @@ const Chat = () => {
           const response = await axiosInstance.get(
             `/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
           );
-          setMessages(response.data.data || []);
+
+        
           
+          setMessages(response.data.data || []);
+          const live=await axiosInstance.get(`/messageNotification/${userProfile.id}`)
+          // SUSTA
+          console.log('res',live);
         } catch (error) {
           console.error('Error fetching messages:', error);
         }

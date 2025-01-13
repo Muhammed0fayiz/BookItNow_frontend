@@ -6,13 +6,23 @@ import ChangePasswordForm from '@/component/changepassword';
 import useUserStore from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
 import { loginImage } from '@/datas/logindatas';
+
 import useChatNotifications from '@/store/useChatNotification';
+import { useUpcomingEventsStore } from '@/store/useUserUpcomingEvents';
+import { useUserEventHistory } from '@/store/useUserEventHistory';
+
 const Profile: React.FC = () => {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState<boolean>(false);
-
+  const { totalCount: upcomingEventsTotalCount, fetchAllEvents: fetchUpcomingEvents } = useUpcomingEventsStore();
+  const { totalCount: userEventHistoryTotalCount, fetchAllEvents: fetchUserEventHistory } = useUserEventHistory();
+  
+  // Now you can use the aliases:
+  console.log(upcomingEventsTotalCount, fetchUpcomingEvents);
+  console.log(userEventHistoryTotalCount, fetchUserEventHistory);
+  
   // Get values and actions from Zustand store
   const { 
     userProfile, 
@@ -32,7 +42,11 @@ const Profile: React.FC = () => {
       await fetchUserProfile();
     };
     loadUserProfile();
-  }, [fetchUserProfile]);
+    fetchUpcomingEvents();
+fetchUserEventHistory()
+
+    
+  }, [fetchUserProfile,,fetchUserEventHistory,fetchUpcomingEvents]);
 
   // Set up an interval to periodically refresh the profile data
   useEffect(() => {
@@ -244,12 +258,12 @@ const Profile: React.FC = () => {
               </div>
               <div className="text-center">
                 <i className="fas fa-calendar text-blue-500 text-2xl"></i>
-                <div className="text-3xl font-bold">5</div>
+                <div className="text-3xl font-bold">{upcomingEventsTotalCount}</div>
                 <div className="text-sm">Upcoming Events</div>
               </div>
               <div className="text-center">
                 <i className="fas fa-history text-pink-500 text-2xl"></i>
-                <div className="text-3xl font-bold">12</div>
+                <div className="text-3xl font-bold">{userEventHistoryTotalCount}</div>
                 <div className="text-sm">Event History</div>
               </div>
             </div>
