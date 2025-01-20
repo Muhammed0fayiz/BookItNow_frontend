@@ -25,7 +25,6 @@ const WalletPaymentModal: React.FC<WalletPaymentModalProps> = ({
          {/* Important Terms */}
          <div className="mb-6 bg-blue-50 p-4 rounded-lg">
             <h3 className="flex items-center gap-2 font-semibold text-blue-700 mb-3">
-        
               Important Terms
             </h3>
             <ul className="space-y-2 text-sm text-blue-600">

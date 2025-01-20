@@ -46,7 +46,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           
 
           const isOnline = await axiosInstance.get(
-            `/checkOnline/${senderId}/${performerDetails?.PId}`
+            `/chat/checkOnline/${senderId}/${performerDetails?.PId}`
           );
 if(isOnline.data.onlineUser==false){
   const response = await axiosInstance.get(`/getUser/${senderId}`, { withCredentials: true });
@@ -79,7 +79,7 @@ if(isOnline.data.onlineUser==false){
     const updateUserStatus = async () => {
       try {
         if (performerDetails?.PId) {
-          await axiosInstance.post(`/offlineUser/${performerDetails.PId}`);
+          await axiosInstance.post(`/chat/offlineUser/${performerDetails.PId}`);
           console.log('hel',performerDetails.PId)
         }
       } catch (error) {

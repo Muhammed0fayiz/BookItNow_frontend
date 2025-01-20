@@ -10,6 +10,7 @@ import RatingModal from '@/component/rating';
 import { loginImage } from '@/datas/logindatas';
 import useChatNotifications from '@/store/useChatNotification';
 import InitialLoading from '@/component/loading';
+import DescriptionViewer from '@/component/descriptionViewer';
 const EventHistory: React.FC = () => {
   const router = useRouter();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -75,7 +76,7 @@ const EventHistory: React.FC = () => {
 
   const handleRemoveFavorite = async (eventId: string) => {
     try {
-      const response = await axiosInstance.post(`/toggleFavoriteEvent/${userProfile?.id}/${eventId}`);
+      const response = await axiosInstance.post(`/userEvent/toggleFavoriteEvent/${userProfile?.id}/${eventId}`);
       
       if (response.status === 200) {
       
@@ -263,7 +264,7 @@ const EventHistory: React.FC = () => {
                     {event.title}
                   </h3>
                   <p className="text-gray-600 text-xs mb-3 line-clamp-2">
-                    {event.description}
+                  <DescriptionViewer description={event.description} maxLength={20} />
                   </p>
 
                   {/* Event Details */}

@@ -44,7 +44,7 @@ export const SocketContextProvider: React.FC<SocketContextProviderProps> = ({ ch
     socketInstance.on("connect", () => {
       console.log("Socket connected!");
     
-      const userId = localStorage.getItem("userId"); // Get userId from localStorage
+      const userId = localStorage.getItem("userId"); 
       console.log(userId,'is')
       if (userId) {
         socketInstance.emit("userConnected", userId);
@@ -61,7 +61,7 @@ export const SocketContextProvider: React.FC<SocketContextProviderProps> = ({ ch
 
     setSocket(socketInstance);
 
-    // Cleanup function to remove event listeners and disconnect the socket
+  
     return () => {
       socketInstance.off("connect");
       socketInstance.off("getOnlineUsers");

@@ -33,7 +33,8 @@ const useAllEventsStore = create<EventsStore>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get(`/getAllEvents/${userId}`,{withCredentials: true});
+      const response = await axiosInstance.get(`/userEvent/getAllEvents/${userId}`,{withCredentials: true});
+console.log('res',response);
 
       if (response.status === 200) {
         set({

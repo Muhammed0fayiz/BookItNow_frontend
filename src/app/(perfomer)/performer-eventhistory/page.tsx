@@ -10,7 +10,7 @@ import usePerformerStore from '@/store/usePerformerStore';
 import useChatNotifications from '@/store/useChatNotification';
 import axiosInstance from '@/shared/axiousintance';
 import { useEventHistory } from '@/store/usePerformerEventHistory';
-
+import DescriptionViewer from '@/component/descriptionViewer';
 interface DashboardSectionProps {
   title: string;
   children: ReactNode;

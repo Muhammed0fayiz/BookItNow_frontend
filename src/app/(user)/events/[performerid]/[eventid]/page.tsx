@@ -1,17 +1,16 @@
-'use client'
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import useAllEventsStore from '@/store/useAllEvents';
-import usePerformersStore from '@/store/useAllPerformerStore';
-import { Calendar, MapPin, Clock, Share2, MessageCircle } from 'lucide-react';
-import useUserStore from '@/store/useUserStore';
-import axiosInstance from '@/shared/axiousintance';
-import EventPayment from '@/component/eventPayment';
-import BookingConfirmationModal from '@/component/bookingconfirmation';
-import axios from 'axios';
-import useChatNotifications from '@/store/useChatNotification';
-import WalletPaymentModal from '@/component/WalletPayment';
-
+"use client";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import useAllEventsStore from "@/store/useAllEvents";
+import usePerformersStore from "@/store/useAllPerformerStore";
+import { Calendar, MapPin, Clock, Share2, MessageCircle } from "lucide-react";
+import useUserStore from "@/store/useUserStore";
+import axiosInstance from "@/shared/axiousintance";
+import EventPayment from "@/component/eventPayment";
+import BookingConfirmationModal from "@/component/bookingconfirmation";
+import axios from "axios";
+import useChatNotifications from "@/store/useChatNotification";
+import WalletPaymentModal from "@/component/WalletPayment";
 
 const EventDetailsPage = () => {
   const router = useRouter();
@@ -25,29 +24,28 @@ const EventDetailsPage = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-const [paymentError, setPaymentError] = useState('');
-const [showConfirmation, setShowConfirmation] = useState(false);
-const [availabilityError, setAvailabilityError] = useState('');
-const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
   // Form state
-  
+
   const [formData, setFormData] = useState({
-    place: '',
-    date: '',
-    time: ''
+    place: "",
+    date: "",
+    time: "",
   });
-  const { 
-    userProfile, 
-  
-    fetchUserProfile, 
-   
+  const {
+    userProfile,
+
+    fetchUserProfile,
   } = useUserStore();
   // Validation state
   const [errors, setErrors] = useState({
-    place: '',
-    date: '',
-    time: ''
+    place: "",
+    date: "",
+    time: "",
   });
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -55,10 +53,12 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
     };
     loadUserProfile();
   }, [fetchUserProfile]);
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
-  useChatNotifications();
+  const { totalUnreadMessage, notifications, fetchNotifications } =
+    useChatNotifications();
   useEffect(() => {
-    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+    fetchNotifications().catch((err) =>
+      console.error("Error fetching notifications:", err)
+    );
   }, [fetchNotifications]);
   useEffect(() => {
     fetchAllEvents();
@@ -68,223 +68,299 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
-  
-  const event = events.find(e => e._id === eventId);
-  const performer = performers.find(p => p.userId === performerId);
 
+  const event = events.find((e) => e._id === eventId);
+
+  console.log("events", event);
+  console.log("performerid", performerId);
+
+  const performer = performers.find((p) => p.userId === performerId);
+  console.log("performer", performer);
   // Form validation function
   const validateForm = () => {
     let isValid = true;
     const newErrors = {
-      place: '',
-      date: '',
-      time: ''
+      place: "",
+      date: "",
+      time: "",
     };
-  
+
     // Place validation
     if (!formData.place.trim()) {
-      newErrors.place = 'Place is required';
+      newErrors.place = "Place is required";
       isValid = false;
     } else if (formData.place.trim().length < 3) {
-      newErrors.place = 'Place must be at least 3 characters';
+      newErrors.place = "Place must be at least 3 characters";
       isValid = false;
     }
-  
+
     // Date validation
     if (!formData.date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = "Date is required";
       isValid = false;
     } else {
       const selectedDate = new Date(formData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-  
+
       // Check if the selected date is in the past
       if (selectedDate < today) {
-        newErrors.date = 'Date cannot be in the past';
+        newErrors.date = "Date cannot be in the past";
         isValid = false;
       } else {
         // Calculate the date 5 days from today
         const minDate = new Date(today);
         minDate.setDate(today.getDate() + 5);
-  
+
         // Check if the selected date is at least 5 days after today
         if (selectedDate < minDate) {
-          newErrors.date = 'Date must be at least 5 days from today';
+          newErrors.date = "Date must be at least 5 days from today";
           isValid = false;
         }
       }
     }
-  
+
     // Time validation
     if (!formData.time) {
-      newErrors.time = 'Time is required';
+      newErrors.time = "Time is required";
       isValid = false;
     }
-  
+
     setErrors(newErrors);
     return isValid;
   };
-  
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-  
+
     // Reset previous availability error
-    setAvailabilityError('');
-  
+    setAvailabilityError("");
+
     if (validateForm()) {
       try {
-        const response = await axiosInstance.post('/checkavailable', {
+        const response = await axiosInstance.post(
+          "/userEvent/checkavailable",
+          {
+            formData: formData,
+            eventId: eventId,
+            performerId: performerId,
+            userId: userProfile?.id,
+          },
+          { withCredentials: true }
+        );
+
+        if (response.data.data === true) {
+          setShowConfirmation(true);
+        } else {
+          setAvailabilityError(
+            "This date is not available. Please choose another date."
+          );
+
+          // Clear the error message after 1 second
+          setTimeout(() => {
+            setAvailabilityError("");
+          }, 2000);
+        }
+      } catch (error) {
+        setAvailabilityError("Error checking availability. Please try again.");
+        console.error("Availability check failed:", error);
+
+        setTimeout(() => {
+          setAvailabilityError("");
+        }, 2000);
+      }
+    }
+  };
+  const handleWalletPaymentClick = async () => {
+    // Reset previous errors
+    setAvailabilityError("");
+    setPaymentError("");
+  
+    // First validate the form
+    if (!validateForm()) {
+      return; // Exit if validation fails
+    }
+  
+    // Check if event exists
+    if (!event) {
+      setPaymentError("Event details are missing");
+      return;
+    }
+  
+    try {
+      // Check availability first
+      const availabilityResponse = await axiosInstance.post(
+        "/userEvent/checkavailable",
+        {
           formData: formData,
           eventId: eventId,
           performerId: performerId,
           userId: userProfile?.id,
-        },{withCredentials:true});
+        },
+        { withCredentials: true }
+      );
   
-        if (response.data.data === true) {
-          setShowConfirmation(true);
-        } else {
-          setAvailabilityError('This date is not available. Please choose another date.');
-  
-          // Clear the error message after 1 second
-          setTimeout(() => {
-            setAvailabilityError('');
-          }, 1000);
+      if (availabilityResponse.data.data === true) {
+        // Check wallet balance
+        if (
+          !userProfile?.walletBalance ||
+          event.price * 0.1 > userProfile.walletBalance
+        ) {
+          setPaymentError("Insufficient wallet balance");
+          return;
         }
-      } catch (error) {
-        setAvailabilityError('Error checking availability. Please try again.');
-        console.error('Availability check failed:', error);
   
-
+        // If all validations pass, show the wallet payment modal
+        setShowWalletPaymentModal(true);
+      } else {
+        setAvailabilityError(
+          "This date is not available. Please choose another date."
+        );
         setTimeout(() => {
-          setAvailabilityError('');
-        }, 1000);
+          setAvailabilityError("");
+        }, 3000);
       }
+    } catch (error) {
+      setAvailabilityError("Error checking availability. Please try again.");
+      console.error("Availability check failed:", error);
+      setTimeout(() => {
+        setAvailabilityError("");
+      }, 2000);
     }
   };
+  
   const handleWalletPaymentConfirm = async () => {
     // Reset previous errors
-    setAvailabilityError('');
-    setPaymentError('');
-  
+    setAvailabilityError("");
+    setPaymentError("");
+
     // Check if event exists before proceeding
     if (!event) {
-      setPaymentError('Event details are missing');
+      setPaymentError("Event details are missing");
       setShowWalletPaymentModal(false);
       return;
     }
-  
+
     // Perform form validation first
     if (validateForm()) {
       try {
         // Check event availability
-        const response = await axiosInstance.post('/checkavailable', {
-          formData: formData,
-          eventId: eventId,
-          performerId: performerId,
-          userId: userProfile?.id,
-        },{withCredentials:true});
-  
+        const response = await axiosInstance.post(
+          "/userEvent/checkavailable",
+          {
+            formData: formData,
+            eventId: eventId,
+            performerId: performerId,
+            userId: userProfile?.id,
+          },
+          { withCredentials: true }
+        );
+
         if (response.data.data === true) {
           // Validate wallet balance
-          if (!userProfile?.walletBalance || 
-              (event.price * 0.1 > userProfile.walletBalance)) {
-            setPaymentError('Insufficient wallet balance');
+          if (
+            !userProfile?.walletBalance ||
+            event.price * 0.1 > userProfile.walletBalance
+          ) {
+            setPaymentError("Insufficient wallet balance");
             setShowWalletPaymentModal(false);
             return;
           }
-  
+
           // Proceed with wallet payment
           try {
-            const walletPaymentResponse = await axiosInstance.post('/walletPayment', {
-              formData: formData,
-              eventId: eventId,
-              performerId: performerId,
-              userId: userProfile?.id,
-              amount: event.price * 0.1,
-            },{withCredentials:true});
-  
+            const walletPaymentResponse = await axiosInstance.post(
+              "/userEvent/walletPayment",
+              {
+                formData: formData,
+                eventId: eventId,
+                performerId: performerId,
+                userId: userProfile?.id,
+                amount: event.price * 0.1,
+              },
+              { withCredentials: true }
+            );
+
             if (walletPaymentResponse.status === 200) {
               setShowWalletPaymentModal(false);
-              router.replace('/events/paymentsuccess');
+              router.replace("/events/paymentsuccess");
             }
           } catch (paymentError: unknown) {
             if (axios.isAxiosError(paymentError)) {
               if (paymentError.response) {
                 switch (paymentError.response.status) {
                   case 400:
-                    setPaymentError('Insufficient wallet balance');
+                    setPaymentError("Insufficient wallet balance");
                     break;
                   case 403:
-                    setPaymentError('Payment unauthorized');
+                    setPaymentError("Payment unauthorized");
                     break;
                   default:
-                    setPaymentError('Wallet payment failed. Please try again.');
+                    setPaymentError("Wallet payment failed. Please try again.");
                 }
               }
               // Hide wallet payment modal on any error
               setShowWalletPaymentModal(false);
             } else {
-              setPaymentError('An unexpected error occurred');
+              setPaymentError("An unexpected error occurred");
               // Hide wallet payment modal on any error
               setShowWalletPaymentModal(false);
             }
           }
         } else {
-          setAvailabilityError('This date is not available. Please choose another date.');
+          setAvailabilityError(
+            "This date is not available. Please choose another date."
+          );
           setShowWalletPaymentModal(false);
-          
+
           // Clear the error message after 1 second
           setTimeout(() => {
-            setAvailabilityError('');
+            setAvailabilityError("");
           }, 1000);
         }
       } catch (error) {
-        setAvailabilityError('Error checking availability. Please try again.');
+        setAvailabilityError("Error checking availability. Please try again.");
         setShowWalletPaymentModal(false);
-        console.error('Availability check failed:', error);
-  
+        console.error("Availability check failed:", error);
+
         setTimeout(() => {
-          setAvailabilityError('');
+          setAvailabilityError("");
         }, 1000);
       }
     }
   };
 
-  
-  const handleWalletPaymentClick = () => {
-    setShowWalletPaymentModal(true);
-  };
-  
-
   const handlePaymentSuccess = async (paymentIntent: any) => {
     try {
-      const response = await axiosInstance.post('/events/book', {
-        formData: formData,
-        eventId: eventId,
-        performerId: performerId,
-        userId: userProfile?.id,
-        paymentIntent: paymentIntent,
-      },{withCredentials:true});
-      
+      const response = await axiosInstance.post(
+        "/userEvent/events/book",
+        {
+          formData: formData,
+          eventId: eventId,
+          performerId: performerId,
+          userId: userProfile?.id,
+          paymentIntent: paymentIntent,
+        },
+        { withCredentials: true }
+      );
+
       if (response.status === 200) {
-        router.replace('/events/paymentsuccess');
+        router.replace("/events/paymentsuccess");
       }
     } catch (error) {
-      setPaymentError('Booking failed. Please try again.');
-      console.error('Booking failed:', error);
+      setPaymentError("Booking failed. Please try again.");
+      console.error("Booking failed:", error);
     }
   };
   const handleConfirmBooking = () => {
     setShowConfirmation(false);
     setShowPayment(true);
   };
-  
+
   const handleCancelBooking = () => {
     setShowConfirmation(false);
   };
-  
+
   const handlePaymentError = (error: React.SetStateAction<string>) => {
     setPaymentError(error);
     setShowPayment(true);
@@ -293,29 +369,26 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
 
-  // const handleLike = () => {
-  //   setIsLiked(!isLiked);
-  // };
+
 
   const handleShare = () => {
     // Add share functionality
-    console.log('Share clicked');
+    console.log("Share clicked");
   };
 
-  
   const goToPerformerPage = () => {
     router.push(`/events/${performer?.userId}`);
   };
@@ -332,13 +405,17 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
 
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Navbar */}
       <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-6">
-            <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
+            <a
+              href="/home"
+              className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300"
+            >
               BookItNow
             </a>
           </div>
@@ -353,29 +430,65 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
           </div>
 
           <div className="hidden md:flex items-center space-x-6">
-            <a href="/home" className="text-gray-700 hover:text-blue-600 transition duration-300">
+            <a
+              href="/home"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
               Home
             </a>
-            <a href="/events" className="text-blue-600 font-semibold transition duration-300">
+            <a
+              href="/events"
+              className="text-blue-600 font-semibold transition duration-300"
+            >
               Events
             </a>
-            <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
+            <a
+              href="/about"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
               About
             </a>
-            <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+            <a
+              href="/chat"
+              className="relative text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z"
+                />
               </svg>
               {totalUnreadMessage > 0 && (
-  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-    {totalUnreadMessage}
-  </span>
-)}
-
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                  {totalUnreadMessage}
+                </span>
+              )}
             </a>
-            <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z" />
+            <a
+              href="/profile"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z"
+                />
               </svg>
             </a>
           </div>
@@ -392,19 +505,34 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                 &times;
               </button>
               <div className="flex flex-col p-6">
-                <a href="/home" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/home"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   Home
                 </a>
-                <a href="/events" className="text-blue-600 font-semibold transition duration-300 mb-4">
+                <a
+                  href="/events"
+                  className="text-blue-600 font-semibold transition duration-300 mb-4"
+                >
                   Events
                 </a>
-                <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/about"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   About
                 </a>
-                <a href="/chat" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/chat"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   Chat
                 </a>
-                <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
+                <a
+                  href="/profile"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300"
+                >
                   Profile
                 </a>
               </div>
@@ -424,11 +552,11 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                 src={event.imageUrl}
                 alt={event.title}
                 className={`w-full h-full object-cover min-h-[500px] transition-transform duration-700 group-hover:scale-110 ${
-                  isImageLoaded ? 'opacity-100' : 'opacity-0'
+                  isImageLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={() => setIsImageLoaded(true)}
               />
-              
+
               {/* Floating Action Buttons */}
               <div className="absolute top-4 right-4 z-20 flex space-x-2">
                 <button
@@ -437,31 +565,14 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                 >
                   <Share2 className="h-5 w-5 text-gray-700" />
                 </button>
-                {/* <button
-                  onClick={handleLike}
-                  className={`p-3 ${isLiked ? 'bg-red-500' : 'bg-white/90'} backdrop-blur-md rounded-full shadow-lg hover:scale-110 transition-all duration-300`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-5 w-5 ${isLiked ? 'text-white' : 'text-gray-700'}`}
-                    fill={isLiked ? 'currentColor' : 'none'}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button> */}
               </div>
 
               {/* Price Tag */}
               <div className="absolute bottom-4 left-4 z-20">
                 <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg">
-                  <p className="text-2xl font-bold text-blue-600">₹{event.price}</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    ₹{event.price}
+                  </p>
                   <p className="text-sm text-gray-600">per booking</p>
                 </div>
               </div>
@@ -472,24 +583,39 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
               <div className="space-y-6">
                 {/* Title and Rating */}
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-3">{event.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-800 mb-3">
+                    {event.title}
+                  </h1>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center">
-                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="h-5 w-5 text-yellow-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      <span className="ml-1 font-semibold text-gray-800">{event.rating.toFixed(1)}</span>
+                      <span className="ml-1 font-semibold text-gray-800">
+                        {event.rating.toFixed(1)}
+                      </span>
                     </div>
                     <span className="text-gray-400">•</span>
-                    <span className="text-blue-600 font-semibold">{event.category}</span>
+                    <span className="text-blue-600 font-semibold">
+                      {event.category}
+                    </span>
                   </div>
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-600 leading-relaxed">{event.description}</p>
+                <p className="text-gray-600 leading-relaxed">
+                  {event.description}
+                </p>
 
                 {/* Event Details Form */}
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form
+                  onSubmit={handleSubmit}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
                   {/* Left side: Form */}
                   <div className="space-y-4">
                     {/* Place Input */}
@@ -502,11 +628,15 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                           value={formData.place}
                           onChange={handleInputChange}
                           placeholder="Enter place"
-                          className={`border ${errors.place ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          className={`border ${
+                            errors.place ? "border-red-500" : "border-gray-300"
+                          } rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
                       </div>
                       {errors.place && (
-                        <p className="text-red-500 text-sm ml-8">{errors.place}</p>
+                        <p className="text-red-500 text-sm ml-8">
+                          {errors.place}
+                        </p>
                       )}
                     </div>
 
@@ -519,28 +649,36 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                           name="date"
                           value={formData.date}
                           onChange={handleInputChange}
-                          className={`border ${errors.date ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          className={`border ${
+                            errors.date ? "border-red-500" : "border-gray-300"
+                          } rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
                       </div>
                       {errors.date && (
-                        <p className="text-red-500 text-sm ml-8">{errors.date}</p>
+                        <p className="text-red-500 text-sm ml-8">
+                          {errors.date}
+                        </p>
                       )}
                     </div>
 
                     {/* Time Input */}
                     <div className="space-y-2">
                       <div className="flex items-center space-x-3">
-                      <Clock className="h-5 w-5 text-blue-600" />
+                        <Clock className="h-5 w-5 text-blue-600" />
                         <input
                           type="time"
                           name="time"
                           value={formData.time}
                           onChange={handleInputChange}
-                          className={`border ${errors.time ? 'border-red-500' : 'border-gray-300'} rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          className={`border ${
+                            errors.time ? "border-red-500" : "border-gray-300"
+                          } rounded-md p-2 w-full text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
                       </div>
                       {errors.time && (
-                        <p className="text-red-500 text-sm ml-8">{errors.time}</p>
+                        <p className="text-red-500 text-sm ml-8">
+                          {errors.time}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -549,12 +687,14 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-5 w-5 text-blue-600" />
-                      <span className="text-gray-700">{new Date(event.createdAt).toLocaleDateString('en-US', { 
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}</span>
+                      <span className="text-gray-700">
+                        {new Date(event.createdAt).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <MapPin className="h-5 w-5 text-blue-600" />
@@ -569,7 +709,9 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
                 {/* Host Information */}
                 <div className="bg-gray-50 p-4 rounded-xl">
-                  <h2 className="text-xl font-semibold mb-3">Host Information</h2>
+                  <h2 className="text-xl font-semibold mb-3">
+                    Host Information
+                  </h2>
                   <div className="flex items-center space-x-4">
                     <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
                       <span className="text-blue-600 font-semibold text-lg">
@@ -577,7 +719,9 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                       </span>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">{event.teamLeader}</p>
+                      <p className="font-semibold text-gray-800">
+                        {event.teamLeader}
+                      </p>
                       <p className="text-gray-600">{event.teamLeaderNumber}</p>
                     </div>
                     <button
@@ -586,63 +730,74 @@ const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
                     >
                       View Profile →
                     </button>
-              
                   </div>
                 </div>
                 <div className="button-container">
-  {event.price * 0.1 <= (userProfile?.walletBalance ?? 0) && (
-    <button onClick={handleWalletPaymentConfirm}>💳 Pay with Wallet</button>
-  )}
-</div>
+                  {event.price * 0.1 <= (userProfile?.walletBalance ?? 0) && (
+                <button
+                onClick={handleWalletPaymentClick}
+                className="button-container"
+              >
+                💳 Pay with Wallet
+              </button>
+              
 
+
+
+
+
+                  )}
+                </div>
 
                 {availabilityError && (
-  <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-    {availabilityError}
-  </div>
-)}
+                  <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {availabilityError}
+                  </div>
+                )}
                 {/* Action Buttons */}
                 <div className="flex space-x-4 pt-4">
-                  <button 
+                  <button
                     onClick={handleSubmit}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     Book Now
                   </button>
-                 
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      {/* Add this before the final closing div */}
-      {/* Add this before EventPayment */}
-      <WalletPaymentModal 
-        show={showWalletPaymentModal} 
+    
+      <WalletPaymentModal
+        show={showWalletPaymentModal}
         onClose={() => setShowWalletPaymentModal(false)}
         onConfirm={handleWalletPaymentConfirm}
         amount={event?.price ? event.price * 0.1 : 0}
         walletBalance={userProfile?.walletBalance}
       />
 
-<BookingConfirmationModal 
-  show={showConfirmation}
-  onConfirm={handleConfirmBooking}
-  onCancel={handleCancelBooking}
-  eventPrice={event.price}
-/>
-<EventPayment 
-  amount={event.price*0.1}
+      <BookingConfirmationModal
+        show={showConfirmation}
+        onConfirm={handleConfirmBooking}
+        onCancel={handleCancelBooking}
+        eventPrice={event.price}
+      />
+   <EventPayment
+  amount={event.price * 0.1}
   show={showPayment}
   onSuccess={handlePaymentSuccess}
   onError={handlePaymentError}
+  onBack={() => {
+    setShowPayment(false);
+    setShowConfirmation(true);
+  }}
 />
-{paymentError && (
-  <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-    {paymentError}
-  </div>
-)}
+      {paymentError && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {paymentError}
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faInbox } from '@fortawesome/free-solid-svg-icons';
 import { Dialog, Transition } from '@headlessui/react';
 import axiosInstance from '@/shared/axiousintance';
+import VideoDescriptionModal from '@/component/videoDescriptionModal';
 
 type Performer = {
     id: string;
@@ -26,6 +27,8 @@ const Verification: React.FC = () => {
   const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
+
   const [rejectReason, setRejectReason] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rejectReasonError, setRejectReasonError] = useState('');
@@ -218,7 +221,7 @@ const Verification: React.FC = () => {
                       <th className="p-4">Submit Date</th>
                       <th className="p-4">Video</th>
                       <th className="p-4">Mobile Number</th>
-                      <th className="p-4">Description</th>
+                  
                       <th className="p-4">Status</th>
                     </tr>
                   </thead>
@@ -228,10 +231,29 @@ const Verification: React.FC = () => {
                         <td className="p-4">{performer.bandName}</td>
                         <td className="p-4">{new Date(performer.createdAt).toLocaleDateString()}</td>
                         <td className="p-4">
-                          <a href={performer.video} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View Video</a>
-                        </td>
+    <button
+      onClick={() => {
+        setSelectedPerformer(performer);
+        setIsVideoModalOpen(true);
+      }}
+      className="text-indigo-600 hover:text-indigo-800 underline"
+      type="button"
+    >
+      View Video
+    </button>
+  </td>
+
+
+                        
+
+
+
+
+
+
+
                         <td className="p-4">{performer.mobileNumber}</td>
-                        <td className="p-4">{performer.description}</td>
+                    
                         <td className="p-4">
                           {performer.isVerified && (
                             <span className="text-green-500 font-semibold">Approved</span>
@@ -276,7 +298,14 @@ const Verification: React.FC = () => {
           </div>
         </div>
       </div>
-
+      <VideoDescriptionModal
+    isOpen={isVideoModalOpen}
+    onClose={() => {
+      setIsVideoModalOpen(false);
+      setSelectedPerformer(null);
+    }}
+    performer={selectedPerformer}
+  />
       <Transition appear show={confirmationOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setConfirmationOpen(false)}>
           <Transition.Child

@@ -18,7 +18,7 @@ export const useFavoritesStore = create<FavoritesStore>((set, get) => ({
         return;
       }
   
-      const response = await axiosInstance.get(`/favorites/${userId}`, { withCredentials: true });
+      const response = await axiosInstance.get(`/userEvent/favorites/${userId}`, { withCredentials: true });
   
       if (response.status !== 200) {
         throw new Error(`Unexpected response status: ${response.status}`);

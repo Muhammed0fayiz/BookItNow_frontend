@@ -12,7 +12,7 @@ import { loginImage } from '@/datas/logindatas';
 import { Calendar } from 'lucide-react';
 import useChatNotifications from '@/store/useChatNotification';
 import InitialLoading from '@/component/loading';
-
+import DescriptionViewer from '@/component/descriptionViewer';
 const UpcomingEvents: React.FC = () => {
 
   const router = useRouter();
@@ -93,7 +93,7 @@ useChatNotifications();
       console.log('Fetching events for page:', page);
       setIsLoadingEvents(true);
       const response = await axiosInstance.get(
-        `/userUpcomingEvents/${userProfile?.id}?page=${page}`,
+        `/userEvent/userUpcomingEvents/${userProfile?.id}?page=${page}`,
         { withCredentials: true }
       );
   
@@ -127,7 +127,7 @@ useChatNotifications();
     try {
       setCancellingEventId(selectedEvent._id); 
       const response = await axiosInstance.post(
-        `/cancelevent/${selectedEvent._id}`,
+        `/userEvent/cancelevent/${selectedEvent._id}`,
         { withCredentials: true }
       );
       
@@ -351,7 +351,7 @@ useChatNotifications();
                     {event.title}
                   </h3>
                   <p className="text-gray-600 text-xs mb-3 line-clamp-2">
-                    {event.description}
+                  <DescriptionViewer description={event.description} maxLength={20} />
                   </p>
 
                   <div className="space-y-2">
@@ -445,7 +445,7 @@ useChatNotifications();
                   You don't have any upcoming events scheduled. Browse our events page to find something interesting!
                 </p>
                 <a 
-                  href="/home" 
+                  href="/events" 
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center space-x-2"
                 >
                   <i className="fas fa-search"></i>
@@ -453,9 +453,7 @@ useChatNotifications();
                 </a>
               </div>
             )}
-          </div>
-
-          {/* Enhanced Pagination */}
+               {/* Enhanced Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center space-x-2 mt-8 mb-6">
               <button
@@ -494,6 +492,9 @@ useChatNotifications();
               </button>
             </div>
           )}
+          </div>
+
+       
         </div>
       </div>
 

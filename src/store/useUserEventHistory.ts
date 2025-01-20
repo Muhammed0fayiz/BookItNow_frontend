@@ -14,7 +14,7 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
-        const response = await axiosInstance.get(`/eventHistory/${userId}`,{withCredentials: true});
+        const response = await axiosInstance.get(`/userEvent/eventHistory/${userId}`,{withCredentials: true});
         // Transform the response data to match our interface if needed
       console.log('dddd',response.data.totalCount,'erssfdsajf');
       

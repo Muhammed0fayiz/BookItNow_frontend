@@ -2,7 +2,6 @@
 
 import { useState, ChangeEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
 import { AxiosError } from 'axios';
 import axiosInstance from '@/shared/axiousintance';
 
@@ -13,6 +12,7 @@ const OtpPage = () => {
   const [timer, setTimer] = useState<number>(60);
   const [showVerifyButton, setShowVerifyButton] = useState<boolean>(true);
   const [showResendButton, setShowResendButton] = useState<boolean>(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,7 +41,12 @@ const OtpPage = () => {
   }, [timer]);
 
   const handleOtpChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setOtp(e.target.value);
+    const value = e.target.value;
+    setOtp(value);
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
   };
 
   const validateForm = (): boolean => {
@@ -62,7 +67,10 @@ const OtpPage = () => {
       try {
         const response = await axiosInstance.post('/verify-otp', { email, otp });
         console.log('OTP verification response:', response.data);
-        router.push('/auth');
+        setShowSuccessPopup(true);
+        setTimeout(() => {
+          router.push('/auth');
+        }, 1000);
       } catch (err) {
         handleAxiosError(err, 'OTP verification failed. Please try again.');
       }
@@ -110,6 +118,29 @@ const OtpPage = () => {
         <h1 className="text-3xl font-bold mb-6 text-center">Enter OTP</h1>
         {error && <p className="text-red-600 text-center mb-4">{error}</p>}
         {email && <p className="text-gray-600 text-center mb-4">Verifying OTP for: {email}</p>}
+        
+        {showSuccessPopup && (
+          <div className="mb-4 p-4 rounded-md bg-green-50 border border-green-500">
+            <div className="flex items-center">
+              <svg 
+                className="w-5 h-5 text-green-500 mr-2" 
+                fill="none" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h4 className="text-green-800 font-medium">Success!</h4>
+                <p className="text-green-700 text-sm">Sign up successful! Redirecting...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col">
           <input
             type="text"

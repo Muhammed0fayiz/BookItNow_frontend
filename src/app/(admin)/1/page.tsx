@@ -211,7 +211,7 @@ const EventManagement = () => {
                       <td className="py-3 px-4">{event.teamLeader}</td>
                       <td className="py-3 px-4">{event.teamLeaderNumber}</td>
                       <td className="py-3 px-4">
-  <DescriptionViewer description={event.description} maxLength={15} />
+  <DescriptionViewer description={event.description} maxLength={10} />
 </td>
                       <td className="py-3 px-4">
                         <img src={event.imageUrl} alt={event.title} className="w-12 h-12 object-cover mx-auto" />
@@ -268,7 +268,7 @@ const EventManagement = () => {
                 </button>
               </div>
             )}
-           
+                {/* Modal */}
      
           </div>
         </main>

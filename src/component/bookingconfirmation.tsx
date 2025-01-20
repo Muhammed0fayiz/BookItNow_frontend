@@ -16,7 +16,8 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
 }) => {
   if (!show) return null;
 
-  const advanceAmount = eventPrice * 0.1;
+const advanceAmount = eventPrice * 0.1;
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -59,14 +60,7 @@ const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
 
           {/* Price Breakdown */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-600">Advance Payment (10%)</span>
-              <span className="font-semibold">₹{advanceAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-600">App Fee</span>
-              <span className="font-semibold">₹10.00</span>
-            </div>
+         
             <div className="flex justify-between items-center py-2 text-lg font-bold">
               <span>Total Amount Due Now</span>
               <span>₹{(advanceAmount).toFixed(2)}</span>

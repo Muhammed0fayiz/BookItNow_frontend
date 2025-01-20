@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState, useRef } from 'react';
-import axiosInstance from '@/shared/axiousintance';
-import useUserStore from '@/store/useUserStore';
-import useChatRooms from '@/store/chatstore';
-import mongoose from 'mongoose';
-import { Send } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
-import useChatNotifications from '@/store/useChatNotification';
-import useSocketStore from '@/store/useSocketStore ';
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
+import axiosInstance from "@/shared/axiousintance";
+import useUserStore from "@/store/useUserStore";
+import useChatRooms from "@/store/chatstore";
+import mongoose from "mongoose";
+import { Send } from "lucide-react";
+import { io, Socket } from "socket.io-client";
+import useChatNotifications from "@/store/useChatNotification";
+import useSocketStore from "@/store/useSocketStore ";
 
 // Updated Message interface to match backend structure
 interface Message {
@@ -28,7 +28,7 @@ interface Message {
 export interface ChatRoom {
   profileImage: string;
   userName: string;
-  performerName: string; 
+  performerName: string;
   myId: string;
   otherId: string;
 }
@@ -36,12 +36,14 @@ export interface ChatRoom {
 const Chat = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(
+    null
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
-  useChatNotifications();
+  const { totalUnreadMessage, notifications, fetchNotifications } =
+    useChatNotifications();
   const { fetchUserProfile, userProfile } = useUserStore();
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
   const { socket } = useSocketStore();
@@ -50,59 +52,49 @@ const Chat = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  useEffect(() => {
-    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
-  }, [fetchNotifications]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   useEffect(() => {
     if (selectedChatRoom && socket) {
-
       // Updated message handling logic
-      socket.on('receiveMessage', ({ senderId, message }) => {
-        // Only add message if it's from the currently selected chat room
+      socket.on("receiveMessage", ({ senderId, message }) => {
+     
         if (selectedChatRoom.otherId === senderId) {
-          setMessages(prevMessages => [...prevMessages, {
-            _id: new mongoose.Types.ObjectId().toString(),
-            roomId: selectedChatRoom.otherId,
-            senderId: new mongoose.Types.ObjectId(senderId),
-            receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-            message: message,
-            timestamp: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            __v: 0,
-            role: 'receiver'
-          }]);
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              _id: new mongoose.Types.ObjectId().toString(),
+              roomId: selectedChatRoom.otherId,
+              senderId: new mongoose.Types.ObjectId(senderId),
+              receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+              message: message,
+              timestamp: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              __v: 0,
+              role: "receiver",
+            },
+          ]);
         } else {
           // Optionally, you could update a notification counter for the other chat room
-          console.log(`Received message from ${senderId} while chatting with ${selectedChatRoom.otherId}`);
+          console.log(
+            `Received message from ${senderId} while chatting with ${selectedChatRoom.otherId}`
+          );
         }
       });
     }
 
     return () => {
       if (socket) {
-        socket.off('receiveMessage');
+        socket.off("receiveMessage");
       }
     };
-  }, [selectedChatRoom,socket]);
-
-
+  }, [selectedChatRoom, socket]);
+  useEffect(() => {
+    fetchNotifications().catch((err) =>
+      console.error("Error fetching notifications:", err)
+    );
+  }, [fetchNotifications]);
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
@@ -122,19 +114,21 @@ const Chat = () => {
     const fetchMessages = async () => {
       if (selectedChatRoom && userProfile?.id) {
         try {
-          const online=await axiosInstance.post(`/onlineUser/${userProfile.id}/${selectedChatRoom.otherId}`)
+          const online = await axiosInstance.post(
+            `/chat/onlineUser/${userProfile.id}/${selectedChatRoom.otherId}`
+          );
           const response = await axiosInstance.get(
-            `/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
+            `/chat/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
           );
 
-        
-          
           setMessages(response.data.data || []);
-          const live=await axiosInstance.get(`/messageNotification/${userProfile.id}`)
+          const live = await axiosInstance.get(
+            `/chat/messageNotification/${userProfile.id}`
+          );
           // SUSTA
-          console.log('res',live);
+          console.log("res", live);
         } catch (error) {
-          console.error('Error fetching messages:', error);
+          console.error("Error fetching messages:", error);
         }
       }
     };
@@ -142,53 +136,55 @@ const Chat = () => {
   }, [selectedChatRoom, userProfile]);
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
-  const profilePage = () => router.replace('/profile');
+  const profilePage = () => router.replace("/profile");
 
   const handleSendMessage = async () => {
     if (newMessage.trim() && selectedChatRoom) {
       try {
         if (!userProfile?.id) {
-          console.error('User profile not found');
+          console.error("User profile not found");
           return;
         }
         await axiosInstance.post(
-          `/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
+          `/chat/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
           { message: newMessage }
         );
-        const messageData = { senderId :userProfile.id, receiverId:selectedChatRoom.otherId, newMessage };
+        const messageData = {
+          senderId: userProfile.id,
+          receiverId: selectedChatRoom.otherId,
+          newMessage,
+        };
 
-        if(socket)
-
-          socket.emit('sendMessage', {
+        if (socket)
+          socket.emit("sendMessage", {
             senderId: selectedChatRoom.myId,
             receiverId: selectedChatRoom.otherId,
-            message: newMessage
+            message: newMessage,
           });
-        
-        
+
         // Optimistically add the new message to the messages array
         const newMessageObj: Message = {
           _id: `temp-${Date.now()}`,
-          roomId: '', // You might want to set this appropriately
+          roomId: "", // You might want to set this appropriately
           senderId: new mongoose.Types.ObjectId(userProfile.id),
           receiverId: new mongoose.Types.ObjectId(selectedChatRoom.otherId),
           message: newMessage,
           timestamp: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
-          __v: 0
+          __v: 0,
         };
-        
-        setMessages(prevMessages => [...prevMessages, newMessageObj]);
-        setNewMessage('');
+
+        setMessages((prevMessages) => [...prevMessages, newMessageObj]);
+        setNewMessage("");
       } catch (error) {
-        console.error('Error sending message:', error);
+        console.error("Error sending message:", error);
       }
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSendMessage();
     }
   };
@@ -200,7 +196,10 @@ const Chat = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           {/* Left Side: Logo */}
           <div className="flex items-center space-x-6">
-            <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
+            <a
+              href="/home"
+              className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300"
+            >
               BookItNow
             </a>
           </div>
@@ -217,31 +216,66 @@ const Chat = () => {
 
           {/* Full Navbar for Large Devices */}
           <div className="hidden md:flex items-center space-x-6">
-            <a href="/home" className="text-blue-600 font-semibold transition duration-300">
+            <a
+              href="/home"
+              className="text-blue-600 font-semibold transition duration-300"
+            >
               Home
             </a>
-            <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300">
+            <a
+              href="/events"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
               Events
-             
             </a>
-           
 
-            <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
+            <a
+              href="/about"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
               About
             </a>
-            <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+            <a
+              href="/chat"
+              className="relative text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z"
+                />
               </svg>
               {totalUnreadMessage > 0 && (
-  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-    {totalUnreadMessage}
-  </span>
-)}
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                  {totalUnreadMessage}
+                </span>
+              )}
             </a>
-            <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z" />
+            <a
+              href="/profile"
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z"
+                />
               </svg>
             </a>
           </div>
@@ -258,19 +292,34 @@ const Chat = () => {
                 &times;
               </button>
               <div className="flex flex-col p-6">
-                <a href="/" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   Home
                 </a>
-                <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/events"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   Events
                 </a>
-                <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/about"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   About
                 </a>
-                <a href="/chat" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
+                <a
+                  href="/chat"
+                  className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4"
+                >
                   Chat
                 </a>
-                <a  className="text-gray-700 hover:text-blue-600 transition duration-300"onClick={profilePage}>
+                <a
+                  className="text-gray-700 hover:text-blue-600 transition duration-300"
+                  onClick={profilePage}
+                >
                   Profile
                 </a>
               </div>
@@ -292,82 +341,90 @@ const Chat = () => {
                     onClick={() => setSelectedChatRoom(chatRoom)}
                     className={`p-2 cursor-pointer rounded-md transition-colors duration-200 flex items-center ${
                       selectedChatRoom?.otherId === chatRoom.otherId
-                        ? 'bg-blue-100 font-semibold'
-                        : 'hover:bg-gray-200'
+                        ? "bg-blue-100 font-semibold"
+                        : "hover:bg-gray-200"
                     }`}
                   >
-                    <img 
-                      src={chatRoom.profileImage} 
-                      alt={chatRoom.userName} 
+                    <img
+                      src={chatRoom.profileImage}
+                      alt={chatRoom.userName}
                       className="w-10 h-10 rounded-full mr-3"
                     />
                     <div>
                       <div>{chatRoom.userName}</div>
-                      <div className="text-xs text-gray-500">{chatRoom.performerName}</div>
+                      <div className="text-xs text-gray-500">
+                        {chatRoom.performerName}
+                      </div>
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
-            
+
             {/* Chat Section */}
             <div className="w-3/4 p-4 flex flex-col">
               {/* Chat Header */}
               {selectedChatRoom && (
                 <div className="bg-blue-50 p-3 rounded-t-lg border-b mb-4 flex items-center">
-                  <img 
-                    src={selectedChatRoom.profileImage} 
-                    alt={selectedChatRoom.userName} 
+                  <img
+                    src={selectedChatRoom.profileImage}
+                    alt={selectedChatRoom.userName}
                     className="w-12 h-12 rounded-full mr-4"
                   />
                   <div>
                     <h2 className="text-xl font-bold text-blue-800">
                       {selectedChatRoom.userName}
-                      
                     </h2>
-                    <p className="text-sm text-gray-600">{selectedChatRoom.performerName}</p>
+                    <p className="text-sm text-gray-600">
+                      {selectedChatRoom.performerName}
+                    </p>
                   </div>
                 </div>
               )}
-              
-              {/* Messages Container */}
-          {/* Messages Container */}
-<div className="flex-grow h-80 overflow-y-auto border rounded-md p-4 bg-gray-50 space-y-3">
-  {!selectedChatRoom ? (
-    <p className="text-gray-700 text-center font-medium">
-      <span className="text-blue-500 font-bold">BookItNow</span> provides an interactive{" "}
-      <span className="text-green-500">chatting feature</span>. You can easily chat with the{" "}
-      <span className="text-purple-500">Performer</span> to discuss details and more.
-    </p>
-  ) : (
-    messages.map((message) => (
-      <div 
-        key={message._id} 
-        className={`flex ${
-          message.senderId.toString() === userProfile?.id 
-            ? 'justify-end' 
-            : 'justify-start'
-        }`}
-      >
-        <div 
-          className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
-            message.senderId.toString() === userProfile?.id 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-gray-200 text-black'
-          }`}
-        >
-          {message.message}
-          <div className="text-xs mt-1 opacity-70 text-right">
-            {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-          </div>
-        </div>
-      </div>
-    ))
-  )}
-  <div ref={messagesEndRef} />
-</div>
 
-              
+              {/* Messages Container */}
+              {/* Messages Container */}
+              <div className="flex-grow h-80 overflow-y-auto border rounded-md p-4 bg-gray-50 space-y-3">
+                {!selectedChatRoom ? (
+                  <p className="text-gray-700 text-center font-medium">
+                    <span className="text-blue-500 font-bold">BookItNow</span>{" "}
+                    provides an interactive{" "}
+                    <span className="text-green-500">chatting feature</span>.
+                    You can easily chat with the{" "}
+                    <span className="text-purple-500">Performer</span> to
+                    discuss details and more.
+                  </p>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message._id}
+                      className={`flex ${
+                        message.senderId.toString() === userProfile?.id
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[70%] p-3 rounded-lg shadow-sm ${
+                          message.senderId.toString() === userProfile?.id
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-black"
+                        }`}
+                      >
+                        {message.message}
+                        <div className="text-xs mt-1 opacity-70 text-right">
+                          {new Date(message.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
               {/* Message Input */}
               {selectedChatRoom && (
                 <div className="mt-4 flex">
@@ -385,7 +442,6 @@ const Chat = () => {
                   >
                     <Send size={24} />
                   </button>
-                
                 </div>
               )}
             </div>

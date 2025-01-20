@@ -36,7 +36,7 @@ const useChatNotifications = create<ChatNotificationsState>((set) => ({
       const response = await axiosInstance.get<{
           data: { totalCount: any; notifications: any; }; totalCount: number; notifications: ChatNotification[] 
 }>(
-        `/messageNotification/${id}`,
+        `/chat/messageNotification/${id}`,
         { withCredentials: true }
       );
 

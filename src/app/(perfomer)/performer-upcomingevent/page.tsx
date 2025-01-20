@@ -84,7 +84,7 @@ const UpcomingEvents: React.FC = () => {
     }
 
     try {
-      const response = await axiosInstance.post(`/performer/cancelevent/${eventId}`,{withCredentials:true});
+      const response = await axiosInstance.post(`/performerEvent/cancelevent/${eventId}`,{withCredentials:true});
   
       if (response.status === 200) {
         console.log("Event canceled successfully:", response.data);
@@ -131,7 +131,7 @@ const UpcomingEvents: React.FC = () => {
       console.log('Fetching events for page:', page);
       setIsLoadingEvents(true);
       const response = await axiosInstance.get(
-        `/performer/performerUpcomingEvents/${performerDetails?.PId}?page=${page}`,
+        `/performerEvent/performerUpcomingEvents/${performerDetails?.PId}?page=${page}`,
         { withCredentials: true }
       );
   

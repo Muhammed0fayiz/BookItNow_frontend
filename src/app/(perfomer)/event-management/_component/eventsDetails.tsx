@@ -5,11 +5,13 @@ import { Menu, MessageCircle, Plus, Edit2, Trash2, Phone, Star } from 'lucide-re
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import { useChatStore } from '@/store/useChatStore';
-import useEventManagerStore from '@/store/useEventManagerStore';
+
 import usePerformerStore from '@/store/usePerformerStore';
 import usePerformerEventsStore from '@/store/usePerformerEvents';
 import axiosInstance from '@/shared/axiousintance';
 import useChatNotifications from '@/store/useChatNotification';
+import DescriptionViewer from '@/component/descriptionViewer';
+
 interface Event {
   _id?: string;
   title: string;
@@ -95,7 +97,7 @@ const EventManagementDashboard: React.FC = () => {
     }
 
     try {
-      const response = await axiosInstance.put(`/performer/blockUnblockEvents/${id}`,{withCredentials:true});
+      const response = await axiosInstance.put(`/performerEvent/blockUnblockEvents/${id}`,{withCredentials:true});
       if (response.status === 200) {
         setEvents(events.map(event => {
           if (event._id === id) {
@@ -161,7 +163,7 @@ const EventManagementDashboard: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+        <p className="text-gray-600 mb-4 line-clamp-2"><DescriptionViewer description={event.description} maxLength={25} /></p>
         <div className="border-t pt-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">Team Leader:</span>

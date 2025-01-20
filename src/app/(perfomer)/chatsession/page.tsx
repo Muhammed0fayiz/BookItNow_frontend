@@ -99,8 +99,8 @@ useEffect(() => {
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedChatRoom) {
-        try { const online=await axiosInstance.post(`/onlineUser/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`)
-          const response = await axiosInstance.get(`/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, { withCredentials: true });
+        try { const online=await axiosInstance.post(`/chat/onlineUser/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`)
+          const response = await axiosInstance.get(`/chat/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, { withCredentials: true });
           setMessages(response.data.data || []);
         } catch (error) {
           console.error('Error fetching messages:', error);
@@ -120,7 +120,7 @@ useEffect(() => {
     if (newMessage.trim() !== '' && selectedChatRoom && socket) {
       try {
         // Send message to server via HTTP
-        const response = await axiosInstance.post(`/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, {
+        const response = await axiosInstance.post(`/chat/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, {
           message: newMessage,
         }, { withCredentials: true });
 

@@ -39,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         fetchNotifications(userProfile?.id);
         try {
           const isOnline = await axiosInstance.get(
-            `/checkOnline/${senderId}/${userProfile?.id}`
+            `/chat/checkOnline/${senderId}/${userProfile?.id}`
           );
 
           console.log("id", isOnline.data.onlineUser);
@@ -79,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const updateUserStatus = async () => {
       try {
         if (userProfile?.id) {
-          await axiosInstance.post(`/offlineUser/${userProfile.id}`);
+          await axiosInstance.post(`/chat/offlineUser/${userProfile.id}`);
         }
       } catch (error) {
         console.error("Error updating user status:", error);

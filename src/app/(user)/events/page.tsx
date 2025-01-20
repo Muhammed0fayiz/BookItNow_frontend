@@ -6,7 +6,7 @@ import useChatNotifications from "@/store/useChatNotification";
 import axiosInstance from "@/shared/axiousintance";
 import { useFavoritesStore } from "@/store/useFavoriteEvents";
 import usePerformersStore from "@/store/useAllPerformerStore";
-
+import DescriptionViewer from '@/component/descriptionViewer';
 interface Event {
   _id?: string;
   title: string;
@@ -84,7 +84,7 @@ const EventsPage = () => {
 
     try {
       const response = await axiosInstance.get(
-        `/getFilteredEvents/${userProfile?.id}`,
+        `/userEvent/getFilteredEvents/${userProfile?.id}`,
         {
           params: {
             category: selectedCategory !== "all" ? selectedCategory : undefined,
@@ -128,7 +128,7 @@ const EventsPage = () => {
 
     try {
       const response = await axiosInstance.get(
-        `/getFilteredPerformers/${userProfile.id}`,
+        `/userEvent/getFilteredPerformers/${userProfile.id}`,
         {
           params: {
             order: performerSortOrder,
@@ -223,7 +223,7 @@ const EventsPage = () => {
     if (!userProfile?.id || !id) return;
 
     try {
-      await axiosInstance.post(`/toggleFavoriteEvent/${userProfile.id}/${id}`);
+      await axiosInstance.post(`/userEvent/toggleFavoriteEvent/${userProfile.id}/${id}`);
       await fetchfavoriteEvents();
     } catch (error) {
       console.error("Error toggling wishlist:", error);
@@ -515,17 +515,18 @@ const EventsPage = () => {
                         onClick={() => handleWishlist(event._id)}
                         className="absolute top-4 right-4 z-10 focus:outline-none"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className={`h-7 w-7 ${
-                            favoriteEvents.includes(event._id)
-                              ? "text-red-500 fill-current"
-                              : "text-gray-300 hover:text-red-300"
-                          }`}
-                          fill="none"
-                          viewBox="0 0 2424"
-                          stroke="currentColor"
-                        >
+                      <svg
+  xmlns="http://www.w3.org/2000/svg"
+  className={`h-7 w-7 ${
+    favoriteEvents.some(favEvent => favEvent._id === event._id)
+      ? "text-red-500 fill-current"
+      : "text-gray-300 hover:text-red-300"
+  }`}
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+>
+                          
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -557,11 +558,12 @@ const EventsPage = () => {
                             <span className="ml-1 text-gray-600">
                               {event.rating.toFixed(1)}
                             </span>
+                            <h1>show</h1>
                           </div>
                         </div>
 
                         <p className="text-gray-600 mb-4">
-                          {event.description}
+                        <DescriptionViewer description={event.description} maxLength={20} />
                         </p>
 
                         <div className="space-y-2">
@@ -674,7 +676,7 @@ const EventsPage = () => {
                         {performer.bandName}
                       </h3>
                       <p className="text-gray-600 mb-3">
-                        {performer.description}
+                      <DescriptionViewer description={performer.description} maxLength={15} />
                       </p>
                       <div className="flex items-center justify-center mb-3">
                         <svg
@@ -719,7 +721,7 @@ const EventsPage = () => {
           )}
         </div>
       </main>
-
+    
       <footer className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-8 mt-16">
         <p>&copy; 2024 BookItNow. All rights reserved.</p>
       </footer>

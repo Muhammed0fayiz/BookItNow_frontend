@@ -97,7 +97,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
         throw new Error('No user ID found');
       }
 
-      const response = await axiosInstance.get(`/performer/getPerformerEvents/${userId}`,{withCredentials: true});
+      const response = await axiosInstance.get(`/performerEvent/getPerformerEvents/${userId}`,{withCredentials: true});
 
       if(response.status === 200) {
         set({
@@ -167,7 +167,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      await axiosInstance.delete(`/performer/deleteEvent/${eventId}`,{withCredentials:true});
+      await axiosInstance.delete(`/performerEvent/deleteEvent/${eventId}`,{withCredentials:true});
 
       set((state) => ({
         events: state.events.filter((event) => event._id !== eventId),
@@ -192,7 +192,7 @@ const usePerformerEventsStore = create<PerformerEventsStore>((set) => ({
         throw new Error('No user ID found');
       }
 
-      const response = await axiosInstance.get(`/performer/getPerformerEventStats/${userId}`,{withCredentials:true});
+      const response = await axiosInstance.get(`/performerEvent/getPerformerEventStats/${userId}`,{withCredentials:true});
 
       set({
         stats: response.data?.stats || defaultStats,
