@@ -1,262 +1,464 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import { banner1, djparty, motivationspeaker, music } from '@/datas/homepagedatas';
-import UploadEventForm from '@/component/perfomerform';
 
-import usePerformersStore from '@/store/useAllPerformerStore';
-import { Performer } from '@/types/store';
-
+import React, { useState, ChangeEvent, FocusEvent, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import usePerformerStore from '@/store/usePerformerStore';
+import { useEdgeStore } from '@/lib/edgestore';
 import axiosInstance from '@/shared/axiousintance';
-// import axios from 'axios';
-// import axiosInstance from '@/shared/axiousintance';
+import usePerformerEventsStore from '@/store/usePerformerEvents';
 
-// import useAuth from '@/hooks/fetchUser';
-import useUserStore from '@/store/useUserStore';
+interface Event {
+    _id?: string;
+    title: string;
+    category: string;
+    price: number;
+    teamLeader: string;
+    teamLeaderNumber: string;
+    rating: number;
+    description: string;
+    imageUrl: string;
+}
 
+interface FormData {
+    id: string;
+    title: string;
+    category: string;
+    userId: string;
+    price: string;
+    teamLeader: string;
+    teamLeaderNumber: string;
+    description: string;
+    imageFile: File | null;
+}
 
-const Chat = () => {
-  const router = useRouter()
+interface FormErrors {
+    [key: string]: string;
+}
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
+interface TouchedFields {
+    [key: string]: boolean;
+}
 
- 
-  // const { userDetails, loading, error } = useAuth();
-
-
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
-  const { fetchUserProfile } = useUserStore();
-  const { performers, fetchAllPerformers } = usePerformersStore();
-
-
- 
-  
-  const { 
-    userProfile, 
-    isLoading, 
-    error, 
-  
-   
-  } = useUserStore();
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      await fetchUserProfile();
-    };
-    loadUserProfile();
-  }, [fetchUserProfile]);
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      await fetchUserProfile();
-    };
-    loadUserProfile();
-  }, [fetchUserProfile]);
-
-  useEffect(() => {
-    fetchAllPerformers();
-    
-  }, [fetchAllPerformers]);
-  const handleSendMessage = async () => {
-    if (newMessage.trim() !== '' && selectedPerformer) {
-      try {
-        // Get the current user's profile
-        const userProfile = useUserStore.getState().userProfile; 
-        
-        if (!userProfile || !userProfile.id) {
-          console.error('User profile not found');
-          return;
-        }
-  
-        // Send message with BOTH sender and receiver IDs
-        const response = await axiosInstance.post(`/handleSendMessage/${userProfile.id}/${selectedPerformer.userId}`, {
-          message: newMessage
-        });
-  
-        // Clear message input after sending
-        setNewMessage('');
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    }
-  };
-  const handlefetch=async()=>{
-    const loadUserProfile = async () => {
-      await fetchUserProfile();
-    };
-    loadUserProfile();
-  }
-
-  // {userDetails?.id}
-  const profilePage: () => void = () => {
-    router.replace('/profile');
-  };
- 
-  return (
-    <div className="min-h-screen bg-gray-50">
-       <nav className="bg-white shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          {/* Left Side: Logo */}
-          <div className="flex items-center space-x-6">
-            <a href="/home" className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
-              BookItNow
-            </a>
-          </div>
-
-          {/* Menu Button for Small Devices */}
-          <div className="flex md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="text-gray-700 hover:text-blue-600 transition duration-300"
-            >
-              Menu
-            </button>
-          </div>
-
-          {/* Full Navbar for Large Devices */}
-          <div className="hidden md:flex items-center space-x-6">
-            <a href="/home" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              Home
-            </a>
-            <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              Events
-             
-            </a>
-           
-
-            <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              About
-            </a>
-            <a href="/chat" className="text-blue-600 font-semibold transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
-              </svg>
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                3
-              </span>
-            </a>
-            <a href="/profile" className="text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1112 19a7 7 0 01-6.879-5.196m6.879-9.196a3 3 0 100 6 3 3 0 000-6z" />
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        {/* Sidebar for Small Devices */}
-        {isMenuOpen && (
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
-            <div className="fixed right-0 top-0 w-64 h-full bg-white shadow-lg z-50">
-              <button
-                className="absolute top-4 right-4 text-gray-600"
-                onClick={toggleMenu}
-              >
-                &times;
-              </button>
-              <div className="flex flex-col p-6">
-                <a href="/" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
-                  Home
-                </a>
-                <a href="/events" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
-                  Events
-                </a>
-                <a href="/about" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
-                  About
-                </a>
-                <a href="/chat" className="text-gray-700 hover:text-blue-600 transition duration-300 mb-4">
-                  Chat
-                </a>
-                <a  className="text-gray-700 hover:text-blue-600 transition duration-300"onClick={profilePage}>
-                  Profile
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
-
-
- 
-      
-      <main className="flex flex-col items-center justify-center py-0 px-4 md:px-8">
-        {/* Chat Modal */}
-        <div className="flex flex-col w-full md:w-3/4 bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="flex">
-            {/* Left Section: Performers List */}
-            <div className="w-1/4 border-r p-4 bg-gray-100">
-              <h3 className="text-lg font-semibold mb-4">Performers</h3>
-              <ul>
-                {performers.map((performer) => (
-                  <li
-                    key={performer.userId}
-                    onClick={() => setSelectedPerformer(performer)} // Set selected performer for chat
-                    className={`p-2 cursor-pointer rounded-md ${
-                      selectedPerformer?.userId === performer.userId
-                        ? 'bg-blue-100'
-                        : ''
-                    }`}
-                  >
-                    {performer.bandName} {/* Assuming performer has a 'bandName' property */}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Right Section: Chat */}
-            <div className="w-3/4 p-4">
-              <div className="h-96 overflow-y-auto border rounded-md p-4 bg-gray-50">
-                {selectedPerformer ? (
-                  <div>
-                    <div className="mb-4">
-                      <p className="text-md bg-gray-200 p-2 rounded-md inline-block">
-                        {`Chat with ${selectedPerformer.bandName}`}
-                      </p>
-                    </div>
-                    {/* Add message rendering logic here */}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center">
-                    Select a performer to start chatting
-                   
-                  
-                  
-                  </p>
-                )}
-              </div>
-              {selectedPerformer && (
-                <div className="mt-4">
-                   {userProfile?.id}
-                   <h1>hee</h1>
-                   {selectedPerformer?.userId}
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)} // Bind input to state
-                    placeholder="Type your message..."
-                    className="w-full border rounded-md p-2"
-                  />
-                  <button
-                    onClick={handleSendMessage} // Send message on button click
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md mt-2"
-                  >
-                    Send
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      
-      <footer className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-8">
-        <p>&copy; 2024 BookItNow. All rights reserved.</p>
-      </footer>
-    </div>
-  );
+const INITIAL_FORM_STATE: FormData = {
+    id: '',
+    title: '',
+    category: '',
+    userId: '',
+    price: '',
+    teamLeader: '',
+    teamLeaderNumber: '',
+    description: '',
+    imageFile: null,
 };
 
+const EventForm: React.FC = () => {
+    const router = useRouter();
+    const { events, fetchPerformerEvents, setEvents } = usePerformerEventsStore();
+    const { performerDetails, fetchPerformerDetails } = usePerformerStore();
+    const [formData, setFormData] = useState<FormData>(INITIAL_FORM_STATE);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [touched, setTouched] = useState<TouchedFields>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string>('');
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [file, setFile] = useState<File>();
+    const { edgestore } = useEdgeStore();
+    const { id } = useParams();
+    const [event, setEvent] = useState<Event | null>(null);
 
-export default Chat;
+    // Fetch performer details on component mount
+    useEffect(() => {
+        fetchPerformerDetails();
+    }, [fetchPerformerDetails]);
+
+    // Update form data with user ID when performer details are available
+    useEffect(() => {
+        if (performerDetails?.userId) {
+            setFormData(prev => ({
+                ...prev,
+                userId: performerDetails.userId,
+            }));
+        }
+    }, [performerDetails]);
+
+    // Fetch performer events
+    useEffect(() => {
+        fetchPerformerEvents();
+    }, [fetchPerformerEvents]);
+
+    // Set form data when event is found
+    useEffect(() => {
+        if (events.length > 0) {
+            const foundEvent = events.find(event => event._id === id);
+            setEvent(foundEvent || null);
+            if (foundEvent) {
+                setFormData(prev => ({
+                    ...prev,
+                    id: foundEvent._id || '',
+                    title: foundEvent.title,
+                    category: foundEvent.category,
+                    price: foundEvent.price.toString(),
+                    teamLeader: foundEvent.teamLeader,
+                    teamLeaderNumber: foundEvent.teamLeaderNumber,
+                    description: foundEvent.description,
+                    imageFile: null,
+                }));
+                setImagePreview(foundEvent.imageUrl);
+            }
+        }
+    }, [events, id]);
+
+    // Clear success message after 3 seconds
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (submitSuccess) {
+            timeout = setTimeout(() => setSubmitSuccess(false), 3000);
+        }
+        return () => clearTimeout(timeout);
+    }, [submitSuccess]);
+
+    // Field validation rules
+    const validateField = (name: keyof FormData, value: any): string => {
+        const validators: Record<keyof FormData, (value: any) => string> = {
+            id: () => '',
+            userId: () => '',
+            title: value => (
+                !value ? 'Event name is required' : 
+                value.length < 2 ? 'Event name must be at least 2 characters' : 
+                value.length > 15 ? 'Event name must be less than 15 characters' : 
+                ''
+            ),
+            price: value => (
+                !value ? 'Price is required' : 
+                isNaN(Number(value)) ? 'Price must be a number' : 
+                Number(value) < 1000 ? 'Price must be at least 1000' : 
+                Number(value) > 1000000 ? 'Price cannot exceed 1,000,000' : 
+                ''
+            ),
+            category: value => (!value ? 'Category is required' : ''),
+            teamLeader: value => (
+                !value ? 'Team leader name is required' : 
+                value.length < 2 ? 'Team leader name must be at least 2 characters' : 
+                !/^[a-zA-Z\s]*$/.test(value) ? 'Team leader name can only contain letters' : 
+                ''
+            ),
+            teamLeaderNumber: value => (
+                !value ? 'Contact number is required' : 
+                !/^\d{10}$/.test(value) ? 'Please enter a valid 10-digit number' : 
+                ''
+            ),
+            description: value => (
+                !value ? 'Description is required' : 
+                value.length < 10 ? 'Description must be at least 10 characters' : 
+                value.length > 500 ? 'Description cannot exceed 500 characters' : 
+                ''
+            ),
+            imageFile: () => '',
+        };
+        return validators[name](value);
+    };
+
+    // Handle input changes
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setSubmitError('');
+        if (touched[name]) {
+            setErrors(prev => ({ 
+                ...prev, 
+                [name]: validateField(name as keyof FormData, value) 
+            }));
+        }
+    };
+
+    // Handle image upload
+    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFile(file);
+            setFormData(prev => ({ ...prev, imageFile: file }));
+            setImagePreview(URL.createObjectURL(file));
+            setErrors(prev => ({ ...prev, imageFile: '' }));
+        }
+    };
+
+    // Handle input blur (validation)
+    const handleBlur = (e: FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        setErrors(prev => ({ 
+            ...prev, 
+            [name]: validateField(name as keyof FormData, value) 
+        }));
+    };
+
+    // Validate entire form
+    const validateForm = (): boolean => {
+        const newErrors: FormErrors = {};
+        let isValid = true;
+        
+        Object.keys(formData).forEach(key => {
+            const error = validateField(
+                key as keyof FormData, 
+                formData[key as keyof FormData]
+            );
+            if (error) {
+                newErrors[key] = error;
+                isValid = false;
+            }
+        });
+        
+        setErrors(newErrors);
+        return isValid;
+    };
+
+    // Handle form submission
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
+        setSubmitError('');
+
+        // Mark all fields as touched
+        const touchedFields: TouchedFields = {};
+        Object.keys(formData).forEach(key => { 
+            touchedFields[key] = true; 
+        });
+        setTouched(touchedFields);
+
+        if (validateForm()) {
+            try {
+                // Check if both IDs are available
+                if (!id || !performerDetails?.PId) {
+                    throw new Error('Missing required IDs');
+                }
+
+                const submitFormData = new FormData();
+
+                // Handle image upload
+                if (formData.imageFile) {
+                    const imageResponse = await edgestore.publicFiles.upload({
+                        file: formData.imageFile
+                    });
+                    if (imageResponse?.url) {
+                        submitFormData.append('imageUrl', imageResponse.url);
+                    } else {
+                        throw new Error("Image upload failed");
+                    }
+                }
+
+                // Append form data
+                Object.entries(formData).forEach(([key, value]) => {
+                    if (key !== 'imageFile' && value !== null) {
+                        submitFormData.append(key, value.toString());
+                    }
+                });
+
+                // Add event ID to form data
+                submitFormData.append('eventId', id as string);
+
+                // Make API request
+                console.log('ffffffffffffffffffffffffff')
+
+                console.log(`${performerDetails.PId}/${id}`,'ffffffffffffffffffayi')
+                const response = await axiosInstance.put(
+                    `/performerEvent/editEvent/${performerDetails.PId}/${id}`,
+                    submitFormData,
+                    {withCredentials:true});
+
+                // Reset form and show success message
+                setFormData(INITIAL_FORM_STATE);
+                setImagePreview(null);
+                setErrors({});
+                setTouched({});
+                setSubmitSuccess(true);
+                router.replace('/event-management');
+            } catch (error) {
+                setSubmitError(
+                    error instanceof Error 
+                        ? error.message 
+                        : 'An error occurred while submitting the form'
+                );
+                console.error('Error:', error);
+            }
+        } else {
+            setSubmitError('Please correct the errors before submitting');
+        }
+
+        setIsSubmitting(false);
+    };
+
+    // CSS Classes
+    const inputClasses = "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500";
+    const labelClasses = "block text-sm font-semibold text-gray-700 mb-1";
+    const errorClasses = "text-red-500 text-xs mt-1";
+
+    const getInputStateClasses = (fieldName: string): string => {
+        if (touched[fieldName]) {
+            return errors[fieldName] 
+                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                : "border-green-500 focus:ring-green-500 focus:border-green-500";
+        }
+        return "border-gray-300";
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-8">
+            <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-8">
+                <button 
+                    onClick={() => router.replace('/event-management')} 
+                    className="mb-4 flex items-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none"
+                >
+                    Back to Event Management
+                </button>
+
+                <h2 className="text-2xl font-bold mb-4">
+                    {event ? 'Update Event' : 'Create New Event'}
+                </h2>
+
+                {submitError && (
+                    <div className="text-red-500 mb-4">{submitError}</div>
+                )}
+
+                {submitSuccess && (
+                    <div className="text-green-500 mb-4">
+                        Event {event ? 'updated' : 'created'} successfully!
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {/* Event Name */}
+                    <div>
+                        <label className={labelClasses}>Event Name</label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('title')}`}
+                        />
+                        {errors.title && (
+                            <div className={errorClasses}>{errors.title}</div>
+                        )}
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                        <label className={labelClasses}>Category</label>
+                        <select
+                            name="category"
+                            value={formData.category}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('category')}`}
+                        >
+                            <option value="">Select Category</option>
+                            <option value="Motivational">Motivational</option>
+                            <option value="Comedy">Comedy</option>
+                            <option value="Music">Music</option>
+                        </select>
+                        {errors.category && (
+                            <div className={errorClasses}>{errors.category}</div>
+                        )}
+                    </div>
+
+                    {/* Price */}
+                    <div>
+                        <label className={labelClasses}>Price</label>
+                        <input
+                            type="text"
+                            name="price"
+                            value={formData.price}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('price')}`}
+                        />
+                        {errors.price && (
+                            <div className={errorClasses}>{errors.price}</div>
+                        )}
+                    </div>
+
+                    {/* Team Leader */}
+                    <div>
+                        <label className={labelClasses}>Team Leader Name</label>
+                        <input
+                            type="text"
+                            name="teamLeader"
+                            value={formData.teamLeader}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('teamLeader')}`}
+                        />
+                        {errors.teamLeader && (
+                            <div className={errorClasses}>{errors.teamLeader}</div>
+                        )}
+                    </div>
+
+                    {/* Contact Number */}
+                    <div>
+                        <label className={labelClasses}>Contact Number</label>
+                        <input
+                            type="text"
+                            name="teamLeaderNumber"
+                            value={formData.teamLeaderNumber}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('teamLeaderNumber')}`}
+                        />
+                        {errors.teamLeaderNumber && (
+                            <div className={errorClasses}>{errors.teamLeaderNumber}</div>
+                        )}
+                    </div>
+{/* Description */}
+<div>
+                        <label className={labelClasses}>Description</label>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className={`${inputClasses} ${getInputStateClasses('description')}`}
+                            rows={4}
+                        />
+                        {errors.description && (
+                            <div className={errorClasses}>{errors.description}</div>
+                        )}
+                    </div>
+
+                    {/* Event Image */}
+                    <div>
+                        <label className={labelClasses}>Event Image</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                          
+                            onChange={handleImageChange}
+                            className={`${inputClasses} ${getInputStateClasses('imageFile')}`}
+                        />
+                        {imagePreview && (
+                            <img 
+                                src={imagePreview} 
+                                alt="Image preview" 
+                                className="mt-2 h-32 w-32 object-cover"
+                            />
+                        )}
+                        {errors.imageFile && (
+                            <div className={errorClasses}>{errors.imageFile}</div>
+                        )}
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="mt-4 w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default EventForm;
