@@ -54,9 +54,9 @@ const VideoDescriptionModal: React.FC<VideoDescriptionModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
                 <div className="flex justify-between items-center mb-4">
-                  <Dialog.Title className="text-2xl font-bold text-gray-900">
+                  <Dialog.Title className="text-xl font-bold text-gray-900 truncate max-w-[calc(100%-2rem)]">
                     {performer?.bandName}
                   </Dialog.Title>
                   <button
@@ -69,7 +69,7 @@ const VideoDescriptionModal: React.FC<VideoDescriptionModalProps> = ({
                   </button>
                 </div>
 
-                <div className="h-96"> {/* Increased fixed height */}
+                <div className="h-64 mb-4"> {/* Reduced height */}
                   {performer && (
                     <iframe
                       src={performer.video}
@@ -81,9 +81,11 @@ const VideoDescriptionModal: React.FC<VideoDescriptionModalProps> = ({
                   )}
                 </div>
 
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-2 text-gray-900">Description</h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">{performer?.description}</p>
+                <div>
+                  <h3 className="text-md font-semibold mb-2 text-gray-900">Description</h3>
+                  <p className="text-gray-700 whitespace-pre-wrap text-sm max-h-32 overflow-y-auto">
+                    {performer?.description}
+                  </p>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

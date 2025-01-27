@@ -94,7 +94,7 @@ export interface Events {
   description: string;
   imageUrl: string;
   isblocked:boolean;
-  isperformerblockedevents:boolean
+  isperformerblockedevents:boolean;
 
 }
 

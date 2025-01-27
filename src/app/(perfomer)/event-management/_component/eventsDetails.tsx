@@ -10,7 +10,11 @@ import usePerformerStore from '@/store/usePerformerStore';
 import usePerformerEventsStore from '@/store/usePerformerEvents';
 import axiosInstance from '@/shared/axiousintance';
 import useChatNotifications from '@/store/useChatNotification';
-import DescriptionViewer from '@/component/descriptionViewer';
+
+import PerformerDescriptionViewer from '@/component/performerEventDescription';
+import PerformerAppeal from '@/component/performerAppeal';
+import useusersStore from '@/store/useAllUserStore';
+import useUserStore from '@/store/useUserStore';
 
 interface Event {
   _id?: string;
@@ -74,6 +78,17 @@ const EventManagementDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
+  const { 
+    userProfile, 
+    isLoading, 
+    error, 
+    fetchUserProfile, 
+  
+  } = useUserStore();
+  const [selectedBlockedEvent, setSelectedBlockedEvent] = useState<{
+    id: string;
+    blockDetails?: { reason: string; blockedAt: string };
+  } | null>(null);
   const {  totalUnreadMessage, notifications, fetchNotifications } =
   
   useChatNotifications();
@@ -85,7 +100,15 @@ const EventManagementDashboard: React.FC = () => {
     fetchPerformerDetails();
     fetchPerformerEvents();
   }, [fetchPerformerDetails, fetchPerformerEvents]);
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      await fetchUserProfile();
+    };
+    loadUserProfile();
 
+
+    
+  }, [fetchUserProfile]);
   useEffect(() => {
     console.log('Fetched Events:', events);
   }, [events]);
@@ -111,6 +134,27 @@ const EventManagementDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error blocking/unblocking event:', error);
+    }
+  };
+  const handleViewBlockDetails = async (eventId: string) => {
+    try {
+      console.log('hello');
+      
+      const response = await axiosInstance.get(`/performerEvent/getEvent/${eventId}`);
+
+      console.log('evend detiala',response);
+      
+      setSelectedBlockedEvent({
+        id: eventId,
+        blockDetails: {
+          reason: response.data.data.
+          blockingReason,
+          blockedAt: response.data.data.
+          blockingPeriod
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching event details:', error);
     }
   };
 
@@ -145,11 +189,18 @@ const EventManagementDashboard: React.FC = () => {
             {event.category}
           </span>
 
+
+
+      
+
           <div className="flex gap-2">
             {event.isblocked ? (
-              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                Admin Blocked
-              </span>
+                 <button 
+                 onClick={() => handleViewBlockDetails(event._id!)}
+                 className="bg-green-400 text-red-800 px-2 py-1 rounded-full"
+               >
+                  Conduct 
+               </button>
             ) : (
               <button
                 className={`px-2 py-1 rounded-full text-sm ${
@@ -163,7 +214,7 @@ const EventManagementDashboard: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-gray-600 mb-4 line-clamp-2"><DescriptionViewer description={event.description} maxLength={25} /></p>
+        <p className="text-gray-600 mb-4 line-clamp-2"><PerformerDescriptionViewer description={event.description} maxLength={15} /></p>
         <div className="border-t pt-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">Team Leader:</span>
@@ -198,6 +249,7 @@ const EventManagementDashboard: React.FC = () => {
       </div>
     </div>
   );
+  
 
   const validEvents = events.filter(isValidEvent);
   
@@ -226,7 +278,7 @@ const EventManagementDashboard: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        const response = await axiosInstance.delete(`/performer/deleteEvent/${eventId}`);
+        const response = await axiosInstance.delete(`/performerEvent/deleteEvent/${eventId}`);
         if (response.status === 200) {
           const updatedEvents = events.filter(event => event._id !== eventId);
           setEvents(updatedEvents);
@@ -325,6 +377,15 @@ const EventManagementDashboard: React.FC = () => {
               <p className="text-gray-600">No events found.</p>
             )}
           </DashboardSection>
+          <PerformerAppeal
+        eventId={selectedBlockedEvent?.id || ''}
+        isOpen={!!selectedBlockedEvent}
+        performerEmail={userProfile?.email}
+        onClose={() => setSelectedBlockedEvent(null)}
+        blockDetails={selectedBlockedEvent?.blockDetails}
+       
+   
+      />
         </div>
       </div>
     </div>

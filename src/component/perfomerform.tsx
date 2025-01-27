@@ -53,10 +53,13 @@ const UploadEventForm: React.FC<UploadEventFormProps> = ({ onClose, id = "" , ha
       newErrors.video = 'Please upload a video.';
     }
 
+
     if (!description.trim()) {
       newErrors.description = 'Description is required.';
     } else if (description.trim().length < 5) {
       newErrors.description = 'Description must be at least 5 characters long.';
+    } else if (description.trim().length > 50) {
+      newErrors.description = 'Description must be less than or equal to 50 characters.';
     }
 
     setErrors(newErrors);

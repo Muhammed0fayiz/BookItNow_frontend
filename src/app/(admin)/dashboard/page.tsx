@@ -8,6 +8,8 @@ import axiosInstance from '@/shared/axiousintance';
 import useAdminDetails from '@/store/useAdminDetails';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Sidebar from '@/component/adminSidebar';
+
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -138,48 +140,9 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar - Previous implementation remains the same */}
-    <aside className={`w-64 bg-gradient-to-b from-blue-600 to-blue-800 text-white p-6 h-screen fixed top-0 left-0 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-30`}>
-           <div className="flex items-center mb-8">
-             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-               <img
-                 src="http://i.pravatar.cc/250?img=58"
-                 alt="Admin"
-                 className="w-full h-full object-cover"
-               />
-             </div>
-             <div>
-               <h3 className="text-lg font-semibold">Admin Name</h3>
-               <span className="text-sm font-light">Administrator</span>
-             </div>
-           </div>
-   
-           <nav>
-             <ul className="space-y-4">
-               {[
-                 { icon: faHome, text: 'Dashboard', href: '/dashboard' },
-                 { icon: faUsers, text: 'User Management', href: '/usermanagement' },
-                 { icon: faUsers, text: 'Events', href: '/eventmanagement' },
-                 { icon: faLock, text: 'Verification', href: '/verification' },
-                //  { icon: faWallet, text: 'Wallet', href: '#wallet' }
-               ].map((item, index) => (
-                 <li key={index}>
-                   <a href={item.href} className="flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
-                     <FontAwesomeIcon icon={item.icon} className="mr-3" />
-                     {item.text}
-                   </a>
-                 </li>
-               ))}
-               <li>
-                 <button onClick={handleLogout} className="w-full text-left flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
-                   <FontAwesomeIcon icon={faSignOutAlt} className="mr-3" />
-                   Logout
-                 </button>
-               </li>
-             </ul>
-           </nav>
-         </aside>
-   
+    
+         <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
+
 
       {/* Main Content */}
       <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">

@@ -1,17 +1,17 @@
-
 import React from 'react';
 import { 
   LayoutDashboard, 
   Calendar, 
   Clock, 
   LogOut, 
-  ListChecks,  // For Event Details
-  History,     // For Event History
-  Wallet,      // For Wallet Management
-  MapPin       // For Upcoming Events
+  ListChecks,
+  History,
+  Wallet,
+  MapPin
 } from 'lucide-react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+
 interface SidebarProps {
   isOpen: boolean;
   performerDetails: {
@@ -24,6 +24,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout }) => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -37,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
     },
     {
       path: '/event-management',
-      icon: <ListChecks size={20} />, // Changed from Calendar to ListChecks
+      icon: <ListChecks size={20} />,
       label: 'Events Details'
     },
     {
@@ -47,17 +48,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
     },
     {
       path: '/performer-upcomingevent',
-      icon: <MapPin size={20} />, // Changed from Calendar to MapPin
+      icon: <MapPin size={20} />,
       label: 'Upcoming Events'
     },
     {
       path: '/performer-eventhistory',
-      icon: <History size={20} />, // Changed from Calendar to History
+      icon: <History size={20} />,
       label: 'Event History'
     },
     {
       path: '/wallet-management',
-      icon: <Wallet size={20} />, // Changed from Clock to Wallet
+      icon: <Wallet size={20} />,
       label: 'Wallet'
     }
   ];
@@ -93,7 +94,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
           <li key={item.path}>
             <button
               onClick={() => handleNavigation(item.path)}
-              className="flex items-center text-lg hover:bg-blue-700 p-3 rounded w-full text-left"
+              className={`flex items-center text-lg p-3 rounded w-full text-left transition-colors duration-200
+                ${pathname === item.path 
+                  ? 'bg-white  text-blue-600 font-medium shadow-lg' 
+                  : 'hover:bg-blue-700 text-white/90'
+                }`}
             >
               <span className="mr-2">{item.icon}</span>
               {item.label}

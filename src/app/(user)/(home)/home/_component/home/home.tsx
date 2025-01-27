@@ -12,13 +12,29 @@ import useUserStore from "@/store/useUserStore";
 
 import useChatNotifications from "@/store/useChatNotification";
 import axiosInstance from "@/shared/axiousintance";
-
+import useRatedEvent from "@/store/useRatedEvent";
+interface Event {
+    _id?: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    price: number;
+    category: string;
+    rating: number;
+    teamLeader: string;
+    teamLeaderNumber: string;
+    createdAt: string;
+    userId: string;
+    status: string;
+  }
 const Home = () => {
   const router = useRouter();
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { totalUnreadMessage, notifications, fetchNotifications } =
     useChatNotifications();
+
+    const { topEvents,fetchTopEvents } = useRatedEvent();
   useEffect(() => {
     fetchNotifications().catch((err) =>
       console.error("Error fetching notifications:", err)
@@ -71,7 +87,10 @@ const Home = () => {
   const profilePage: () => void = () => {
     router.replace("/profile");
   };
+  useEffect(() => {
+    fetchTopEvents();
 
+  }, [fetchTopEvents]);
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -228,36 +247,36 @@ const Home = () => {
         </header>
 
         <section id="events" className="py-16 px-6 bg-white">
-          <h2 className="text-3xl font-bold text-center mb-12 animate__animated animate__fadeIn">
-            Featured Events
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {events.map((event, index) => (
-              <div
-                key={index}
-                className="bg-white shadow-xl rounded-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-2xl animate__animated animate__fadeIn animate__delay-3s"
-              >
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-56 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-                  <p className="text-gray-600 mb-4">
-                    Date: {event.date} | Location: {event.location}
-                  </p>
-                  <a
-                    href="/events"
-                    className="block text-center bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
-                  >
-                    Book Now
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+  <h2 className="text-3xl font-bold text-center mb-12 animate__animated animate__fadeIn">
+    Top Rated Events
+  </h2>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+    {topEvents.map((event: Event, index: number) => (
+      <div
+        key={event._id || index}
+        className="bg-white shadow-xl rounded-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-2xl animate__animated animate__fadeIn animate__delay-3s"
+      >
+        <img
+          src={event.imageUrl}
+          alt={event.title}
+          className="w-full h-56 object-cover"
+        />
+        <div className="p-6">
+          <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
+          <p className="text-gray-600 mb-4">
+            Category: {event.category} | Rating: {event.rating.toFixed(1)}
+          </p>
+          <a
+            href={`/events/${event.userId}/${event._id}`}
+            className="block text-center bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+          >
+            Book Now
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
 
         <section className="bg-gray-100 py-16">
           <h2 className="text-3xl font-bold text-center mb-12 animate__animated animate__fadeIn">

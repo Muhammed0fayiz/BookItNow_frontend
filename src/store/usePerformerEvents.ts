@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import axiosInstance from '@/shared/axiousintance';
 import { Events } from '@/types/store';
 
-// Event interface to match MongoDB document structure
+
 interface Event {
   _id?: string;
   title: string;
@@ -17,7 +17,7 @@ interface Event {
   imageUrl: string;
 }
 
-// Detailed statistics for performer events
+
 interface PerformerEventsStats {
   totalEvents: number;
   upcomingEvents: number;
@@ -26,7 +26,7 @@ interface PerformerEventsStats {
   averageRating: number;
 }
 
-// Store interface for performer events
+
 interface PerformerEventsStore {
   getUserIdFromToken(): unknown;
   events: Events[];

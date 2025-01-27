@@ -1,464 +1,357 @@
 'use client';
-
-import React, { useState, ChangeEvent, FocusEvent, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import usePerformerStore from '@/store/usePerformerStore';
-import { useEdgeStore } from '@/lib/edgestore';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faBars, faTimes, faChevronLeft, faChevronRight, faSearch } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '@/shared/axiousintance';
-import usePerformerEventsStore from '@/store/usePerformerEvents';
+import useAllEventsAdminStore from '@/store/useAllEventsAdmin';
 
+import Sidebar from '@/component/adminSidebar';
+import BlockEventModal from '@/component/adminEventBlock';
+import Description from '@/component/description';
+
+// TypeScript interface for Event type (add this based on your event structure)
 interface Event {
-    _id?: string;
-    title: string;
-    category: string;
-    price: number;
-    teamLeader: string;
-    teamLeaderNumber: string;
-    rating: number;
-    description: string;
-    imageUrl: string;
+  _id: string;
+  title: string;
+  category: string;
+  price: string;
+  isblocked: boolean;
+  teamLeader: string;
+  teamLeaderNumber: string;
+  description: string;
+  imageUrl: string;
 }
 
-interface FormData {
-    id: string;
-    title: string;
-    category: string;
-    userId: string;
-    price: string;
-    teamLeader: string;
-    teamLeaderNumber: string;
-    description: string;
-    imageFile: File | null;
-}
+const EventManagement = () => {
+  const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const eventsPerPage = 10;
+  
+  const router = useRouter();
+  const { events, fetchAllEvents } = useAllEventsAdminStore();
 
-interface FormErrors {
-    [key: string]: string;
-}
+  const [selectedEvent, setSelectedEvent] = useState<string | undefined>(undefined);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isUnblockConfirmOpen, setIsUnblockConfirmOpen] = useState(false);
+  
+  // Block Event Handler
+  const handleBlockEvent = async (duration: string, reason: string) => {
+    if (!selectedEvent) {
+      console.error('No event selected for blocking');
+      return;
+    }
+  
+    try {
+      const response = await axiosInstance.post(`/admin/blockUnblockEvents/${selectedEvent}`, {
+        duration,
+        reason,
+        action: 'block'
+      });
+      
+      if(response.status === 200) {
+        fetchAllEvents();
+        setIsBlockModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error blocking event:', error);
+    }
+  };
 
-interface TouchedFields {
-    [key: string]: boolean;
-}
+  // Unblock Event Handler
+  const handleUnblockEvent = async () => {
+    if (!selectedEvent) {
+      console.error('No event selected for unblocking');
+      return;
+    }
+  
+    try {
+      const response = await axiosInstance.post(`/admin/blockUnblockEvents/${selectedEvent}`, {
+        action: 'unblock'
+      });
+      
+      if(response.status === 200) {
+        fetchAllEvents();
+        setIsUnblockConfirmOpen(false);
+      }
+    } catch (error) {
+      console.error('Error unblocking event:', error);
+    }
+  };
 
-const INITIAL_FORM_STATE: FormData = {
-    id: '',
-    title: '',
-    category: '',
-    userId: '',
-    price: '',
-    teamLeader: '',
-    teamLeaderNumber: '',
-    description: '',
-    imageFile: null,
-};
+  // Block/Unblock Event Selector
+  const blockUnblockEvent = async (_id?: string) => {
+    if (!_id) {
+      console.error('Event ID is undefined. Cannot block/unblock event.');
+      return;
+    }
+  
+    const eventToBlock = events.find(event => event._id === _id);
+    
+    if (eventToBlock?.isblocked) {
+      // If event is blocked, show unblock confirmation
+      setSelectedEvent(_id);
+      setIsUnblockConfirmOpen(true);
+    } else {
+      // If event is not blocked, show block modal
+      setSelectedEvent(_id);
+      setIsBlockModalOpen(true);
+    }
+  };
 
-const EventForm: React.FC = () => {
-    const router = useRouter();
-    const { events, fetchPerformerEvents, setEvents } = usePerformerEventsStore();
-    const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-    const [formData, setFormData] = useState<FormData>(INITIAL_FORM_STATE);
-    const [errors, setErrors] = useState<FormErrors>({});
-    const [touched, setTouched] = useState<TouchedFields>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string>('');
-    const [submitSuccess, setSubmitSuccess] = useState(false);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [file, setFile] = useState<File>();
-    const { edgestore } = useEdgeStore();
-    const { id } = useParams();
-    const [event, setEvent] = useState<Event | null>(null);
+  // Filter events based on search term
+  const filteredEvents = events.filter(event => 
+    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    event.teamLeader.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    // Fetch performer details on component mount
-    useEffect(() => {
-        fetchPerformerDetails();
-    }, [fetchPerformerDetails]);
+  // Calculate pagination values
+  const indexOfLastEvent = currentPage * eventsPerPage;
+  const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+  const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+  const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
 
-    // Update form data with user ID when performer details are available
-    useEffect(() => {
-        if (performerDetails?.userId) {
-            setFormData(prev => ({
-                ...prev,
-                userId: performerDetails.userId,
-            }));
+  // Page Change Handler
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Sidebar Toggle
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  // Logout Handler
+  const handleLogout = async () => {
+    try {
+      const response = await axiosInstance.post('/admin/adminLogout');
+      if (response.data.success) {
+        setTimeout(() => {
+          router.replace('/adminlogin');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
+  // Session Check Effect
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await axiosInstance.get('/admin/checkSession');
+        if (!response.data.isAuthenticated) {
+          router.replace('/adminlogin');
         }
-    }, [performerDetails]);
-
-    // Fetch performer events
-    useEffect(() => {
-        fetchPerformerEvents();
-    }, [fetchPerformerEvents]);
-
-    // Set form data when event is found
-    useEffect(() => {
-        if (events.length > 0) {
-            const foundEvent = events.find(event => event._id === id);
-            setEvent(foundEvent || null);
-            if (foundEvent) {
-                setFormData(prev => ({
-                    ...prev,
-                    id: foundEvent._id || '',
-                    title: foundEvent.title,
-                    category: foundEvent.category,
-                    price: foundEvent.price.toString(),
-                    teamLeader: foundEvent.teamLeader,
-                    teamLeaderNumber: foundEvent.teamLeaderNumber,
-                    description: foundEvent.description,
-                    imageFile: null,
-                }));
-                setImagePreview(foundEvent.imageUrl);
-            }
-        }
-    }, [events, id]);
-
-    // Clear success message after 3 seconds
-    useEffect(() => {
-        let timeout: NodeJS.Timeout;
-        if (submitSuccess) {
-            timeout = setTimeout(() => setSubmitSuccess(false), 3000);
-        }
-        return () => clearTimeout(timeout);
-    }, [submitSuccess]);
-
-    // Field validation rules
-    const validateField = (name: keyof FormData, value: any): string => {
-        const validators: Record<keyof FormData, (value: any) => string> = {
-            id: () => '',
-            userId: () => '',
-            title: value => (
-                !value ? 'Event name is required' : 
-                value.length < 2 ? 'Event name must be at least 2 characters' : 
-                value.length > 15 ? 'Event name must be less than 15 characters' : 
-                ''
-            ),
-            price: value => (
-                !value ? 'Price is required' : 
-                isNaN(Number(value)) ? 'Price must be a number' : 
-                Number(value) < 1000 ? 'Price must be at least 1000' : 
-                Number(value) > 1000000 ? 'Price cannot exceed 1,000,000' : 
-                ''
-            ),
-            category: value => (!value ? 'Category is required' : ''),
-            teamLeader: value => (
-                !value ? 'Team leader name is required' : 
-                value.length < 2 ? 'Team leader name must be at least 2 characters' : 
-                !/^[a-zA-Z\s]*$/.test(value) ? 'Team leader name can only contain letters' : 
-                ''
-            ),
-            teamLeaderNumber: value => (
-                !value ? 'Contact number is required' : 
-                !/^\d{10}$/.test(value) ? 'Please enter a valid 10-digit number' : 
-                ''
-            ),
-            description: value => (
-                !value ? 'Description is required' : 
-                value.length < 10 ? 'Description must be at least 10 characters' : 
-                value.length > 500 ? 'Description cannot exceed 500 characters' : 
-                ''
-            ),
-            imageFile: () => '',
-        };
-        return validators[name](value);
+      } catch (error) {
+        console.error('Session check failed:', error);
+      }
     };
+    checkSession();
+  }, [router]);
 
-    // Handle input changes
-    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        setSubmitError('');
-        if (touched[name]) {
-            setErrors(prev => ({ 
-                ...prev, 
-                [name]: validateField(name as keyof FormData, value) 
-            }));
-        }
-    };
+  // Loading Effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-    // Handle image upload
-    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFile(file);
-            setFormData(prev => ({ ...prev, imageFile: file }));
-            setImagePreview(URL.createObjectURL(file));
-            setErrors(prev => ({ ...prev, imageFile: '' }));
-        }
-    };
+  // Fetch Events Effect
+  useEffect(() => {
+    fetchAllEvents();
+  }, [fetchAllEvents]);
 
-    // Handle input blur (validation)
-    const handleBlur = (e: FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setTouched(prev => ({ ...prev, [name]: true }));
-        setErrors(prev => ({ 
-            ...prev, 
-            [name]: validateField(name as keyof FormData, value) 
-        }));
-    };
+  // Reset Page on Search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
-    // Validate entire form
-    const validateForm = (): boolean => {
-        const newErrors: FormErrors = {};
-        let isValid = true;
-        
-        Object.keys(formData).forEach(key => {
-            const error = validateField(
-                key as keyof FormData, 
-                formData[key as keyof FormData]
-            );
-            if (error) {
-                newErrors[key] = error;
-                isValid = false;
-            }
-        });
-        
-        setErrors(newErrors);
-        return isValid;
-    };
-
-    // Handle form submission
-    const handleSubmit = async () => {
-        setIsSubmitting(true);
-        setSubmitError('');
-
-        // Mark all fields as touched
-        const touchedFields: TouchedFields = {};
-        Object.keys(formData).forEach(key => { 
-            touchedFields[key] = true; 
-        });
-        setTouched(touchedFields);
-
-        if (validateForm()) {
-            try {
-                // Check if both IDs are available
-                if (!id || !performerDetails?.PId) {
-                    throw new Error('Missing required IDs');
-                }
-
-                const submitFormData = new FormData();
-
-                // Handle image upload
-                if (formData.imageFile) {
-                    const imageResponse = await edgestore.publicFiles.upload({
-                        file: formData.imageFile
-                    });
-                    if (imageResponse?.url) {
-                        submitFormData.append('imageUrl', imageResponse.url);
-                    } else {
-                        throw new Error("Image upload failed");
-                    }
-                }
-
-                // Append form data
-                Object.entries(formData).forEach(([key, value]) => {
-                    if (key !== 'imageFile' && value !== null) {
-                        submitFormData.append(key, value.toString());
-                    }
-                });
-
-                // Add event ID to form data
-                submitFormData.append('eventId', id as string);
-
-                // Make API request
-                console.log('ffffffffffffffffffffffffff')
-
-                console.log(`${performerDetails.PId}/${id}`,'ffffffffffffffffffayi')
-                const response = await axiosInstance.put(
-                    `/performerEvent/editEvent/${performerDetails.PId}/${id}`,
-                    submitFormData,
-                    {withCredentials:true});
-
-                // Reset form and show success message
-                setFormData(INITIAL_FORM_STATE);
-                setImagePreview(null);
-                setErrors({});
-                setTouched({});
-                setSubmitSuccess(true);
-                router.replace('/event-management');
-            } catch (error) {
-                setSubmitError(
-                    error instanceof Error 
-                        ? error.message 
-                        : 'An error occurred while submitting the form'
-                );
-                console.error('Error:', error);
-            }
-        } else {
-            setSubmitError('Please correct the errors before submitting');
-        }
-
-        setIsSubmitting(false);
-    };
-
-    // CSS Classes
-    const inputClasses = "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500";
-    const labelClasses = "block text-sm font-semibold text-gray-700 mb-1";
-    const errorClasses = "text-red-500 text-xs mt-1";
-
-    const getInputStateClasses = (fieldName: string): string => {
-        if (touched[fieldName]) {
-            return errors[fieldName] 
-                ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
-                : "border-green-500 focus:ring-green-500 focus:border-green-500";
-        }
-        return "border-gray-300";
-    };
-
+  // Loading Spinner
+  if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-8">
-            <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-8">
-                <button 
-                    onClick={() => router.replace('/event-management')} 
-                    className="mb-4 flex items-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none"
-                >
-                    Back to Event Management
-                </button>
-
-                <h2 className="text-2xl font-bold mb-4">
-                    {event ? 'Update Event' : 'Create New Event'}
-                </h2>
-
-                {submitError && (
-                    <div className="text-red-500 mb-4">{submitError}</div>
-                )}
-
-                {submitSuccess && (
-                    <div className="text-green-500 mb-4">
-                        Event {event ? 'updated' : 'created'} successfully!
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    {/* Event Name */}
-                    <div>
-                        <label className={labelClasses}>Event Name</label>
-                        <input
-                            type="text"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('title')}`}
-                        />
-                        {errors.title && (
-                            <div className={errorClasses}>{errors.title}</div>
-                        )}
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                        <label className={labelClasses}>Category</label>
-                        <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('category')}`}
-                        >
-                            <option value="">Select Category</option>
-                            <option value="Motivational">Motivational</option>
-                            <option value="Comedy">Comedy</option>
-                            <option value="Music">Music</option>
-                        </select>
-                        {errors.category && (
-                            <div className={errorClasses}>{errors.category}</div>
-                        )}
-                    </div>
-
-                    {/* Price */}
-                    <div>
-                        <label className={labelClasses}>Price</label>
-                        <input
-                            type="text"
-                            name="price"
-                            value={formData.price}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('price')}`}
-                        />
-                        {errors.price && (
-                            <div className={errorClasses}>{errors.price}</div>
-                        )}
-                    </div>
-
-                    {/* Team Leader */}
-                    <div>
-                        <label className={labelClasses}>Team Leader Name</label>
-                        <input
-                            type="text"
-                            name="teamLeader"
-                            value={formData.teamLeader}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('teamLeader')}`}
-                        />
-                        {errors.teamLeader && (
-                            <div className={errorClasses}>{errors.teamLeader}</div>
-                        )}
-                    </div>
-
-                    {/* Contact Number */}
-                    <div>
-                        <label className={labelClasses}>Contact Number</label>
-                        <input
-                            type="text"
-                            name="teamLeaderNumber"
-                            value={formData.teamLeaderNumber}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('teamLeaderNumber')}`}
-                        />
-                        {errors.teamLeaderNumber && (
-                            <div className={errorClasses}>{errors.teamLeaderNumber}</div>
-                        )}
-                    </div>
-{/* Description */}
-<div>
-                        <label className={labelClasses}>Description</label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            className={`${inputClasses} ${getInputStateClasses('description')}`}
-                            rows={4}
-                        />
-                        {errors.description && (
-                            <div className={errorClasses}>{errors.description}</div>
-                        )}
-                    </div>
-
-                    {/* Event Image */}
-                    <div>
-                        <label className={labelClasses}>Event Image</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                          
-                            onChange={handleImageChange}
-                            className={`${inputClasses} ${getInputStateClasses('imageFile')}`}
-                        />
-                        {imagePreview && (
-                            <img 
-                                src={imagePreview} 
-                                alt="Image preview" 
-                                className="mt-2 h-32 w-32 object-cover"
-                            />
-                        )}
-                        {errors.imageFile && (
-                            <div className={errorClasses}>{errors.imageFile}</div>
-                        )}
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="mt-4 w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSubmitting ? 'Submitting...' : 'Submit'}
-                    </button>
-                </div>
-            </div>
+      <div className="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+        <div className="text-blue-600 text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-semibold">Loading...</h2>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar */}
+      <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
+
+      <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">
+        {/* Header */}
+        <header className="bg-white shadow-md p-4 flex justify-between items-center">
+          <button onClick={toggleSidebar} className="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none">
+            <FontAwesomeIcon icon={sidebarOpen ? faTimes : faBars} size="lg" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800">Event Management</h1>
+        </header>
+
+        <main className="p-6">
+          {/* Search Input */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <FontAwesomeIcon 
+                icon={faSearch} 
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+            </div>
+          </div>
+
+          {/* Events Table */}
+          <div className="overflow-x-auto">
+            {filteredEvents.length === 0 ? (
+              <div className="text-center py-4 text-gray-600">
+                No events found matching your search.
+              </div>
+            ) : (
+              <>
+                <table className="min-w-full bg-white shadow rounded-lg">
+                  <thead>
+                    <tr>
+                      <th className="py-3 px-4 border-b">Title</th>
+                   
+                      <th className="py-3 px-4 border-b">Details</th>
+                      <th className="py-3 px-4 border-b">Price</th>
+                    
+                   
+                  
+                 
+                      <th className="py-3 px-4 border-b">Image</th>
+                      <th className="py-3 px-4 border-b">Status</th>
+                      <th className="py-3 px-4 border-b">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentEvents.map((event) => (
+                      <tr key={event._id} className="border-b text-center">
+                        <td className="py-3 px-4">{event.title}</td>
+                    
+                        <td className="py-3 px-4">
+                        <Description 
+  description={event.description} 
+  teamLeader={event.teamLeader}
+  teamLeaderNumber={event.teamLeaderNumber}
+  category={event.category}
+  maxLength={0} 
+/>
+                        </td>
+                        <td className="py-3 px-4">{event.price}</td>
+                    
+                   
+                     
+                    
+                        <td className="py-3 px-4">
+                          <img src={event.imageUrl} alt={event.title} className="w-12 h-12 object-cover mx-auto" />
+                        </td>
+                        <td className={`py-3 px-4 ${event.isblocked ? "text-red-500" : "text-green-500"}`}>
+                          {event.isblocked ? "Inactive" : "Active"}
+                        </td>
+                        <td className="py-3 px-4">
+                          <button 
+                            onClick={() => blockUnblockEvent(event._id)}
+                            className={`py-2 px-4 rounded font-semibold ${
+                              event.isblocked
+                                ? "bg-green-500 text-white hover:bg-green-600"
+                                : "bg-red-500 text-white hover:bg-red-600"
+                            }`}
+                          >
+                            {event.isblocked ? "Unblock" : "Block"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination Controls */}
+                {filteredEvents.length > 0 && (
+                  <div className="mt-4 flex justify-center items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <FontAwesomeIcon icon={faChevronLeft} />
+                    </button>
+                    
+                    {[...Array(totalPages)].map((_, index) => (
+                      <button
+                        key={index + 1}
+                        onClick={() => handlePageChange(index + 1)}
+                        className={`px-3 py-1 rounded ${
+                          currentPage === index + 1
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </main>
+
+        {/* Block Event Modal */}
+        <BlockEventModal 
+          isOpen={isBlockModalOpen}
+          onClose={() => setIsBlockModalOpen(false)}
+          onBlock={handleBlockEvent}
+          showTimeInput={true}
+        />
+
+        {/* Unblock Confirmation Modal */}
+        {isUnblockConfirmOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-sm w-full">
+              <h2 className="text-xl font-bold mb-4">Confirm Unblock</h2>
+              <p className="mb-4">Are you sure you want to unblock this event?</p>
+              <div className="flex justify-end space-x-2">
+                <button 
+                  onClick={() => setIsUnblockConfirmOpen(false)}
+                  className="px-4 py-2 bg-gray-200 rounded"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleUnblockEvent}
+                  className="px-4 py-2 bg-green-500 text-white rounded"
+                >
+                  Unblock
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-export default EventForm;
+export default EventManagement;

@@ -7,6 +7,8 @@ import axiosInstance from "@/shared/axiousintance";
 import { useFavoritesStore } from "@/store/useFavoriteEvents";
 import usePerformersStore from "@/store/useAllPerformerStore";
 import DescriptionViewer from '@/component/descriptionViewer';
+import EventRatingPage from "@/component/showEventRating";
+
 interface Event {
   _id?: string;
   title: string;
@@ -66,6 +68,7 @@ const EventsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedEventForRating, setSelectedEventForRating] = useState<string | null>(null);
 
   // Filter states
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -197,6 +200,15 @@ const EventsPage = () => {
     searchQuery,
   ]);
 
+
+  const handleShowRatings = (eventId: string) => {
+    setSelectedEventForRating(eventId);
+  };
+
+  // Function to close ratings modal
+  const closeRatingsModal = () => {
+    setSelectedEventForRating(null);
+  };
   // Event handlers
   const handleSearch = (value: string) => {
     setSearchQuery(value);
@@ -558,7 +570,16 @@ const EventsPage = () => {
                             <span className="ml-1 text-gray-600">
                               {event.rating.toFixed(1)}
                             </span>
-                            <h1>show</h1>
+                            {event.rating > 0 && (
+  <span
+    onClick={() => handleShowRatings(event._id || '')}
+    className="cursor-pointer text-green-600 hover:underline hover:text-green-700 transition duration-300"
+  >
+    Reviews
+  </span>
+)}
+
+
                           </div>
                         </div>
 
@@ -719,6 +740,33 @@ const EventsPage = () => {
                 )}
             </>
           )}
+            {/* Ratings Modal */}
+      {selectedEventForRating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto relative">
+            <button 
+              onClick={closeRatingsModal}
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 z-60"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-6 w-6" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M6 18L18 6M6 6l12 12" 
+                />
+              </svg>
+            </button>
+            <EventRatingPage eventId={selectedEventForRating} />
+          </div>
+        </div>
+      )}
         </div>
       </main>
     

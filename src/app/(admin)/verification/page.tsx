@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,6 +6,7 @@ import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faInbox } from '@forta
 import { Dialog, Transition } from '@headlessui/react';
 import axiosInstance from '@/shared/axiousintance';
 import VideoDescriptionModal from '@/component/videoDescriptionModal';
+import Sidebar from '@/component/adminSidebar';
 
 type Performer = {
     id: string;
@@ -28,12 +28,18 @@ const Verification: React.FC = () => {
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
-
   const [rejectReason, setRejectReason] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rejectReasonError, setRejectReasonError] = useState('');
   const itemsPerPage = 5;
   const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -47,8 +53,6 @@ const Verification: React.FC = () => {
       } catch (error) {
         console.error('Session check failed:', error);
         router.replace('/adminlogin');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -121,6 +125,18 @@ const Verification: React.FC = () => {
     }
   };
 
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const openConfirmation = (performer: Performer, action: 'approve' | 'reject') => {
     setSelectedPerformer(performer);
     setAction(action);
@@ -133,18 +149,6 @@ const Verification: React.FC = () => {
   const totalPages = Math.ceil(performers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const selectedPerformers = performers.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
 
   const EmptyState: React.FC = () => (
     <div className="text-center py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
@@ -169,42 +173,7 @@ const Verification: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <aside className={`w-64 bg-gradient-to-b from-blue-600 to-blue-800 text-white p-6 h-screen fixed top-0 left-0 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-30`}>
-        <div className="flex items-center mb-8">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-            <img src="http://i.pravatar.cc/250?img=58" alt="Admin" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">Admin Name</h3>
-            <span className="text-sm font-light">Administrator</span>
-          </div>
-        </div>
-
-        <nav>
-          <ul className="space-y-4">
-            {[
-              { icon: faHome, text: 'Dashboard', href: '/dashboard' },
-              { icon: faUsers, text: 'User Management', href: '/usermanagement' },
-              { icon: faUsers, text: 'Events', href: '/eventmanagement' },
-              { icon: faLock, text: 'Verification', href: '/verification' },
-              // { icon: faWallet, text: 'Wallet', href: '#wallet' }
-            ].map((item, index) => (
-              <li key={index}>
-                <a href={item.href} className="flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
-                  <FontAwesomeIcon icon={item.icon} className="mr-3" />
-                  {item.text}
-                </a>
-              </li>
-            ))}
-            <li>
-              <button onClick={handleLogout} className="w-full text-left flex items-center text-lg hover:bg-blue-700 p-3 rounded-lg transition-colors duration-200">
-                <FontAwesomeIcon icon={faSignOutAlt} className="mr-3" />
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+      <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
 
       <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">
         <div className="flex-1 p-8">
@@ -221,7 +190,6 @@ const Verification: React.FC = () => {
                       <th className="p-4">Submit Date</th>
                       <th className="p-4">Video</th>
                       <th className="p-4">Mobile Number</th>
-                  
                       <th className="p-4">Status</th>
                     </tr>
                   </thead>
@@ -231,29 +199,18 @@ const Verification: React.FC = () => {
                         <td className="p-4">{performer.bandName}</td>
                         <td className="p-4">{new Date(performer.createdAt).toLocaleDateString()}</td>
                         <td className="p-4">
-    <button
-      onClick={() => {
-        setSelectedPerformer(performer);
-        setIsVideoModalOpen(true);
-      }}
-      className="text-indigo-600 hover:text-indigo-800 underline"
-      type="button"
-    >
-      View Video
-    </button>
-  </td>
-
-
-                        
-
-
-
-
-
-
-
+                          <button
+                            onClick={() => {
+                              setSelectedPerformer(performer);
+                              setIsVideoModalOpen(true);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-800 underline"
+                            type="button"
+                          >
+                            View Video
+                          </button>
+                        </td>
                         <td className="p-4">{performer.mobileNumber}</td>
-                    
                         <td className="p-4">
                           {performer.isVerified && (
                             <span className="text-green-500 font-semibold">Approved</span>
@@ -298,14 +255,16 @@ const Verification: React.FC = () => {
           </div>
         </div>
       </div>
+      
       <VideoDescriptionModal
-    isOpen={isVideoModalOpen}
-    onClose={() => {
-      setIsVideoModalOpen(false);
-      setSelectedPerformer(null);
-    }}
-    performer={selectedPerformer}
-  />
+        isOpen={isVideoModalOpen}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+          setSelectedPerformer(null);
+        }}
+        performer={selectedPerformer}
+      />
+      
       <Transition appear show={confirmationOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setConfirmationOpen(false)}>
           <Transition.Child
@@ -349,7 +308,6 @@ const Verification: React.FC = () => {
                       placeholder="Please provide a reason for rejection..."
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
-                 
                     />
                     {rejectReasonError && <p className="text-red-500 text-sm">{rejectReasonError}</p>}
                   </>
@@ -362,31 +320,28 @@ const Verification: React.FC = () => {
                     Cancel
                   </button>
                   <button
-             className={`bg-${action === 'approve' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded hover:bg-${action === 'approve' ? 'green' : 'red'}-600 transition-colors duration-200`}
-             onClick={() => {
-               if (action === 'reject' && !rejectReason.trim()) {
-                
-                setRejectReasonError('Please provide a reason for rejection');
-
-            
-                setTimeout(() => {
-                  setRejectReasonError('');
-                }, 1000);
-                 return;
-               }
-               selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')
-             }}
-           >
-             {action === 'approve' ? 'Approve' : 'Reject'}
-           </button>
-         </div>
-       </Dialog.Panel>
-     </Transition.Child>
-   </div>
- </Dialog>
-</Transition>
-</div>
-);
+                    className={`bg-${action === 'approve' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded hover:bg-${action === 'approve' ? 'green' : 'red'}-600 transition-colors duration-200`}
+                    onClick={() => {
+                      if (action === 'reject' && !rejectReason.trim()) {
+                        setRejectReasonError('Please provide a reason for rejection');
+                        setTimeout(() => {
+                          setRejectReasonError('');
+                        }, 1000);
+                        return;
+                      }
+                      selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')
+                    }}
+                  >
+                    {action === 'approve' ? 'Approve' : 'Reject'}
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
+    </div>
+  );
 };
 
 export default Verification;
