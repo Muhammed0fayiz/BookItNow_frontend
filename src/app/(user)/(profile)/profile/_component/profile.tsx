@@ -1,310 +1,254 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import { MessageCircle, Bell, Menu, X, Wallet } from 'lucide-react';
 import EditProfileForm from '@/component/edituserprofile';
 import ChangePasswordForm from '@/component/changepassword';
 import useUserStore from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
 import { loginImage } from '@/datas/logindatas';
-
+import Sidebar from '@/component/userSidebar';
 import useChatNotifications from '@/store/useChatNotification';
 import { useUpcomingEventsStore } from '@/store/useUserUpcomingEvents';
 import { useUserEventHistory } from '@/store/useUserEventHistory';
 
-const Profile: React.FC = () => {
+const Profile = () => {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const { totalCount: upcomingEventsTotalCount, fetchAllEvents: fetchUpcomingEvents } = useUpcomingEventsStore();
   const { totalCount: userEventHistoryTotalCount, fetchAllEvents: fetchUserEventHistory } = useUserEventHistory();
-  
-  // Now you can use the aliases:
-  console.log(upcomingEventsTotalCount, fetchUpcomingEvents);
-  console.log(userEventHistoryTotalCount, fetchUserEventHistory);
-  
-  // Get values and actions from Zustand store
-  const { 
-    userProfile, 
-    isLoading, 
-    error, 
-    fetchUserProfile, 
-    handleLogout 
-  } = useUserStore();
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
-  useChatNotifications();
-    useEffect(() => {
-      fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
-    }, [fetchNotifications]);
-  // Fetch user profile on mount and after any updates
+  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore();
+  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
+
+  // Reset modal states on mount and handle initial data fetching
   useEffect(() => {
-    const loadUserProfile = async () => {
-      await fetchUserProfile();
-    };
-    loadUserProfile();
-    fetchUpcomingEvents();
-fetchUserEventHistory()
-
-    
-  }, [fetchUserProfile,,fetchUserEventHistory,fetchUpcomingEvents]);
-
-  // Set up an interval to periodically refresh the profile data
-  useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      fetchUserProfile();
-    }, 60000); // Refresh every minute
-
-    return () => clearInterval(refreshInterval);
-  }, [fetchUserProfile]);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleEditProfileClick = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModal = async () => {
     setIsModalOpen(false);
-    // Refresh user profile after modal closes
-    await fetchUserProfile();
-  };
-
-  const handleChangePasswordClick = () => {
-    setIsChangePasswordModalOpen(true);
-  };
-  
-  const closeChangePasswordModal = async () => {
     setIsChangePasswordModalOpen(false);
-    // Refresh user profile after password change
+    
+    const initializeData = async () => {
+      try {
+        await Promise.all([
+          fetchNotifications(),
+          fetchUserProfile(),
+          fetchUpcomingEvents(),
+          fetchUserEventHistory()
+        ]);
+      } catch (err) {
+        console.error('Error initializing data:', err);
+      }
+    };
+
+    initializeData();
+
+    // Clean up function to reset states when component unmounts
+    return () => {
+      setIsModalOpen(false);
+      setIsChangePasswordModalOpen(false);
+    };
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Handle escape key to close modals
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsModalOpen(false);
+        setIsChangePasswordModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapeKey);
+    return () => window.removeEventListener('keydown', handleEscapeKey);
+  }, []);
+
+  const handleModalClose = async () => {
+    setIsModalOpen(false);
     await fetchUserProfile();
   };
 
-  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      closeModal();
-    }
+  const handlePasswordModalClose = async () => {
+    setIsChangePasswordModalOpen(false);
+    await fetchUserProfile();
   };
-
-  const handleChangePasswordOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      closeChangePasswordModal();
-    }
-  };
-
-  // Handle logout with proper cleanup
-  const handleProfileClick = () => {
-    router.push('/profile');
-  };
-
-  const handleLogouts = () => {
-    console.log('enter logout');
-    document.cookie = 'userToken=; Max-Age=0; path=/;';
-    setTimeout(() => {
-      router.replace('/auth');
-    }, 1000);
-  };
-
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="text-red-500 bg-red-100 p-4 rounded-lg">
-          <p className="font-semibold">Error loading profile</p>
-          <p className="text-sm">{error}</p>
-          <button 
-            onClick={() => fetchUserProfile()}
-            className="mt-2 text-blue-600 hover:text-blue-800"
-          >
-            Try Again
-          </button>
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <span className="text-red-500 text-6xl mb-4">⚠️</span>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Profile</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={() => fetchUserProfile()}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Top Navbar */}
-      <nav className="bg-white shadow-md fixed top-0 left-0 right-0 flex justify-between items-center px-6 py-4 z-50">
-        <a href="/home">
-          <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
-        </a>
-        <div className="flex space-x-4 items-center">
-        <a href="/chat" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
-              </svg>
-              {totalUnreadMessage > 0 && (
-  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-    {totalUnreadMessage}
-  </span>
-)}
-            </a>
-          <button className="md:hidden text-blue-600" onClick={toggleSidebar}>
-            <i className={`fas ${sidebarOpen ? 'fa-times' : 'fa-bars'}`}></i>
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <nav className="bg-white shadow-sm fixed w-full z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+              >
+                {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+              <a href="/home" className="flex items-center">
+                <span className="text-2xl font-bold text-blue-600 ml-2">BookItNow</span>
+              </a>
+            </div>
+            <div className="flex items-center space-x-4">
+              <a href="/chat" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
+                <MessageCircle size={24} />
+                {totalUnreadMessage > 0 && (
+                  <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalUnreadMessage}
+                  </span>
+                )}
+              </a>
+            </div>
+          </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="flex flex-1 pt-20">
-        {/* Left Sidebar */}
-        <aside 
-          className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}
-        >
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-            <img
-      src={userProfile?.profileImage ||  loginImage.img}
-      alt="User Avatar"
-      className="w-full h-full object-cover"
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        target.src =  loginImage.img;
-      }}
-      onClick={handleProfileClick}
-    />
-            </div>
-            <div>
-              <h3 className="text-md font-semibold">{userProfile?.username || 'Guest'}</h3>
-              <span className="text-sm font-light">User</span>
-            </div>
-          </div>
+      <div className="flex pt-16">
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          handleLogout={handleLogout}
+        />
 
-          <ul className="space-y-6">
-  <li>
-    <a href="/upcoming-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      Upcoming Events
-    </a>
-  </li>
-  <li>
-    <a href="/event-history" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      Event History
-    </a>
-  </li>
-  <li>
-              <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-              Favorite-events
-              </a>
-            </li>
-  <li>
-    <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      My Wallet
-    </a>
-  </li>
-  <li>
-    <button 
-      onClick={handleLogout}
-      className="w-full text-left block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100"
-    >
-      Sign Out
-    </button>
-  </li>
-</ul>
-        </aside>
+        <main className="flex-1 md:ml-64 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Cover Image */}
+              <div className="h-32 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+              
+              {/* Profile Content */}
+              <div className="relative px-6 pb-6">
+                {/* Profile Image */}
+                <div className="absolute -top-16 left-6">
+                  <div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden shadow-lg">
+                    <img
+                      src={userProfile?.profileImage || loginImage.img}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = loginImage.img;
+                      }}
+                    />
+                  </div>
+                </div>
 
-        {/* Profile Section */}
-        <div className={`flex-1 flex justify-center items-start ${sidebarOpen ? 'md:ml-64' : ''} p-6`}>
-          <div className={`bg-white rounded-lg shadow-lg p-8 relative w-full max-w-md ${sidebarOpen ? 'md:opacity-100' : ''}`}>
-            <div className="relative flex justify-center mb-6">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-8 border-white shadow-lg absolute -top-16">
-              <img
-  src={userProfile?.profileImage || loginImage.img}
-  alt="User Avatar"
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    const target = e.target as HTMLImageElement;
-    target.src = loginImage.img;
-  }}
-/>
+                {/* Profile Info */}
+                <div className="pt-20">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">{userProfile?.username || 'Guest'}</h1>
+                      <p className="text-gray-600">{userProfile?.email || 'guest@example.com'}</p>
+                    </div>
+                    <div className="mt-4 md:mt-0 space-y-2 md:space-y-0 md:space-x-2">
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
+                      >
+                        Edit Profile
+                      </button>
+                      <button
+                        onClick={() => setIsChangePasswordModalOpen(true)}
+                        className="w-full md:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200"
+                      >
+                        Change Password
+                      </button>
+                    </div>
+                  </div>
 
-              </div>
-            </div>
-        
-            <div className="text-center mt-16">
-              <h4 className="text-2xl font-semibold">{userProfile?.username || 'Guest'}</h4>
-              <span className="block text-sm font-light mt-1">{userProfile?.email || 'guest@example.com'}</span>
-              <button
-                onClick={handleEditProfileClick}
-                className="block w-full mt-6 border border-black rounded-full py-2 px-6 text-sm transition hover:bg-black hover:text-white"
-              >
-                Edit Profile
-              </button>
-              <button
-                onClick={handleChangePasswordClick}
-                className="block w-full mt-3 border border-black rounded-full py-2 px-6 text-sm transition hover:bg-black hover:text-white"
-              >
-                Change Password
-              </button>
-            </div>
-
-            {/* Profile Stats */}
-            <div className="flex justify-between mt-8">
-              <div className="text-center">
-                <i className="fas fa-wallet text-yellow-500 text-2xl"></i>
-                <div className="text-3xl font-bold">{userProfile?.walletBalance?.toFixed(2) || '0.00'}</div>
-                <div className="text-sm">Wallet</div>
-              </div>
-              <div className="text-center">
-                <i className="fas fa-calendar text-blue-500 text-2xl"></i>
-                <div className="text-3xl font-bold">{upcomingEventsTotalCount}</div>
-                <div className="text-sm">Upcoming Events</div>
-              </div>
-              <div className="text-center">
-                <i className="fas fa-history text-pink-500 text-2xl"></i>
-                <div className="text-3xl font-bold">{userEventHistoryTotalCount}</div>
-                <div className="text-sm">Event History</div>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-6 mt-8">
+                    <div className="p-6 bg-blue-50 rounded-xl">
+                      <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+                        <Wallet className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">₹{userProfile?.walletBalance?.toFixed(2) || '0.00'}</h3>
+                      <p className="text-gray-600">Wallet Balance</p>
+                    </div>
+                    <div className="p-6 bg-green-50 rounded-xl">
+                      <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
+                        <Bell className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">{upcomingEventsTotalCount}</h3>
+                      <p className="text-gray-600">Upcoming Events</p>
+                    </div>
+                    <div className="p-6 bg-purple-50 rounded-xl">
+                      <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4">
+                        <MessageCircle className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">{userEventHistoryTotalCount}</h3>
+                      <p className="text-gray-600">Event History</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
-      {/* Modal for Edit Profile */}
+      {/* Modals */}
       {isModalOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleOverlayClick}></div>
-          <div className="fixed inset-0 flex justify-center items-center z-50" onClick={handleOverlayClick}>
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-              <EditProfileForm 
-                onClose={closeModal} 
-                username={userProfile?.username || ''} 
-                userID={userProfile?.id || ''}
-              />
-            </div>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          onClick={() => handleModalClose()}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full mx-4" 
+            onClick={e => e.stopPropagation()}
+          >
+            <EditProfileForm 
+              onClose={handleModalClose} 
+              username={userProfile?.username || ''} 
+              userID={userProfile?.id || ''}
+            />
           </div>
-        </>
+        </div>
       )}
 
-      {/* Modal for Change Password */}
       {isChangePasswordModalOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleChangePasswordOverlayClick}></div>
-          <div className="fixed inset-0 flex justify-center items-center z-50" onClick={handleChangePasswordOverlayClick}>
-            <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-              <ChangePasswordForm 
-                onClose={closeChangePasswordModal} 
-                userId={userProfile?.id || ''}
-              />
-            </div>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          onClick={() => handlePasswordModalClose()}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full mx-4" 
+            onClick={e => e.stopPropagation()}
+          >
+            <ChangePasswordForm 
+              onClose={handlePasswordModalClose} 
+              userId={userProfile?.id || ''}
+            />
           </div>
-        </>
-      )}
-
-      {/* Overlay for Mobile View */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 md:hidden" onClick={toggleSidebar}></div>
+        </div>
       )}
     </div>
   );

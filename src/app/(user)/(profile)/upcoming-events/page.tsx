@@ -13,6 +13,8 @@ import { Calendar } from 'lucide-react';
 import useChatNotifications from '@/store/useChatNotification';
 import InitialLoading from '@/component/loading';
 import DescriptionViewer from '@/component/descriptionViewer';
+import Sidebar from '@/component/userSidebar';
+
 const UpcomingEvents: React.FC = () => {
 
   const router = useRouter();
@@ -237,61 +239,13 @@ useChatNotifications();
       </nav>
 
       <div className="flex pt-16">
-        {/* ... existing sidebar code ... */}
- <aside 
-          className={`w-64 bg-blue-600 text-white p-6 fixed top-0 left-0 h-full transition-transform duration-300 z-40 
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 pt-24`}
-        >
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-            <img
-      src={userProfile?.profileImage || loginImage.img}
-      alt="User Avatar"
-      className="w-full h-full object-cover"
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        target.src = loginImage.img;
-      }}
-      onClick={handleProfileClick}
-    />
-            </div>
-            <div>
-              <h3 className="text-md font-semibold">{userProfile?.username || 'Guest'}</h3>
-              <span className="text-sm font-light">User</span>
-            </div>
-          </div>
-          <ul className="space-y-6">
-  <li>
-    <a href="/upcoming-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      Upcoming Events
-    </a>
-  </li>
-  <li>
-    <a href="/event-history" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      Event History
-    </a>
-  </li>
-  <li>
-    <a href="/favorite-events" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-              Favorite-events
-              </a>
-            </li>
-  <li>
-    <a href="/user-wallet" className="block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100">
-      My Wallet
-    </a>
-  </li>
-  <li>
-    <button 
-      onClick={handleLogout}
-      className="w-full text-left block text-lg hover:bg-white/10 p-3 rounded-md transition duration-300 text-white hover:text-gray-100"
-    >
-      Sign Out
-    </button>
-  </li>
-</ul>
-        </aside>
-        {/* Enhanced Events Section */}
+ 
+        <Sidebar
+  sidebarOpen={sidebarOpen}
+  toggleSidebar={toggleSidebar}
+  handleLogout={handleLogout}
+/>
+ 
         <div className={`flex-1 ${sidebarOpen ? 'md:ml-64' : ''} p-6 mt-2`}>
           {/* Page Header */}
           <div className="mb-8 ml-64">

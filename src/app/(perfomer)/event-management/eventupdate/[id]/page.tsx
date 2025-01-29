@@ -426,7 +426,7 @@ const EventForm: React.FC = () => {
 
             <div className="relative group">
               <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="price">
-                <DollarSign className="w-4 h-4 inline-block mr-2" />
+              <span className="w-4 h-4 inline-block mr-1">₹</span>
                 Price
               </label>
               <input
