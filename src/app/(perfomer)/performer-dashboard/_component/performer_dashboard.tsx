@@ -121,8 +121,9 @@ const PerformerDashboard: React.FC = () => {
             <button className="md:hidden text-blue-600 mr-4" onClick={toggleSidebar}>
               <Menu size={24} />
             </button>
+            </div>
             <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
-          </div>
+        
           <div className="flex items-center">
             <button 
               onClick={toggleChat} 

@@ -9,7 +9,8 @@ import {
   Wallet,
   History,
   LogOut,
-  User
+  User,
+  Home
 } from 'lucide-react';
 
 const Sidebar: React.FC<{ sidebarOpen: boolean; toggleSidebar: () => void; handleLogout: () => void; }> = ({ 
@@ -26,6 +27,11 @@ const Sidebar: React.FC<{ sidebarOpen: boolean; toggleSidebar: () => void; handl
   };
 
   const navigationItems = [
+    {
+      path: '/profile',
+      icon: <User size={20} />,
+      label: 'My Profile'
+    },
     {
       path: '/upcoming-events',
       icon: <Calendar size={20} />,
@@ -45,6 +51,11 @@ const Sidebar: React.FC<{ sidebarOpen: boolean; toggleSidebar: () => void; handl
       path: '/user-wallet',
       icon: <Wallet size={20} />,
       label: 'My Wallet'
+    },
+    {
+      path: '/home',
+      icon: <Home size={20} />,
+      label: 'Home Page'
     }
   ];
 

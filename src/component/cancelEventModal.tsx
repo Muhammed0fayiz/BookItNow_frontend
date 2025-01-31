@@ -63,7 +63,7 @@ const CancelEventModal = ({
             <ul className="space-y-2 text-sm text-yellow-700">
               <li>• App fees (₹10) is non-refundable</li>
               <li>• Cancellations less than 10 days before the event are non-refundable</li>
-              <li>• Refund is 10% of event price minus app fees (₹10)</li>
+      
             </ul>
           </div>
 
@@ -74,8 +74,9 @@ const CancelEventModal = ({
               <span className="font-medium">{daysUntilEvent} days</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Original payment:</span>
-              <span className="font-medium">₹{eventPrice}</span>
+              <span className="text-sm text-gray-600">Adwan payment:</span>
+              <span className="font-medium">₹{eventPrice / 10}</span>
+
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">App fees (non-refundable):</span>

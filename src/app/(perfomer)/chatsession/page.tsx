@@ -159,10 +159,14 @@ useEffect(() => {
       router.replace('/auth');
     }, 1000);
   };
-  const filteredChatRooms = chatRooms.filter(room => 
-    room.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    room.performerName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+const filteredChatRooms = chatRooms.filter(room => {
+    const searchTermLower = searchTerm.toLowerCase();
+    const userName = room.userName?.toLowerCase() || '';
+    const performerName = room.performerName?.toLowerCase() || '';
+    
+    return userName.includes(searchTermLower) || 
+           performerName.includes(searchTermLower);
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex">

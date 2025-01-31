@@ -309,7 +309,7 @@ const EventManagementDashboard: React.FC = () => {
               <Menu size={24} />
             </button>
           </div>
-          <h1 className="text-2xl font-bold text-blue-600">Event Management</h1>
+          <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
           <div className="flex items-center">
             <button 
               onClick={toggleChat} 

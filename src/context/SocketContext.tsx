@@ -73,7 +73,7 @@ export const SocketContextProvider: React.FC<SocketContextProviderProps> = ({ ch
   const sendMessage = (receiverId: string, message: string) => {
     if (socket) {
       const messageData: Message = {
-        senderId: localStorage.getItem("userId") || "", // Get senderId from localStorage
+        senderId: localStorage.getItem("userId") || "",
         receiverId,
         message,
       };

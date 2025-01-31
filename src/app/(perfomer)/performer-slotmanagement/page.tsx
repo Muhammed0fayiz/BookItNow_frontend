@@ -33,7 +33,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) 
   </div>
 );
 
-const PerformerDashboard: React.FC = () => {
+const SlotManagement: React.FC = () => {
   // State Management
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -272,25 +272,7 @@ const PerformerDashboard: React.FC = () => {
     </div>
   );
 
-  // Chat Component
-  const renderChatSection = () => (
-    <div className={`fixed right-0 bottom-0 w-80 bg-white shadow-lg transition-transform duration-300 ${chatOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-      <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-        <h3 className="font-semibold">Chat</h3>
-        <button onClick={toggleChat} className="text-white">
-          <Menu size={20} />
-        </button>
-      </div>
-      <div className="h-80 overflow-y-auto p-4">
-        {/* Chat messages would go here */}
-      </div>
-      <div className="p-4 border-t">
-        <div className="flex">
-          {/* Chat input would go here */}
-        </div>
-      </div>
-    </div>
-  );
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -333,7 +315,7 @@ const PerformerDashboard: React.FC = () => {
         </div>
 
         {/* Render Chat Section */}
-        {renderChatSection()}
+    
       </div>
 
       {/* Mobile Overlay */}
@@ -344,4 +326,4 @@ const PerformerDashboard: React.FC = () => {
   );
 };
 
-export default PerformerDashboard;
+export default SlotManagement;
