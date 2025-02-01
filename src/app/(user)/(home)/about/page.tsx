@@ -57,8 +57,8 @@ const About = () => {
 
           <div className="hidden md:flex items-center space-x-6">
             <a
-              href="/"
-              className="text-blue-600 font-semibold transition duration-300"
+              href="/home"
+            className="text-gray-700 hover:text-blue-600 transition duration-300"
             >
               Home
             </a>
@@ -70,7 +70,7 @@ const About = () => {
             </a>
             <a
               href="/about"
-              className="text-gray-700 hover:text-blue-600 transition duration-300"
+                 className="text-blue-600 font-semibold transition duration-300"
             >
               About
             </a>

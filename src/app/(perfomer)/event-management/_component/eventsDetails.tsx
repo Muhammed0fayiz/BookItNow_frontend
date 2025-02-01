@@ -199,7 +199,7 @@ const EventManagementDashboard: React.FC = () => {
                  onClick={() => handleViewBlockDetails(event._id!)}
                  className="bg-green-400 text-red-800 px-2 py-1 rounded-full"
                >
-                  Conduct 
+                Contact 
                </button>
             ) : (
               <button

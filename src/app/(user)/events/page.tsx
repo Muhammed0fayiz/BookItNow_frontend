@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { debounce } from "lodash";
 import { useRouter } from "next/navigation";
 import useUserStore from "@/store/useUserStore";
 import useChatNotifications from "@/store/useChatNotification";
@@ -57,9 +58,7 @@ const EventsPage = () => {
   const [performerTotalCount, setPerformerTotalCount] = useState(0);
   const [performerCurrentPage, setPerformerCurrentPage] = useState(1);
   const [performerTotalPages, setPerformerTotalPages] = useState(1);
-  const [performerSortOrder, setPerformerSortOrder] = useState<"asc" | "desc">(
-    "desc"
-  );
+  const [performerSortOrder, setPerformerSortOrder] = useState<"asc" | "desc">("desc");
 
   // Event states
   const [events, setEvents] = useState<Event[]>([]);
@@ -74,6 +73,20 @@ const EventsPage = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Debounced search function
+  const debouncedSearch = debounce((value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+    setPerformerCurrentPage(1);
+  }, 300); // 300ms delay
+
+  // Cleanup debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, []);
 
   // Fetch events with filters
   const fetchFilteredEvents = async () => {
@@ -200,7 +213,6 @@ const EventsPage = () => {
     searchQuery,
   ]);
 
-
   const handleShowRatings = (eventId: string) => {
     setSelectedEventForRating(eventId);
   };
@@ -209,13 +221,8 @@ const EventsPage = () => {
   const closeRatingsModal = () => {
     setSelectedEventForRating(null);
   };
-  // Event handlers
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    setCurrentPage(1);
-    setPerformerCurrentPage(1);
-  };
 
+  // Event handlers
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setCurrentPage(1);
@@ -271,7 +278,6 @@ const EventsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      {/* ... (keep existing navigation JSX) ... */}
       <nav className="bg-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-6">
@@ -403,6 +409,7 @@ const EventsPage = () => {
           </div>
         )}
       </nav>
+
       <main>
         {/* Header Section */}
         <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
@@ -415,24 +422,28 @@ const EventsPage = () => {
             <div className="max-w-xl mx-auto">
               <input
                 type="text"
+                value={searchQuery}
                 placeholder={
                   activeTab === "events"
                     ? "Search events by name or description..."
                     : "Search performers by band name..."
                 }
                 className="w-full px-4 py-2 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => debouncedSearch(e.target.value)} 
               />
             </div>
           </div>
         </header>
+
         {/* Tab Navigation */}
         <div className="bg-white shadow-sm">
           <div className="container mx-auto px-4">
             <div className="flex justify-center space-x-8 py-4">
               <button
-                onClick={() => setActiveTab("events")}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveTab("events");
+                }}
                 className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
                   activeTab === "events"
                     ? "bg-blue-600 text-white"
@@ -442,7 +453,10 @@ const EventsPage = () => {
                 Events
               </button>
               <button
-                onClick={() => setActiveTab("performers")}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveTab("performers");
+                }}
                 className={`text-lg font-semibold px-4 py-2 rounded-lg transition-colors duration-200 ${
                   activeTab === "performers"
                     ? "bg-blue-600 text-white"
@@ -454,6 +468,7 @@ const EventsPage = () => {
             </div>
           </div>
         </div>
+
         <div className="container mx-auto px-4 py-8">
           {/* Events Section */}
           {activeTab === "events" && (
@@ -527,18 +542,17 @@ const EventsPage = () => {
                         onClick={() => handleWishlist(event._id)}
                         className="absolute top-4 right-4 z-10 focus:outline-none"
                       >
-                      <svg
-  xmlns="http://www.w3.org/2000/svg"
-  className={`h-7 w-7 ${
-    favoriteEvents.some(favEvent => favEvent._id === event._id)
-      ? "text-red-500 fill-current"
-      : "text-gray-300 hover:text-red-300"
-  }`}
-  fill="none"
-  viewBox="0 0 24 24"
-  stroke="currentColor"
->
-                          
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={`h-7 w-7 ${
+                            favoriteEvents.some(favEvent => favEvent._id === event._id)
+                              ? "text-red-500 fill-current"
+                              : "text-gray-300 hover:text-red-300"
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -571,20 +585,18 @@ const EventsPage = () => {
                               {event.rating.toFixed(1)}
                             </span>
                             {event.rating > 0 && (
-  <span
-    onClick={() => handleShowRatings(event._id || '')}
-    className="cursor-pointer text-green-600 hover:underline hover:text-green-700 transition duration-300"
-  >
-    Reviews
-  </span>
-)}
-
-
+                              <span
+                                onClick={() => handleShowRatings(event._id || '')}
+                                className="cursor-pointer text-green-600 hover:underline hover:text-green-700 transition duration-300"
+                              >
+                                Reviews
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <p className="text-gray-600 mb-4">
-                        <DescriptionViewer description={event.description} maxLength={20} />
+                          <DescriptionViewer description={event.description} maxLength={20} />
                         </p>
 
                         <div className="space-y-2">
@@ -697,7 +709,7 @@ const EventsPage = () => {
                         {performer.bandName}
                       </h3>
                       <p className="text-gray-600 mb-3">
-                      <DescriptionViewer description={performer.description} maxLength={15} />
+                        <DescriptionViewer description={performer.description} maxLength={15} />
                       </p>
                       <div className="flex items-center justify-center mb-3">
                         <svg
@@ -740,36 +752,37 @@ const EventsPage = () => {
                 )}
             </>
           )}
-            {/* Ratings Modal */}
-      {selectedEventForRating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto relative">
-            <button 
-              onClick={closeRatingsModal}
-              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 z-60"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-6 w-6" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M6 18L18 6M6 6l12 12" 
-                />
-              </svg>
-            </button>
-            <EventRatingPage eventId={selectedEventForRating} />
-          </div>
-        </div>
-      )}
+
+          {/* Ratings Modal */}
+          {selectedEventForRating && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+              <div className="bg-white rounded-lg w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto relative">
+                <button 
+                  onClick={closeRatingsModal}
+                  className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 z-60"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-6 w-6" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M6 18L18 6M6 6l12 12" 
+                    />
+                  </svg>
+                </button>
+                <EventRatingPage eventId={selectedEventForRating} />
+              </div>
+            </div>
+          )}
         </div>
       </main>
-    
+
       <footer className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-8 mt-16">
         <p>&copy; 2024 BookItNow. All rights reserved.</p>
       </footer>
