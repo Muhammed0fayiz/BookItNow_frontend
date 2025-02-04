@@ -1,11 +1,10 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, MessageCircle, Send } from 'lucide-react';
+import { Menu} from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useChatStore } from '@/store/useChatStore';
 import usePerformerStore from '@/store/usePerformerStore';
 import useWalletHistoryStore from '@/store/useWalletHistory';
 import axiosInstance from '@/shared/axiousintance';
@@ -25,14 +24,13 @@ const PerformerDashboard: React.FC = () => {
   const router = useRouter();
   
   // Store hooks
-  const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
+  const { sidebarOpen,toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  const { performerAllDetails, fetchPerformerAllDetails } = usePerformerAllDetails();
-  const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
-  const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
+  const {fetchPerformerAllDetails } = usePerformerAllDetails();
+  const { fetchWalletHistory } = useWalletHistoryStore();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  const {  totalUnreadMessage,fetchNotifications } =
   
   useChatNotifications();
     useEffect(() => {
@@ -46,13 +44,14 @@ const PerformerDashboard: React.FC = () => {
       fetchPerformerDetails();
       fetchWalletHistory();
     }
-  }, []);
+  }, [fetchPerformerAllDetails, fetchPerformerDetails, fetchWalletHistory]);
+  
 
   // Logout handler
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
   const handleDownloadReport = async () => {

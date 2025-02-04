@@ -3,6 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axiosInstance from '@/shared/axiousintance';
+import axios from 'axios';
 
 interface AdminLoginData {
   email: string;
@@ -79,11 +80,11 @@ const AdminLogin: React.FC = () => {
   const adminLoginSubmission = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGeneralError('');
-
+  
     if (!validateForm()) return;
-
+  
     setIsSubmitting(true); // Disable button while submitting
-
+  
     try {
       const response = await axiosInstance.post('/admin/adminLogin', adminLoginData);
       if (response.data.success) {
@@ -91,19 +92,23 @@ const AdminLogin: React.FC = () => {
       } else {
         setGeneralError(response.data.message || 'Login failed');
       }
-    } catch (error: any) {
-      if (error.response?.data?.message) {
-        setGeneralError(error.response.data.message);
-      } else if (error.request) {
-        setGeneralError('No response from server. Please try again.');
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        // Handle Axios-specific error
+        setGeneralError(error.response?.data?.message || 'An error occurred. Please try again.');
+      } else if (error instanceof Error) {
+        // Handle generic error
+        setGeneralError(error.message);
       } else {
-        setGeneralError('An error occurred. Please try again.');
+        // Fallback error message
+        setGeneralError('An unexpected error occurred.');
       }
       console.error('Login error:', error);
     } finally {
       setIsSubmitting(false); // Re-enable button after submission
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-100 to-blue-300 flex items-center justify-center p-4">

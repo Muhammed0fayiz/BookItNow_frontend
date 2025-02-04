@@ -14,7 +14,7 @@ import {
   Line, 
   ResponsiveContainer 
 } from 'recharts';
-import { ArrowUp, ArrowDown, TrendingUp } from 'lucide-react';
+import { ArrowUp,TrendingUp } from 'lucide-react';
 import usePerformerAllDetails from '@/store/usePerformerAllDetails';
 
 // Color palette
@@ -161,9 +161,12 @@ export const UpcomingEventsPieChart: React.FC = () => {
   );
 };
 
-export default {
+
+const Charts = {
   PerformanceOverviewCard,
   EventHistoryChart,
   WalletTransactionChart,
   UpcomingEventsPieChart
 };
+
+export default Charts;

@@ -3,7 +3,7 @@ import * as React from "react"
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => (
+  (props, ref) => (
     <div
       ref={ref}
       className="rounded-lg border bg-white text-gray-950 shadow-sm"
@@ -14,14 +14,14 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
 Card.displayName = "Card"
 
 const CardContent = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => (
+  (props, ref) => (
     <div ref={ref} className="p-6" {...props} />
   )
 )
 CardContent.displayName = "CardContent"
 
 const CardHeader = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => (
+  (props, ref) => (
     <div ref={ref} className="flex flex-col space-y-1.5 p-6" {...props} />
   )
 )

@@ -283,6 +283,7 @@ export interface User{
 export interface FavoriteEvent {
   _id?: string;
   title: string;
+  isListed: boolean;
   category: string;
   userId: string;
   price: number;
@@ -299,7 +300,7 @@ export interface FavoriteEvent {
 }
 
 export interface FavoritesStore {
-  favoriteEvents: any[];
+  favoriteEvents: FavoriteEvent[];
   totalCount: number;
   favorites: FavoriteEvent[];
   isLoading: boolean;

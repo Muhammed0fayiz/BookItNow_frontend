@@ -32,7 +32,7 @@ export const useSlotStore = create<SlotStore>((set, get) => ({
     }
   },
 
-  fetchSlotDetails: async (performerId?: string) => {
+  fetchSlotDetails: async () => {
     set({ isLoading: true, error: null });
     try {
       // If no performerId is provided, try to get it from the token

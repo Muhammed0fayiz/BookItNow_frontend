@@ -7,10 +7,9 @@ import useUserStore from "@/store/useUserStore";
 import useChatRooms from "@/store/chatstore";
 import mongoose from "mongoose";
 import { Send } from "lucide-react";
-import { io, Socket } from "socket.io-client";
 import useChatNotifications from "@/store/useChatNotification";
-import useSocketStore from "@/store/useSocketStore ";
-
+import useSocketStore from "@/store/useSocketStore";
+import Image from "next/image";
 // Updated Message interface to match backend structure
 interface Message {
   _id: string;
@@ -42,7 +41,7 @@ const Chat = () => {
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-  const { totalUnreadMessage, notifications, fetchNotifications } =
+  const {fetchNotifications } =
     useChatNotifications();
   const { fetchUserProfile, userProfile } = useUserStore();
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
@@ -114,7 +113,7 @@ const Chat = () => {
     const fetchMessages = async () => {
       if (selectedChatRoom && userProfile?.id) {
         try {
-          const online = await axiosInstance.post(
+         await axiosInstance.post(
             `/chat/onlineUser/${userProfile.id}/${selectedChatRoom.otherId}`
           );
           const response = await axiosInstance.get(
@@ -149,11 +148,7 @@ const Chat = () => {
           `/chat/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
           { message: newMessage }
         );
-        const messageData = {
-          senderId: userProfile.id,
-          receiverId: selectedChatRoom.otherId,
-          newMessage,
-        };
+     
 
         if (socket)
           socket.emit("sendMessage", {
@@ -346,11 +341,14 @@ const Chat = () => {
                         : "hover:bg-gray-200"
                     }`}
                   >
-                    <img
-                      src={chatRoom.profileImage}
-                      alt={chatRoom.userName}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
+                 <Image
+  src={chatRoom.profileImage}
+  alt={chatRoom.userName}
+  width={32}
+  height={32}
+  className="w-8 h-8 rounded-full mr-3"
+/>
+
                     <div>
                       <div>{chatRoom.userName}</div>
                       <div className="text-xs text-gray-500">
@@ -367,7 +365,9 @@ const Chat = () => {
               {/* Chat Header */}
               {selectedChatRoom && (
                 <div className="bg-blue-50 p-3 rounded-t-lg border-b mb-4 flex items-center">
-                  <img
+                  <Image 
+                     width={48}
+                     height={48}
                     src={selectedChatRoom.profileImage}
                     alt={selectedChatRoom.userName}
                     className="w-12 h-12 rounded-full mr-4"

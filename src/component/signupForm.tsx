@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import * as yup from 'yup';
 import axiosInstance from '@/shared/axiousintance';
+import { AxiosError } from 'axios';
 
 interface SignUpFormProps {
   toggleForm: () => void;
@@ -22,11 +23,14 @@ type FormErrors = {
 
 // Define validation schema
 const signUpSchema = yup.object().shape({
-    fullName: yup
-      .string()
-      .min(3, 'Full Name must be at least 3 characters')
-      .matches(/^\S*$/, 'Full Name should not contain spaces')
-      .required('Full Name is required'),
+  fullName: yup
+  .string()
+  .min(3, 'Full Name must be at least 3 characters')
+  .matches(/^[^\s].*[^\s]$/, 'Full Name cannot have leading or trailing spaces')
+  .matches(/^[a-zA-Z\s]*$/, 'Full Name can only contain letters and spaces')
+  .test('no-multiple-spaces', 'Full Name cannot contain multiple consecutive spaces', 
+    value => !value?.includes('  '))
+  .required('Full Name is required'),
     email: yup
       .string()
       .email('Email format is invalid')
@@ -67,7 +71,8 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
 
     try {
       // Get the validation schema for this field
-      const fieldSchema = yup.reach(signUpSchema, name) as yup.Schema<any>;
+      const fieldSchema = yup.reach(signUpSchema, name) as yup.StringSchema;
+
       await fieldSchema.validate(value);
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     } catch (error) {
@@ -101,15 +106,17 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
     if (isValid) {
       const loadingToast = toast.loading('Signing up...');
       try {
-        const response = await axiosInstance.post('/signup', signUpData);
+       await axiosInstance.post('/signup', signUpData);
         toast.dismiss(loadingToast);
         toast.success('Sign up successful! Redirecting to OTP page...');
         setTimeout(() => {
           router.push(`/otp?email=${signUpData.email}`);
         }, 2000);
-      } catch (error: any) {
+      } catch (error) {
         toast.dismiss(loadingToast);
-        if (error.response?.status === 401) {
+        
+        // Ensure error is properly typed
+        if (error instanceof AxiosError && error.response?.status === 401) {
           setemailexisterror(error.response.data.message);
           setTimeout(() => setemailexisterror(false), 3000);
         } else {

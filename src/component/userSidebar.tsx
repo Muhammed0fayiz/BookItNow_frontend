@@ -2,9 +2,9 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import useUserStore from '@/store/useUserStore';
 import { loginImage } from '@/datas/logindatas';
+import Image from "next/image";
 import {
   Calendar,
-  Clock,
   Heart,
   Wallet,
   History,
@@ -15,7 +15,6 @@ import {
 
 const Sidebar: React.FC<{ sidebarOpen: boolean; toggleSidebar: () => void; handleLogout: () => void; }> = ({ 
   sidebarOpen, 
-  toggleSidebar, 
   handleLogout 
 }) => {
   const router = useRouter();
@@ -69,10 +68,12 @@ const Sidebar: React.FC<{ sidebarOpen: boolean; toggleSidebar: () => void; handl
         onClick={handleProfileClick}
       >
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3">
-          <img
+       <Image
             src={userProfile?.profileImage || loginImage.img}
             alt="User Avatar"
             className="w-full h-full object-cover"
+            width={50}
+            height={30}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = loginImage.img;

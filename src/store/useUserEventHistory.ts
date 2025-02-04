@@ -19,7 +19,7 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
       console.log('dddd',response.data.totalCount,'erssfdsajf');
       
         
-        const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
+        const events: UpcomingEvent[] = response.data.events.map((event: UpcomingEvent) => ({
           ...event,
           // Ensure dates are properly formatted as strings
           date: new Date(event.date).toISOString(),

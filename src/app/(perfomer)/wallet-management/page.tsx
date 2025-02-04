@@ -1,7 +1,8 @@
 'use client'
-import React, { ReactElement, ReactNode, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, MessageCircle, Send, ArrowUpRight, ArrowDownRight, Wallet, Clock, Filter } from 'lucide-react';
+import { Menu,Send, ArrowUpRight, ArrowDownRight, Wallet, Clock, Filter } from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
 import { useChatStore } from '@/store/useChatStore';
@@ -9,26 +10,16 @@ import usePerformerStore from '@/store/usePerformerStore';
 import useWalletHistoryStore from '@/store/useWalletHistory';
 import useUserStore from '@/store/useUserStore';
 import useChatNotifications from '@/store/useChatNotification';
-interface DashboardSectionProps {
-  title: string;
-  children: ReactNode;
-}
 
-const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) => (
-  <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <h2 className="text-xl font-semibold mb-4">{title}</h2>
-    {children}
-  </div>
-);
 
 const PerformerWallet: React.FC = () => {
   const router = useRouter();
   const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  const { messages, newMessage, setNewMessage, sendMessage } = useChatStore();
+  const { newMessage, setNewMessage, sendMessage } = useChatStore();
   const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
-  const { userProfile, isLoading, error, fetchUserProfile } = useUserStore();
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  const { userProfile,fetchUserProfile } = useUserStore();
+  const {  totalUnreadMessage,fetchNotifications } =
   
   useChatNotifications();
     useEffect(() => {
@@ -49,7 +40,7 @@ const PerformerWallet: React.FC = () => {
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
 

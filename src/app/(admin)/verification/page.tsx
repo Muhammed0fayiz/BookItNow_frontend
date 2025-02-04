@@ -2,27 +2,37 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faInbox } from '@fortawesome/free-solid-svg-icons';
+import { faInbox } from '@fortawesome/free-solid-svg-icons';
 import { Dialog, Transition } from '@headlessui/react';
 import axiosInstance from '@/shared/axiousintance';
 import VideoDescriptionModal from '@/component/videoDescriptionModal';
 import Sidebar from '@/component/adminSidebar';
 
 type Performer = {
-    id: string;
-    bandName: string;
-    createdAt: string;
-    video: string;
-    mobileNumber: string;
-    description: string;
-    isVerified: boolean;
-    isRejected: boolean;
+  id: string;
+  bandName: string;
+  createdAt: string;
+  video: string;
+  mobileNumber: string;
+  description: string;
+  isVerified: boolean;
+  isRejected: boolean;
+};
+
+type ApiPerformer = {
+  _id: string;
+  bandName: string;
+  createdAt: string;
+  video: string;
+  mobileNumber: string;
+  description: string;
+  isVerified?: boolean;
+  isRejected?: boolean;
 };
 
 const Verification: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [sessionValid, setSessionValid] = useState<boolean>(false);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [performers, setPerformers] = useState<Performer[]>([]);
   const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
@@ -65,7 +75,7 @@ const Verification: React.FC = () => {
         try {
           const response = await axiosInstance.get('/admin/getTempPerformers');
           if (response.data && response.data.data) {
-            const performersData = response.data.data.map((performer: any): Performer => ({
+            const performersData = response.data.data.map((performer: ApiPerformer): Performer => ({
               id: performer._id,
               bandName: performer.bandName,
               createdAt: performer.createdAt,
@@ -101,20 +111,20 @@ const Verification: React.FC = () => {
   const handleVerificationStatusChange = async (id: string, status: boolean) => {
     try {
       if (status) {
-        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, { 
-          isVerified: true, 
-          isRejected: false 
+        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, {
+          isVerified: true,
+          isRejected: false,
         });
       } else {
-        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, { 
-          isVerified: false, 
+        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, {
+          isVerified: false,
           isRejected: true,
-          rejectReason: rejectReason 
+          rejectReason: rejectReason,
         });
       }
-      
-      setPerformers(prevPerformers =>
-        prevPerformers.map(performer =>
+
+      setPerformers((prevPerformers) =>
+        prevPerformers.map((performer) =>
           performer.id === id ? { ...performer, isVerified: status, isRejected: !status } : performer
         )
       );
@@ -144,8 +154,6 @@ const Verification: React.FC = () => {
     setConfirmationOpen(true);
   };
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
   const totalPages = Math.ceil(performers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const selectedPerformers = performers.slice(startIndex, startIndex + itemsPerPage);
@@ -173,7 +181,7 @@ const Verification: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
+      <Sidebar sidebarOpen={false} handleLogout={handleLogout} />
 
       <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">
         <div className="flex-1 p-8">
@@ -195,7 +203,10 @@ const Verification: React.FC = () => {
                   </thead>
                   <tbody>
                     {selectedPerformers.map((performer, index) => (
-                      <tr key={performer.id} className={`${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors duration-200`}>
+                      <tr
+                        key={performer.id}
+                        className={`${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors duration-200`}
+                      >
                         <td className="p-4">{performer.bandName}</td>
                         <td className="p-4">{new Date(performer.createdAt).toLocaleDateString()}</td>
                         <td className="p-4">
@@ -243,11 +254,19 @@ const Verification: React.FC = () => {
             )}
             {performers.length > 0 && (
               <div className="flex justify-between items-center mt-4">
-                <button onClick={handlePrevPage} disabled={currentPage === 1} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200"
+                >
                   Previous
                 </button>
                 <span>Page {currentPage} of {totalPages}</span>
-                <button onClick={handleNextPage} disabled={currentPage === totalPages} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200">
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200"
+                >
                   Next
                 </button>
               </div>
@@ -255,7 +274,7 @@ const Verification: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <VideoDescriptionModal
         isOpen={isVideoModalOpen}
         onClose={() => {
@@ -264,7 +283,7 @@ const Verification: React.FC = () => {
         }}
         performer={selectedPerformer}
       />
-      
+
       <Transition appear show={confirmationOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setConfirmationOpen(false)}>
           <Transition.Child
@@ -313,8 +332,8 @@ const Verification: React.FC = () => {
                   </>
                 )}
                 <div className="mt-6 flex justify-end">
-                  <button 
-                    className="mr-2 text-gray-500" 
+                  <button
+                    className="mr-2 text-gray-500"
                     onClick={() => setConfirmationOpen(false)}
                   >
                     Cancel
@@ -329,7 +348,7 @@ const Verification: React.FC = () => {
                         }, 1000);
                         return;
                       }
-                      selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve')
+                      selectedPerformer && handleVerificationStatusChange(selectedPerformer.id, action === 'approve');
                     }}
                   >
                     {action === 'approve' ? 'Approve' : 'Reject'}

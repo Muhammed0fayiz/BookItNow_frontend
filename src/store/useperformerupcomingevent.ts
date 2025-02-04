@@ -17,7 +17,7 @@ export const useUpcomingEventsStore = create<PerformerUpcomingEventsStore>((set,
       if (userId) {
         const response = await axiosInstance.get(`/performerEvent/upcomingevents/${userId}`,{withCredentials: true});
         console.log('res',response.data.events)
-        const events: PerformerUpcomingEvent[] = response.data.events.map((event: any) => ({
+        const events: PerformerUpcomingEvent[] = response.data.events.map((event:PerformerUpcomingEvent) => ({
           ...event,
           date: new Date(event.date).toISOString(),
           createdAt: new Date(event.createdAt).toISOString(),

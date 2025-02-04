@@ -6,7 +6,7 @@ import useChatNotifications from "@/store/useChatNotification";
 const About = () => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { totalUnreadMessage, notifications, fetchNotifications } =
+  const { totalUnreadMessage,fetchNotifications } =
     useChatNotifications();
 
   useEffect(() => {
@@ -184,11 +184,12 @@ const About = () => {
               Our Mission
             </h2>
             <p className="text-xl text-gray-600 leading-relaxed">
-              At BookItNow, we're committed to creating a seamless platform
-              where event organizers and attendees connect effortlessly. Our
-              goal is to make event discovery and booking as simple as possible
-              while ensuring quality experiences for everyone.
-            </p>
+  At BookItNow, we&apos;re committed to creating a seamless platform
+  where event organizers and attendees connect effortlessly. Our
+  goal is to make event discovery and booking as simple as possible
+  while ensuring quality experiences for everyone.
+</p>
+
           </div>
         </div>
       </section>
@@ -286,9 +287,10 @@ const About = () => {
             Get in Touch
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Have questions? We'd love to hear from you. Send us a message and
-            we'll respond as soon as possible.
-          </p>
+  Have questions? We&apos;d love to hear from you. Send us a message and
+  we&apos;ll respond as soon as possible.
+</p>
+
           <a
             href="mailto:fayiz149165@gmail.com"
             className="inline-block bg-blue-600 text-white px-8 py-3 rounded-full hover:bg-blue-700 transition duration-300"

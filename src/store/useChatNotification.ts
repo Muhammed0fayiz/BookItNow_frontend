@@ -7,7 +7,7 @@ interface ChatNotification {
 }
 
 interface ChatNotificationsState {
-   totalUnreadMessage: number;
+  totalUnreadMessage: number;
   notifications: ChatNotification[];
   isLoading: boolean;
   error: string | null;
@@ -16,7 +16,7 @@ interface ChatNotificationsState {
 }
 
 const useChatNotifications = create<ChatNotificationsState>((set) => ({
-   totalUnreadMessage: 0,
+  totalUnreadMessage: 0,
   notifications: [],
   isLoading: false,
   error: null,
@@ -34,15 +34,9 @@ const useChatNotifications = create<ChatNotificationsState>((set) => ({
       }
 
       const response = await axiosInstance.get<{
-          data: { totalCount: any; notifications: any; }; totalCount: number; notifications: ChatNotification[] 
-}>(
-        `/chat/messageNotification/${id}`,
-        { withCredentials: true }
-      );
+        data: { totalCount: number; notifications: ChatNotification[] };
+      }>(`/chat/messageNotification/${id}`, { withCredentials: true });
 
-   
-
-  
       const { totalCount, notifications } = response.data.data;
 
       set({

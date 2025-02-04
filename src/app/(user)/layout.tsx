@@ -5,7 +5,7 @@ import useUserStore from "@/store/useUserStore";
 import { io } from "socket.io-client";
 import useChatNotifications from "@/store/useChatNotification";
 import { NotificationBox } from "@/component/NotificationBox";
-import useSocketStore from "@/store/useSocketStore ";
+import useSocketStore from "@/store/useSocketStore";
 
 interface LayoutProps {
   children: ReactNode;

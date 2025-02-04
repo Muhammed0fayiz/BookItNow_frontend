@@ -3,7 +3,9 @@ import React, { ChangeEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import axiosInstance from '@/shared/axiousintance';
+import { AxiosError } from "axios";
+
+import { userLogin } from '@/services/user';
 
 interface UserLoginFormProps {
   toggleForm: () => void;
@@ -43,30 +45,24 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ toggleForm, toggle
     return isValid;
   };
 
-  const userLogin = async () => {
+  const handleLogin = async () => {
     if (validateLoginForm()) {
-      const loadingToast = toast.loading('Logging in...');
       try {
-        const response = await axiosInstance.post('/userlogin', userLoginData);
-        toast.dismiss(loadingToast);
+        const response = await userLogin(userLoginData);
         
-        if (response.data?.token) {
-          document.cookie = `userToken=${response.data.token}; path=/; secure;`;
+        if (response?.token) {
+          document.cookie = `userToken=${response.token}; path=/; secure;`;
           toast.success('Login successful!');
           router.replace('/home');
-        } else {
-          toast.error('Login successful, but no token received.');
         }
-      } catch (error: any) {
-        toast.dismiss(loadingToast);
-        if (error.response?.status === 401) {
-          toast.error('Invalid email or password');
-        } else if (error.response?.status === 403) {
-          toast.error('Your account has been blocked');
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.status === 401) {
+          toast.error("Invalid email or password");
         } else {
-          toast.error('An error occurred during login.');
+          toast.error("Login failed");
         }
       }
+      
     }
   };
 
@@ -108,7 +104,7 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ toggleForm, toggle
       {loginErrors.password && <p className="text-red-500 mb-2 text-sm">{loginErrors.password}</p>}
               
       <button 
-        onClick={userLogin} 
+        onClick={handleLogin} 
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
       >
         Log In
@@ -122,11 +118,12 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ toggleForm, toggle
       </button>
 
       <p className="text-center mt-4">
-        Don't have an account? 
-        <button onClick={toggleForm} className="text-blue-600 hover:underline ml-1">
-          Sign Up
-        </button>
-      </p>
+  Don&apos;t have an account? 
+  <button onClick={toggleForm} className="text-blue-600 hover:underline ml-1">
+    Sign Up
+  </button>
+</p>
+
               
       <div className="text-center mt-4">
         <button onClick={toggleRole} className="text-sm text-gray-700 hover:underline">

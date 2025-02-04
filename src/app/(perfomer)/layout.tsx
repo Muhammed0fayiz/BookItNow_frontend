@@ -1,10 +1,10 @@
 'use client';
 import React, { ReactNode, useEffect, useState } from 'react';
 import axiosInstance from '@/shared/axiousintance';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import usePerformerStore from '@/store/usePerformerStore';
-import useUserStore from '@/store/useUserStore';
-import useSocketStore from '@/store/useSocketStore ';
+
+import useSocketStore from '@/store/useSocketStore';
 import { NotificationBox } from '@/component/NotificationBox';
 import useChatNotifications from '@/store/useChatNotification';
 interface LayoutProps {
@@ -12,8 +12,8 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { userProfile, fetchUserProfile, handleLogout } = useUserStore();
-  const { performerDetails, stats, fetchPerformerDetails, handleLogout: storeHandleLogout } = usePerformerStore();
+
+  const { performerDetails} = usePerformerStore();
   const { fetchNotifications } = useChatNotifications();
   const { setSocket, disconnectSocket,socket} = useSocketStore();
    const [notifications, setNotifications] = useState<Array<{ bandName: string; profileImage: string; message: string }>>([]);

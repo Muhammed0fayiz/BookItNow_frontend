@@ -1,7 +1,7 @@
 'use client'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react';
+import React, {useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, MessageCircle, Send, Plus, Trash2 } from 'lucide-react';
+import { Menu,Plus, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, isAfter } from 'date-fns';
 import useChatNotifications from '@/store/useChatNotification';
 // Sidebar Component
@@ -20,31 +20,19 @@ interface Slot {
   isBooked: boolean;
 }
 
-interface DashboardSectionProps {
-  title: string;
-  children: ReactNode;
-}
-
-// Reusable Dashboard Section Component
-const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) => (
-  <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <h2 className="text-xl font-semibold mb-4">{title}</h2>
-    {children}
-  </div>
-);
 
 const SlotManagement: React.FC = () => {
   // State Management
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [slotss, setSlots] = useState<Slot[]>([]);
-  const { slots, fetchSlotDetails, isLoading, error } = useSlotStore();
+  const { slots, fetchSlotDetails} = useSlotStore();
 
   // Hooks
   const router = useRouter();
-  const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
+  const { sidebarOpen,toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  const {  totalUnreadMessage,fetchNotifications } =
   
   useChatNotifications();
     useEffect(() => {
@@ -130,7 +118,7 @@ const SlotManagement: React.FC = () => {
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
 
@@ -139,14 +127,10 @@ const SlotManagement: React.FC = () => {
     fetchPerformerDetails();
 
   }, [fetchPerformerDetails]);
-  const chatting=()=>{
-    router.push('/chatsession')
-  }
+
   useEffect(() => {
     fetchSlotDetails('performerId');
-    console.log('fayi',slots)
-  }, []);
-
+  }, [fetchSlotDetails]);
   // Render Calendar Grid
   const renderCalendarGrid = () => (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">

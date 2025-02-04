@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstanceMultipart } from '@/shared/axiousintance';
-import { useRouter } from 'next/navigation';
-
+import Image from "next/image";
 interface EditProfileFormProps {
   onClose: () => void;
   username: string;
@@ -9,7 +8,6 @@ interface EditProfileFormProps {
 }
 
 const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, userID }) => {
-  const router = useRouter();
   const [userName, setUserName] = useState(username);
   const [profilePic, setProfilePic] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -84,7 +82,8 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
       <h2 className="text-lg font-bold mb-4">Edit Profile</h2>
-      <label className="mb-2">Username:</label>
+      <label className="mb-2 ml-2">Username:</label>
+
       <input
         type="text"
         name="username"
@@ -98,7 +97,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
       />
       {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
-      <label className="mb-2">Profile Picture:</label>
+      <label className="mb-2 ml-2">Profile Picture:</label>
       <input
         type="file"
         name="profilePic"
@@ -107,16 +106,23 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
         className="border rounded p-2 mb-4"
       />
       {imagePreview && (
-        <div className="mt-2">
-          <img src={imagePreview} alt="Profile Preview" className="w-32 h-32 object-cover rounded" />
-        </div>
+       <div className="mt-2 flex justify-center">
+       <Image 
+         src={imagePreview} 
+         width={500}
+         height={300}
+         alt="Profile Preview" 
+         className="w-32 h-32 object-cover rounded" 
+       />
+     </div>
+     
       )}
 
       <div className="flex justify-between mt-4">
         <button
           type="button"
           onClick={handleCancel}
-          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 "
           disabled={isSubmitting}
         >
           Cancel

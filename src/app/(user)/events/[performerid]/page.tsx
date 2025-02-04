@@ -1,4 +1,6 @@
 "use client";
+import Image from "next/image"
+
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useAllEventsStore from "@/store/useAllEvents";
@@ -6,38 +8,9 @@ import usePerformersStore from "@/store/useAllPerformerStore";
 import useUserStore from "@/store/useUserStore";
 import axiosInstance from "@/shared/axiousintance";
 import useChatNotifications from "@/store/useChatNotification";
-import DescriptionViewer from '@/component/descriptionViewer';
+import DescriptionViewer from "@/component/performerDiscription";
+// import DescriptionViewer from '@/component/descriptionViewer';
 // Interfaces for type safety
-interface Events {
-  createdAt: string;
-  id: number;
-  _id?: string;
-  title: string;
-  category: string;
-  userId: string;
-  price: number;
-  status: string;
-  teamLeader: string;
-  teamLeaderNumber: string;
-  rating: number;
-  description: string;
-  imageUrl: string;
-}
-
-interface PerformerDetails {
-  PId: string;
-  userId: string;
-  bandName: string;
-  place: string;
-  rating: number;
-  description: string;
-  image: string;
-  genre: string;
-  totalReviews: number;
-  walletBalance: number;
-  profileImage?: string;
-  mobileNumber: string;
-}
 
 const PerformerDetailsPage = () => {
   const router = useRouter();
@@ -48,9 +21,9 @@ const PerformerDetailsPage = () => {
   const { performers, fetchAllPerformers } = usePerformersStore();
   const [activeTab, setActiveTab] = useState<"about" | "events">("about");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } =
+  const { userProfile, fetchUserProfile, } =
     useUserStore();
-  const { totalUnreadMessage, notifications, fetchNotifications } =
+  const { totalUnreadMessage,fetchNotifications } =
     useChatNotifications();
   // Fetch events and performers on component mount
   useEffect(() => {
@@ -246,9 +219,11 @@ const PerformerDetailsPage = () => {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-8">
-            <img
+            <Image
               src={performer.profileImage || "/default-profile.jpg"}
               alt={performer.bandName}
+              width={500}
+              height={300}
               className="w-48 h-48 rounded-full object-cover border-4 border-white shadow-lg"
             />
             <div className="mt-6 md:mt-0 text-center md:text-left">
@@ -345,8 +320,11 @@ const PerformerDetailsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-xl font-semibold mb-3">Performance Type</h3>
-                {/* <p className="text-gray-600">{performer.genre}</p> */}
+                <h3 className="text-xl font-semibold mb-3">Joined Date</h3>
+                <p className="text-gray-600">
+  {new Date(performer.createdAt).toLocaleDateString()}
+</p>
+
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-3">
@@ -370,9 +348,11 @@ const PerformerDetailsPage = () => {
                 key={event._id}
                 className="bg-white rounded-lg shadow-lg overflow-hidden"
               >
-                <img
+                <Image
                   src={event.imageUrl}
                   alt={event.title}
+                  width={500}
+                  height={300}
                   className="w-full h-48 object-cover"
                 />
                 <div className="p-6">

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { axiosInstanceMultipart } from '@/shared/axiousintance';
 
+
 interface UploadEventFormProps {
-  id?: string; // id is optional
+  id?: string; 
   onClose: () => void;
-  handlefetch:any
-  
+  handlefetch: () => void; 
 }
 
 interface FormErrors {

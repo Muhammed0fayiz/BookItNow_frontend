@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faBars, faTimes, faDownload } from '@fortawesome/free-solid-svg-icons';
+
+import { faUsers, faWallet, faBars, faTimes, faDownload } from '@fortawesome/free-solid-svg-icons';
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axiosInstance from '@/shared/axiousintance';
 import useAdminDetails from '@/store/useAdminDetails';
@@ -17,7 +19,8 @@ const AdminDashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
-  const { adminDetails, isLoading, error, fetchAdminDetails } = useAdminDetails();
+  const { adminDetails, fetchAdminDetails } = useAdminDetails();
+
 
   const handleLogout = async () => {
     try {

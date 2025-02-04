@@ -1,10 +1,10 @@
 'use client';
 import React, { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, MessageCircle, Plus, Edit2, Trash2, Phone, Star } from 'lucide-react';
+import { Menu,  Plus, Edit2, Trash2, Phone, Star } from 'lucide-react';
 import Sidebar from '@/component/performersidebar';
 import { useUIStore } from '@/store/useUIStore';
-import { useChatStore } from '@/store/useChatStore';
+import Image from "next/image";
 
 import usePerformerStore from '@/store/usePerformerStore';
 import usePerformerEventsStore from '@/store/usePerformerEvents';
@@ -13,7 +13,7 @@ import useChatNotifications from '@/store/useChatNotification';
 
 import PerformerDescriptionViewer from '@/component/performerEventDescription';
 import PerformerAppeal from '@/component/performerAppeal';
-import useusersStore from '@/store/useAllUserStore';
+
 import useUserStore from '@/store/useUserStore';
 
 interface Event {
@@ -76,12 +76,10 @@ const EventManagementDashboard: React.FC = () => {
   const router = useRouter();
   const { events, fetchPerformerEvents, setEvents } = usePerformerEventsStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const { sidebarOpen, chatOpen, toggleSidebar, toggleChat } = useUIStore();
+  const { sidebarOpen,toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
   const { 
-    userProfile, 
-    isLoading, 
-    error, 
+    userProfile,  
     fetchUserProfile, 
   
   } = useUserStore();
@@ -89,7 +87,7 @@ const EventManagementDashboard: React.FC = () => {
     id: string;
     blockDetails?: { reason: string; blockedAt: string };
   } | null>(null);
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
+  const {  totalUnreadMessage,fetchNotifications } =
   
   useChatNotifications();
     useEffect(() => {
@@ -165,11 +163,15 @@ const EventManagementDashboard: React.FC = () => {
   }> = ({ event, onEdit, onDelete }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="relative">
-        <img
-          src={event.imageUrl}
-          alt={event.title}
-          className="w-full h-48 object-cover"
-        />
+      <Image
+  src={event.imageUrl}
+  alt={event.title}
+
+  width={500} 
+  height={300} 
+  className="w-full h-48 object-cover"
+/>
+
         {event.isblocked && (
           <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-center py-1">
             Admin Blocked Event
@@ -263,7 +265,7 @@ const EventManagementDashboard: React.FC = () => {
     console.log('enter logout');
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
 

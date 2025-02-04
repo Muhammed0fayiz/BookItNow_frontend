@@ -6,7 +6,7 @@ import { MessageCircle, Bell, Wallet } from "lucide-react"
 import EditProfileForm from "@/component/edituserprofile"
 import ChangePasswordForm from "@/component/changepassword"
 import useUserStore from "@/store/useUserStore"
-import { useRouter } from "next/navigation"
+import Image from "next/image";
 import { loginImage } from "@/datas/logindatas"
 import Sidebar from "@/component/userSidebar"
 import useChatNotifications from "@/store/useChatNotification"
@@ -15,7 +15,7 @@ import { useUserEventHistory } from "@/store/useUserEventHistory"
 import Navbar from "@/component/userNavbar"
 
 const Profile = () => {
-  const router = useRouter()
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false)
@@ -23,12 +23,12 @@ const Profile = () => {
   const { totalCount: upcomingEventsTotalCount, fetchAllEvents: fetchUpcomingEvents } = useUpcomingEventsStore()
   const { totalCount: userEventHistoryTotalCount, fetchAllEvents: fetchUserEventHistory } = useUserEventHistory()
   const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore()
-  const { totalUnreadMessage, fetchNotifications } = useChatNotifications()
+  const {fetchNotifications } = useChatNotifications()
 
   useEffect(() => {
     setIsModalOpen(false)
     setIsChangePasswordModalOpen(false)
-
+  
     const initializeData = async () => {
       try {
         await Promise.all([fetchNotifications(), fetchUserProfile(), fetchUpcomingEvents(), fetchUserEventHistory()])
@@ -38,14 +38,15 @@ const Profile = () => {
         setIsAllDataLoaded(true) // Set to true even on error to show error state
       }
     }
-
+  
     initializeData()
-
+  
     return () => {
       setIsModalOpen(false)
       setIsChangePasswordModalOpen(false)
     }
-  }, [])
+  }, [fetchNotifications, fetchUserProfile, fetchUpcomingEvents, fetchUserEventHistory]) // Add dependencies here
+  
 
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -130,9 +131,11 @@ const Profile = () => {
                 {/* Profile Image */}
                 <div className="absolute -top-16 left-6">
                   <div className="h-32 w-32 rounded-full border-4 border-white overflow-hidden shadow-lg">
-                    <img
+                    <Image
                       src={userProfile?.profileImage || loginImage.img}
                       alt="Profile"
+                      width={500}
+                      height={300}
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement

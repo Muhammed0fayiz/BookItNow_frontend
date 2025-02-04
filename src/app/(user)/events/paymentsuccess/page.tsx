@@ -1,7 +1,6 @@
 'use client'
 import React, { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useRouter } from 'next/navigation';
 
 interface PaymentSuccessProps {

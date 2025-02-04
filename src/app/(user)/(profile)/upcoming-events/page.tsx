@@ -4,18 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { useUpcomingEventsStore } from '@/store/useUserUpcomingEvents';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import useUserStore from '@/store/useUserStore';
-import { useRouter } from 'next/navigation';
 import { UpcomingEvent } from '@/types/store';
 import axiosInstance from '@/shared/axiousintance';
 import CancelEventModal from '@/component/cancelEventModal';
-import { Calendar, MessageCircle, Bell, Menu, X, Wallet } from 'lucide-react';
+import { Calendar} from 'lucide-react';
 import useChatNotifications from '@/store/useChatNotification';
 import DescriptionViewer from '@/component/descriptionViewer';
 import Sidebar from '@/component/userSidebar';
 import Navbar from '@/component/userNavbar';
-
+import Image from "next/image";
 const UpcomingEvents: React.FC = () => {
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { upcomingEvents, fetchAllEvents, totalCount } = useUpcomingEventsStore();
   const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore();
@@ -27,7 +25,7 @@ const UpcomingEvents: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(0);
   const [isAllDataLoaded, setIsAllDataLoaded] = useState(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
+  const {fetchNotifications } = useChatNotifications();
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -77,7 +75,7 @@ const UpcomingEvents: React.FC = () => {
         { withCredentials: true }
       );
 
-      const events: UpcomingEvent[] = response.data.events.map((event: any) => ({
+      const events: UpcomingEvent[] = response.data.events.map((event:UpcomingEvent ) => ({
         ...event,
         date: new Date(event.date).toISOString(),
         createdAt: new Date(event.createdAt).toISOString(),
@@ -238,9 +236,11 @@ const UpcomingEvents: React.FC = () => {
                   )}
 
                   <div className="relative h-32">
-                    <img
+                    <Image
                       src={event.imageUrl || "/event-placeholder.jpg"}
                       alt={event.title}
+                      width={500} 
+                      height={300} 
                       className={`w-full h-full object-cover ${event.bookingStatus === 'cancelled' ? 'filter grayscale' : ''}`}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -347,8 +347,9 @@ const UpcomingEvents: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">No Upcoming Events</h3>
                 <p className="text-gray-600 text-center mb-6">
-                  You don't have any upcoming events scheduled. Browse our events page to find something interesting!
-                </p>
+  You don&apos;t have any upcoming events scheduled. Browse our events page to find something interesting!
+</p>
+
                 <a
                   href="/events"
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center space-x-2"

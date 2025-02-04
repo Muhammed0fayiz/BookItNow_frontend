@@ -13,7 +13,6 @@ const RatingModal: React.FC<RatingModalProps> = ({
   onClose,
   onSubmit,
   eventTitle,
-  id,
 }) => {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');

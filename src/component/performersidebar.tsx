@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
-  Calendar, 
   Clock, 
   LogOut, 
   ListChecks,
@@ -9,7 +8,7 @@ import {
   Wallet,
   MapPin
 } from 'lucide-react';
-
+import Image from "next/image";
 import { usePathname, useRouter } from 'next/navigation';
 
 interface SidebarProps {
@@ -74,10 +73,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
         onClick={() => handleNavigation('/performer-profile')}
       >
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white mr-3 relative">
-          <img
+     <Image
             src={performerDetails?.imageUrl || performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
             alt={performerDetails?.bandName || 'Profile Image'}
             className="object-cover w-full h-full"
+            width={50}
+            height={30}
           />
         </div>
         <div>

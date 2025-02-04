@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import useUserStore from "@/store/useUserStore"
 import { useUserEventHistory } from "@/store/useUserEventHistory"
 import axiosInstance from "@/shared/axiousintance"
@@ -10,16 +9,11 @@ import "@fortawesome/fontawesome-free/css/all.min.css"
 import RatingModal from "@/component/rating"
 import type { UpcomingEvent } from "@/types/store"
 import useChatNotifications from "@/store/useChatNotification"
-import DescriptionViewer from "@/component/descriptionViewer"
 import Sidebar from "@/component/userSidebar"
 import Navbar from "@/component/userNavbar"
-
-interface Events {
-  eventHistory: UpcomingEvent[]
-}
+import Image from "next/image"
 
 const EventHistory: React.FC = () => {
-  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore()
   const { upcomingEvents, fetchAllEvents, totalCount } = useUserEventHistory()
@@ -27,10 +21,10 @@ const EventHistory: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState<number>(0)
   const [isRatingModalOpen, setIsRatingModalOpen] = useState<boolean>(false)
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null)
   const [isAllDataLoaded, setIsAllDataLoaded] = useState(false)
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
-  const { totalUnreadMessage, notifications, fetchNotifications } = useChatNotifications()
+  const { fetchNotifications } = useChatNotifications()
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -77,7 +71,7 @@ const EventHistory: React.FC = () => {
       const response = await axiosInstance.get(`/userEvent/userEventHistory/${userProfile?.id}?page=${page}`, {
         withCredentials: true,
       })
-      const events: UpcomingEvent[] = response.data.events.pastEventHistory.map((event: any) => ({
+      const events: UpcomingEvent[] = response.data.events.pastEventHistory.map((event: UpcomingEvent) => ({
         ...event,
         date: new Date(event.date).toISOString(),
         createdAt: new Date(event.createdAt).toISOString(),
@@ -128,12 +122,14 @@ const EventHistory: React.FC = () => {
     }
   }
 
-  const handleRateEvent = (event: any) => {
+  const handleRateEvent = (event: UpcomingEvent) => {
     setSelectedEvent(event)
     setIsRatingModalOpen(true)
   }
 
   const submitRating = async (rating: number, review?: string) => {
+    if (!selectedEvent) return
+
     try {
       await axiosInstance.post(
         `/userEvent/add-rating/${selectedEvent._id}`,
@@ -157,19 +153,6 @@ const EventHistory: React.FC = () => {
     const baseClasses =
       "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform hover:scale-105 relative"
     return status === "cancelled" ? `${baseClasses} opacity-90` : baseClasses
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "booking":
-        return "text-green-600"
-      case "canceled":
-        return "text-red-600"
-      case "completed":
-        return "text-blue-600"
-      default:
-        return "text-gray-600"
-    }
   }
 
   if (!isAllDataLoaded || isLoading) {
@@ -196,9 +179,10 @@ const EventHistory: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Fixed position */}
       <div
-        className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
       >
         <Sidebar
           sidebarOpen={sidebarOpen}
@@ -207,14 +191,10 @@ const EventHistory: React.FC = () => {
         />
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 md:ml-64">
-        {/* Navbar */}
         <Navbar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} pageTitle="Event History" />
 
-        {/* Main Content */}
         <div className="pt-16 p-6">
-          {/* Page Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
               <h2 className="text-2xl font-bold text-gray-800">Event History</h2>
@@ -224,7 +204,6 @@ const EventHistory: React.FC = () => {
             </p>
           </div>
 
-          {/* Events Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {events && events.length > 0 ? (
               events.map((event: UpcomingEvent) => (
@@ -232,18 +211,15 @@ const EventHistory: React.FC = () => {
                   key={event._id}
                   className={`${getEventCardClass(event.bookingStatus)} hover:shadow-xl transition-all duration-300`}
                 >
-                  {/* Event Image */}
-                  <div className="relative h-32">
-                    <img
-                      src={event.imageUrl || "/event-placeholder.jpg"}
+                  <div className="relative h-48">
+                    <Image
+                      src={event.imageUrl || "/placeholder.svg"}
                       alt={event.title}
-                      className={`w-full h-full object-cover ${event.bookingStatus === "cancelled" ? "filter grayscale" : ""}`}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.src = "/event-placeholder.jpg"
-                      }}
+                      width={500}
+                      height={300}
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute bottom-2 right-2">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium
                         ${event.bookingStatus === "cancelled" ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
@@ -253,13 +229,14 @@ const EventHistory: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className={`p-4 ${event.bookingStatus === "cancelled" ? "opacity-75" : ""}`}>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">{event.title}</h3>
-                    <p className="text-gray-600 text-xs mb-3 line-clamp-2">
-                      <DescriptionViewer description={event.description} maxLength={20} />
-                    </p>
-
-                    <div className="space-y-2">
+                  <div
+                    className={`p-4 flex flex-col justify-between h-64 ${event.bookingStatus === "cancelled" ? "opacity-75" : ""}`}
+                  >
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">{event.title}</h3>
+                     
+                    </div>
+                    <div className="space-y-2 mt-2">
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-calendar-alt w-4 text-blue-600 text-xs"></i>
                         <span className="text-xs ml-2">{formatDate(event.date)}</span>
@@ -271,14 +248,6 @@ const EventHistory: React.FC = () => {
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-map-marker-alt w-4 text-blue-600 text-xs"></i>
                         <span className="text-xs ml-2">{event.place}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <i className="fas fa-user w-4 text-blue-600 text-xs"></i>
-                        <span className="text-xs ml-2">{event.teamLeader}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <i className="fas fa-phone w-4 text-blue-600 text-xs"></i>
-                        <span className="text-xs ml-2">{event.teamLeaderNumber}</span>
                       </div>
                     </div>
 
@@ -306,7 +275,6 @@ const EventHistory: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Conditionally render Rating Button */}
                     {event.bookingStatus === "completed" && event.isRated === false && (
                       <button
                         onClick={() => handleRateEvent(event)}
@@ -322,15 +290,15 @@ const EventHistory: React.FC = () => {
                 </div>
               ))
             ) : (
-              // No Events State
               <div className="col-span-full flex flex-col items-center justify-center py-16 px-4">
                 <div className="bg-blue-50 rounded-full p-6 mb-4">
                   <i className="fas fa-calendar-alt text-blue-600 text-3xl"></i>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">No Past Events</h3>
                 <p className="text-gray-600 text-center mb-6">
-                  You don't have any past events. Browse our events page to find something interesting!
+                  You don&apos;t have any past events. Browse our events page to find something interesting!
                 </p>
+
                 <a
                   href="/events"
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center space-x-2"
@@ -341,7 +309,6 @@ const EventHistory: React.FC = () => {
               </div>
             )}
 
-            {/* Enhanced Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-2 mt-8 mb-6">
                 <button
@@ -385,7 +352,6 @@ const EventHistory: React.FC = () => {
         </div>
       </div>
 
-      {/* Rating Modal */}
       {selectedEvent && (
         <RatingModal
           isOpen={isRatingModalOpen}

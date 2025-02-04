@@ -57,16 +57,24 @@ export const PerformerLoginForm: React.FC<PerformerLoginFormProps> = ({ toggleFo
         } else {
           toast.error('Login successful, but no token received.');
         }
-      } catch (error: any) {
+      } catch (error) {
         toast.dismiss(loadingToast);
-        if (error.response && error.response.status === 401) {
-          toast.error('Invalid email or password');
-        } else if (error.response && error.response.status === 403) {
-          toast.error('Your account has been blocked');
+      
+        if (error instanceof Error && "response" in error) {
+          const axiosError = error as { response?: { status: number } };
+      
+          if (axiosError.response?.status === 401) {
+            toast.error("Invalid email or password");
+          } else if (axiosError.response?.status === 403) {
+            toast.error("Your account has been blocked");
+          } else {
+            toast.error("An error occurred during login. Please try again.");
+          }
         } else {
-          toast.error('An error occurred during login. Please try again.');
+          toast.error("An unexpected error occurred.");
         }
       }
+      
     }
   };
 
@@ -111,11 +119,11 @@ export const PerformerLoginForm: React.FC<PerformerLoginFormProps> = ({ toggleFo
       </button>
 
       <p className="text-center mt-4">
-        Don't have an account? 
-        <button onClick={toggleForm} className="text-blue-600 hover:underline ml-1">
-          Sign Up
-        </button>
-      </p>
+  Don&apos;t have an account? 
+  <button onClick={toggleForm} className="text-blue-600 hover:underline ml-1">
+    Sign Up
+  </button>
+</p>
               
       <div className="text-center mt-4">
         <button onClick={toggleRole} className="text-sm text-gray-700 hover:underline">

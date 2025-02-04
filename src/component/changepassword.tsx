@@ -1,7 +1,6 @@
 'use client'
 import axiosInstance from '@/shared/axiousintance';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 
 // Function to validate password
@@ -16,7 +15,6 @@ interface ChangePasswordFormProps {
 }
 
 const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onClose, userId }) => {
-    const router = useRouter();
     const [currentPassword, setCurrentPassword] = useState<string>('');
     const [newPassword, setNewPassword] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');

@@ -4,8 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faUsers, faLock, faSignOutAlt, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from "next/image";
 import { MenuItem, SidebarProps } from '../types/sidebar';
-
+import {adminAvatar } from '@/datas/logindatas';
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, handleLogout }) => {
   const pathname = usePathname();
 
@@ -32,11 +33,14 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, handleLogout }) => {
     >
       <div className="flex items-center mb-8">
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-300 mr-3">
-          <img
-            src="/api/placeholder/48/48"
-            alt="Admin"
-            className="w-full h-full object-cover"
-          />
+     
+        <Image 
+  src={adminAvatar.img} 
+  alt="Admin" 
+  width={200} // Set an appropriate width
+  height={200} // Set an appropriate height
+  className="w-full h-full object-cover"
+/>
         </div>
         <div>
           <h3 className="text-lg font-semibold text-blue-100">Admin Name</h3>

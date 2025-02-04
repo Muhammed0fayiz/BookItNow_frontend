@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Card, CardContent } from "@/component/ui/card"
 import { Bell, X } from 'lucide-react'
-
+import Image from "next/image"; 
 interface NotificationProps {
   bandName: string;
   profileImage: string;
@@ -23,10 +23,12 @@ export function NotificationBox({ bandName, profileImage, message, onClose }: No
       <CardContent className="p-4">
         <div className="flex items-center space-x-4">
           <div className="flex-shrink-0">
-            <img
+         <Image
               className="h-12 w-12 rounded-full object-cover"
               src={profileImage}
               alt={bandName}
+              width={50} 
+              height={30}
             />
           </div>
           <div className="flex-1 min-w-0">

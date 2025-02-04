@@ -1,6 +1,45 @@
-"use client";
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader } from "@/component/ui/card";
+import { Star, MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import Image from "next/image";
 import axiosInstance from "@/shared/axiousintance";
+
+// Button component remains the same
+const Button = ({ 
+  children, 
+  variant = "default", 
+  size = "default", 
+  onClick, 
+  className = "" 
+}: { 
+  children: React.ReactNode; 
+  variant?: "default" | "outline" | "ghost"; 
+  size?: "default" | "sm"; 
+  onClick?: () => void; 
+  className?: string;
+}) => {
+  const baseStyles = "rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
+  
+  const variants = {
+    default: "bg-blue-500 text-white hover:bg-blue-600",
+    outline: "border border-gray-300 hover:bg-gray-50",
+    ghost: "hover:bg-gray-100"
+  };
+  
+  const sizes = {
+    default: "px-4 py-2",
+    sm: "px-2 py-1 text-sm"
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
 
 interface Rating {
   _id: string;
@@ -20,6 +59,9 @@ const EventRatingPage: React.FC<EventRatingPageProps> = ({ eventId }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [averageRating, setAverageRating] = useState(0);
+  const [sortBy, setSortBy] = useState<'date' | 'rating'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchEventRatings = async () => {
@@ -42,19 +84,39 @@ const EventRatingPage: React.FC<EventRatingPageProps> = ({ eventId }) => {
     fetchEventRatings();
   }, [eventId]);
 
+  // Rest of the component remains the same
+  const toggleExpandReview = (reviewId: string) => {
+    setExpandedReviews(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(reviewId)) {
+        newSet.delete(reviewId);
+      } else {
+        newSet.add(reviewId);
+      }
+      return newSet;
+    });
+  };
+
+  const sortRatings = (ratings: Rating[]) => {
+    return [...ratings].sort((a, b) => {
+      const modifier = sortOrder === 'desc' ? -1 : 1;
+      if (sortBy === 'date') {
+        return modifier * (new Date(b.Date).getTime() - new Date(a.Date).getTime());
+      }
+      return modifier * (b.rating - a.rating);
+    });
+  };
+
   const renderStars = (rating: number) => {
     return (
-      <div className="flex">
+      <div className="flex space-x-1">
         {[...Array(5)].map((_, index) => (
-          <svg
+          <Star
             key={index}
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-5 w-5 ${index < rating ? 'text-yellow-400' : 'text-gray-300'}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
+            className={`w-5 h-5 ${
+              index < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'
+            } transition-colors duration-200`}
+          />
         ))}
       </div>
     );
@@ -63,61 +125,119 @@ const EventRatingPage: React.FC<EventRatingPageProps> = ({ eventId }) => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {error}
-      </div>
+      <Card className="max-w-2xl mx-auto mt-8">
+        <CardContent className="p-6">
+          <div className="text-red-500 text-center">
+            <MessageCircle className="w-12 h-12 mx-auto mb-4" />
+            {error}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-4">Event Ratings</h1>
-          <div className="flex items-center justify-center mb-4">
-            <span className="text-4xl font-bold mr-2">{averageRating.toFixed(1)}</span>
-            {renderStars(Math.round(averageRating))}
-          </div>
-          <p className="text-gray-600">
-            Based on {ratings.length} review{ratings.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+  const sortedRatings = sortRatings(ratings);
 
-        {ratings.length === 0 ? (
-          <div className="text-center text-gray-600">No reviews yet for this event.</div>
-        ) : (
-          <div className="space-y-6">
-            {ratings.map((rating) => (
-              <div key={rating._id} className="bg-white shadow-md rounded-lg p-6">
-                <div className="flex items-center mb-4">
-                  <img
-                    src={rating.profilePicture || '/default-avatar.png'}
-                    alt={rating.userName}
-                    className="w-10 h-10 rounded-full mr-4"
-                  />
-                  <div>
-                    <h3 className="font-semibold">{rating.userName}</h3>
-                    <div className="flex items-center">
-                      {renderStars(rating.rating)}
-                      <span className="ml-2 text-gray-600">
-                        {new Date(rating.Date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-gray-700">{rating.review}</p>
-              </div>
-            ))}
+  return (
+    <div className="container mx-auto px-4 py-8 ">
+      <Card className="max-w-3xl mx-auto">
+        <CardHeader className="text-center">
+          <h1 className="text-3xl font-bold mb-6">Event Ratings</h1>
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <span className="text-5xl font-bold">{averageRating.toFixed(1)}</span>
+            <div className="flex flex-col items-start">
+              {renderStars(Math.round(averageRating))}
+              <span className="text-sm text-gray-600 mt-1">
+                {ratings.length} review{ratings.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-end space-x-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Sort by:</span>
+              <Button
+                variant={sortBy === 'date' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSortBy('date')}
+              >
+                Date
+              </Button>
+              <Button
+                variant={sortBy === 'rating' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSortBy('rating')}
+              >
+                Rating
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              >
+                {sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {ratings.length === 0 ? (
+            <div className="text-center text-gray-600 py-8">
+              <MessageCircle className="w-12 h-12 mx-auto mb-4" />
+              No reviews yet for this event.
+            </div>
+          ) : (
+            <div className="space-y-4 ">
+              {sortedRatings.map((rating) => (
+                <Card key={rating._id} className="hover:shadow-lg transition-shadow duration-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4">
+                   
+                     <Image
+  src={rating.profilePicture || '/default-avatar.png'}
+  alt={rating.userName}
+  width={100}
+  height={100}
+  className="rounded-full ring-2 ring-gray-200"
+/>
+
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{rating.userName}</h3>
+                          <span className="text-sm text-gray-600">
+                            {new Date(rating.Date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {renderStars(rating.rating)}
+                        <div className={`mt-2 ${expandedReviews.has(rating._id) ? '' : 'line-clamp-3'}`}>
+                          <p className="text-gray-700">{rating.review}</p>
+                        </div>
+                        {rating.review.length > 150 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleExpandReview(rating._id)}
+                            className="mt-2"
+                          >
+                            {expandedReviews.has(rating._id) ? 'Show less' : 'Read more'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

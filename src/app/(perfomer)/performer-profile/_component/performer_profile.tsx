@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, History, LogOut, Music, Star, Wallet } from 'lucide-react';
+import { Calendar, History,Music, Star, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/component/ui/card';
 import { PerformerDetails } from '@/types/store';
 import usePerformerStore from '@/store/usePerformerStore';
@@ -14,7 +14,9 @@ import { useEventHistory } from '@/store/usePerformerEventHistory';
 import { useUpcomingEventsStore } from '@/store/useperformerupcomingevent';
 import useUserStore from '@/store/useUserStore';
 import usePerformerAllDetails from '@/store/usePerformerAllDetails';
-
+import Image from "next/image";
+import useChatNotifications from '@/store/useChatNotification';
+import { Menu} from 'lucide-react';
 interface StatCardProps {
   icon: React.ElementType;
   label: string;
@@ -68,8 +70,8 @@ const PerformerProfile: React.FC<PerformerProfileProps> = ({
   const { fetchAllEvents: fetchEventHistoryEvents, totalCount: eventHistoryTotalCount } = useEventHistory();
   const { fetchAllEvents: fetchUpcomingEvents, totalCount: upcomingEventsTotalCount } = useUpcomingEventsStore();
 
-  const { performerAllDetails, fetchPerformerAllDetails } = usePerformerAllDetails();
-
+  const {fetchPerformerAllDetails } = usePerformerAllDetails();
+  
 
   const { userProfile } = useUserStore();
   const statCards = [
@@ -78,6 +80,7 @@ const PerformerProfile: React.FC<PerformerProfileProps> = ({
     { icon: Wallet, label: 'Wallet Balance', value: `₹${userProfile?.walletBalance?.toFixed(2) || '0.00'}` },
     { icon: Star, label: 'Total Reviews', value: performerDetails?.totalReviews || 0 },
   ];
+  
   useEffect(()=>{
 fetchEventHistoryEvents()
 fetchUpcomingEvents()
@@ -86,10 +89,9 @@ fetchUpcomingEvents()
     const userId = usePerformerAllDetails.getState().getUserIdFromToken();
     if (userId) {
       fetchPerformerAllDetails(userId);
-
-   
     }
-  }, []);
+  }, [fetchPerformerAllDetails]);
+  
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       <div className="flex flex-col md:flex-row gap-6">
@@ -97,9 +99,11 @@ fetchUpcomingEvents()
         <div className="md:w-1/3">
           {/* Profile Image */}
           <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
-            <img
+            <Image
               src={performerDetails?.imageUrl || performerDetails?.image || "http://i.pravatar.cc/250?img=58"}
               alt={performerDetails?.bandName || 'Profile Image'}
+              width={500}
+              height={300}
               className="object-cover w-full h-full"
             />
           </div>
@@ -158,10 +162,12 @@ const PerformerProfileContainer: React.FC = () => {
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
-  const { userProfile, fetchUserProfile } = useUserStore();
-  const { totalCount, fetchAllEvents } = useUpcomingEventsStore();
-  const eventHistory = useEventHistory();
-  
+  const {fetchUserProfile } = useUserStore();
+  const {fetchAllEvents } = useUpcomingEventsStore();
+  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
   useEffect(() => {
     const loadInitialData = async () => {
       await Promise.all([
@@ -184,7 +190,7 @@ const PerformerProfileContainer: React.FC = () => {
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
 
@@ -204,11 +210,27 @@ const PerformerProfileContainer: React.FC = () => {
       />
 
       <div className="flex-1 md:ml-64">
-        <nav className="bg-white shadow-md fixed top-0 right-0 left-0 md:left-64 flex justify-between items-center px-6 py-4 z-10">
-          <button className="md:hidden text-blue-600 mr-4" onClick={toggleSidebar}>
-            <Calendar size={24} />
-          </button>
-          <h1 className="text-2xl font-bold text-blue-600">BookItNow - Profile</h1>
+      <nav className="bg-white shadow-md fixed top-0 right-0 left-0 md:left-64 flex justify-between items-center px-6 py-4 z-10">
+          <div className="flex items-center">
+            <button className="md:hidden text-blue-600 mr-4" onClick={toggleSidebar}>
+              <Menu size={24} />
+            </button>
+          </div>
+          <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
+          <div className="flex items-center">
+            
+              <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
+                </svg>
+                {totalUnreadMessage > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                    {totalUnreadMessage}
+                  </span>
+                )}
+              </a>
+
+          </div>
         </nav>
 
         <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>

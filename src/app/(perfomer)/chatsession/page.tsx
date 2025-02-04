@@ -1,8 +1,8 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import mongoose from 'mongoose';
-import { io, Socket } from 'socket.io-client';
 import { Menu, MessageCircle, Send, Search } from 'lucide-react';
 import axiosInstance from '@/shared/axiousintance';
 import usePerformerStore from '@/store/usePerformerStore';
@@ -10,8 +10,7 @@ import { useUIStore } from '@/store/useUIStore';
 import Sidebar from '@/component/performersidebar';
 import useChatRooms from '@/store/chatstore';
 import useChatNotifications from '@/store/useChatNotification';
-import useSocketStore from '@/store/useSocketStore ';
-
+import useSocketStore from '@/store/useSocketStore';
 
 export interface ChatRoom {
   profileImage: string;
@@ -34,73 +33,82 @@ interface Message {
   role?: string;
 }
 
+interface OnlineStatus {
+  isOnline: boolean;
+  lastSeen?: Date;
+}
+
 const ChatSession: React.FC = () => {
   const router = useRouter();
   const messageEndRef = useRef<HTMLDivElement>(null);
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>({ isOnline: false });
 
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const { socket } = useSocketStore();
-  const {  totalUnreadMessage, notifications, fetchNotifications } =
-  
-  useChatNotifications();
-    useEffect(() => {
+  const { fetchNotifications } = useChatNotifications();
 
-        fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
-      }, [fetchNotifications]);
-  // Initialize Socket.IO connection
+  useEffect(() => {
+    fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
+  }, [fetchNotifications]);
 
-
-  // Connect user to Socket.IO when chat room is selected
-useEffect(() => {
+  useEffect(() => {
     if (selectedChatRoom && socket && performerDetails?.PId) {
-        socket.on('receiveMessage', ({ senderId, message }) => {
-            setMessages(prevMessages => [
-                ...prevMessages,
-                {
-                    _id: new mongoose.Types.ObjectId().toString(),
-                    roomId: selectedChatRoom.otherId,
-                    senderId: new mongoose.Types.ObjectId(senderId),
-                    receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-                    message: message,
-                    timestamp: new Date(),
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    __v: 0,
-                    role: 'receiver',
-                },
-            ]);
-        });
+      socket.on('receiveMessage', ({ senderId, message }) => {
+        setMessages(prevMessages => [
+          ...prevMessages,
+          {
+            _id: new mongoose.Types.ObjectId().toString(),
+            roomId: selectedChatRoom.otherId,
+            senderId: new mongoose.Types.ObjectId(senderId),
+            receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+            message: message,
+            timestamp: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __v: 0,
+            role: 'receiver',
+          },
+        ]);
+      });
     }
 
     return () => {
-        if (socket) {
-            socket.off('receiveMessage');
-        }
+      if (socket) {
+        socket.off('receiveMessage');
+      }
     };
-}, [selectedChatRoom, socket, performerDetails]);
+  }, [selectedChatRoom, socket, performerDetails]);
 
-
-  // Fetch initial chat rooms and messages
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
+
   useEffect(() => {
     console.log('Fetching data...');
     fetchPerformerDetails();
-    fetchPerformerDetails();
-  }, [fetchPerformerDetails, fetchPerformerDetails]);
+  }, [fetchPerformerDetails]);
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedChatRoom) {
-        try { const online=await axiosInstance.post(`/chat/onlineUser/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`)
-          const response = await axiosInstance.get(`/chat/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, { withCredentials: true });
+        try {
+          // Fetch online status
+          const onlineResponse = await axiosInstance.post(
+            `/chat/onlineUser/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`
+          );
+          setOnlineStatus(onlineResponse.data);
+
+          // Fetch messages
+          const response = await axiosInstance.get(
+            `/chat/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`,
+            { withCredentials: true }
+          );
           setMessages(response.data.data || []);
         } catch (error) {
           console.error('Error fetching messages:', error);
@@ -111,7 +119,6 @@ useEffect(() => {
     fetchMessages();
   }, [selectedChatRoom]);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -119,13 +126,13 @@ useEffect(() => {
   const handleSendMessage = async () => {
     if (newMessage.trim() !== '' && selectedChatRoom && socket) {
       try {
-        // Send message to server via HTTP
-        const response = await axiosInstance.post(`/chat/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`, {
-          message: newMessage,
-        }, { withCredentials: true });
+        const response = await axiosInstance.post(
+          `/chat/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`,
+          { message: newMessage },
+          { withCredentials: true }
+        );
 
-        // Emit message via Socket.IO
-        console.log("xc:😍",selectedChatRoom.myId)
+        console.log("xc:😍", selectedChatRoom.myId);
         socket.emit('sendMessage', {
           senderId: selectedChatRoom.myId,
           receiverId: selectedChatRoom.otherId,
@@ -153,13 +160,15 @@ useEffect(() => {
       }
     }
   };
+
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
     setTimeout(() => {
-      router.replace('/auth');
+      router.replace('/');
     }, 1000);
   };
-const filteredChatRooms = chatRooms.filter(room => {
+
+  const filteredChatRooms = chatRooms.filter(room => {
     const searchTermLower = searchTerm.toLowerCase();
     const userName = room.userName?.toLowerCase() || '';
     const performerName = room.performerName?.toLowerCase() || '';
@@ -170,16 +179,13 @@ const filteredChatRooms = chatRooms.filter(room => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex">
-      {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen}
         performerDetails={performerDetails}
         onLogout={handleLogout}
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 md:ml-64">
-        {/* Top Navbar */}
         <nav className="bg-white shadow-lg fixed top-0 right-0 left-0 md:left-64 flex justify-between items-center px-6 py-4 z-20">
           <div className="flex items-center">
             <button
@@ -193,16 +199,10 @@ const filteredChatRooms = chatRooms.filter(room => {
             BookItNow
           </h1>
           <div className="flex items-center">
-           
-          <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
+            <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
               </svg>
-              {/* {totalUnreadMessage > 0 && (
-  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-    {totalUnreadMessage}
-  </span>
-)} */}
             </a>
           </div>
         </nav>
@@ -211,7 +211,6 @@ const filteredChatRooms = chatRooms.filter(room => {
           <div className="flex flex-col items-center justify-center py-0 px-4 md:px-8">
             <div className="flex flex-col w-full bg-white shadow-2xl rounded-2xl overflow-hidden border-2 border-indigo-100">
               <div className="flex">
-                {/* Left Section: Chat Rooms List */}
                 <div className="w-1/4 border-r border-indigo-100 p-4 bg-gray-50">
                   <div className="relative mb-4 group">
                     <input 
@@ -239,13 +238,13 @@ const filteredChatRooms = chatRooms.filter(room => {
                         }`}
                       >
                         <div className="relative">
-                          <img 
+                          <Image 
                             src={room.profileImage} 
                             alt={room.userName} 
-                            className="w-12 h-12 rounded-full mr-3 border-2 border-white shadow-md"
+                            width={48}
+                            height={48}
+                            className="rounded-full mr-3 border-2 border-white shadow-md"
                           />
-                          {/* Optional online status indicator */}
-                          {/* <span className="absolute bottom-0 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span> */}
                         </div>
                         <div>
                           <div className="font-medium text-indigo-800">{room.userName}</div>
@@ -255,30 +254,35 @@ const filteredChatRooms = chatRooms.filter(room => {
                   </ul>
                 </div>
 
-                {/* Right Section: Chat */}
                 <div className="w-3/4 p-4 flex flex-col">
                   <div className="h-[500px] overflow-y-auto border-2 border-indigo-100 rounded-xl p-4 bg-gradient-to-br from-white to-indigo-50 mb-4 shadow-inner">
                     {selectedChatRoom ? (
                       <div className="space-y-3">
                         <div className="mb-4 flex items-center border-b pb-2 border-indigo-100">
                           <div className="relative">
-                            <img 
+                            <Image 
                               src={selectedChatRoom.profileImage} 
                               alt={selectedChatRoom.userName} 
-                              className="w-12 h-12 rounded-full mr-3 border-2 border-white shadow-md"
+                              width={48}
+                              height={48}
+                              className="rounded-full mr-3 border-2 border-white shadow-md"
                             />
-                            {/* <span className="absolute bottom-0 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span> */}
+                            <span className={`absolute bottom-0 right-3 w-3 h-3 ${
+                              onlineStatus.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                            } rounded-full border-2 border-white`}></span>
                           </div>
-                          <div >
+                          <div>
                             <p className="text-lg font-semibold text-indigo-800">
                               {selectedChatRoom.userName}
                             </p>
-                            {/* <p className="text-sm text-indigo-600">Online</p> */}
-                            
+                            <p className="text-sm text-indigo-600">
+                              {onlineStatus.isOnline ? 'Online' : 'Offline'}
+                              {!onlineStatus.isOnline && onlineStatus.lastSeen && 
+                                ` - Last seen ${new Date(onlineStatus.lastSeen).toLocaleString()}`
+                              }
+                            </p>
                           </div>
-                         
                         </div>
-                        {/* Message Rendering */}
                         {messages.map((message) => (
                           <div 
                             key={message._id} 
@@ -313,7 +317,6 @@ const filteredChatRooms = chatRooms.filter(room => {
                         <MessageCircle size={64} className="text-indigo-400 mb-4" />
                         <p className="text-xl font-semibold text-indigo-700 mb-2">
                           Welcome to <span className="text-purple-600">BookItNow</span> Chat
-                         
                         </p>
                         <p className="text-indigo-500 max-w-md">
                           Select a chat to start messaging. Connect, communicate, and make your bookings smooth and easy.
@@ -335,7 +338,7 @@ const filteredChatRooms = chatRooms.filter(room => {
                         onClick={handleSendMessage}
                         className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-2 rounded-full hover:from-indigo-700 hover:to-purple-700 transition duration-300 transform hover:scale-110"
                       >
-                        <Send size={24} />
+                      <Send size={24} />
                       </button>
                     </div>
                   )}

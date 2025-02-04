@@ -1,11 +1,12 @@
-// types/sidebar.ts
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+
 export interface MenuItem {
-    icon: any; // FontAwesome icon type
-    text: string;
-    href: string;
-  }
-  
-  export interface SidebarProps {
-    sidebarOpen: boolean;
-    handleLogout: () => Promise<void>;
-  }
+  icon: IconDefinition; 
+  text: string;
+  href: string;
+}
+
+export interface SidebarProps {
+  sidebarOpen: boolean;
+  handleLogout: () => Promise<void>;
+}

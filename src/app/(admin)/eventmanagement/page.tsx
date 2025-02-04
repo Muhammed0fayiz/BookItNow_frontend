@@ -1,27 +1,15 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faBars, faTimes, faChevronLeft, faChevronRight, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faTimes, faChevronLeft, faChevronRight, faSearch } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '@/shared/axiousintance';
 import useAllEventsAdminStore from '@/store/useAllEventsAdmin';
-
+import Image from "next/image";
 import Sidebar from '@/component/adminSidebar';
 import BlockEventModal from '@/component/adminEventBlock';
 import Description from '@/component/description';
 
-// TypeScript interface for Event type
-interface Event {
-  _id: string;
-  title: string;
-  category: string;
-  price: string;
-  isblocked: boolean;
-  teamLeader: string;
-  teamLeaderNumber: string;
-  description: string;
-  imageUrl: string;
-}
 
 const EventManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -259,7 +247,13 @@ const EventManagement = () => {
                         </td>
                         <td className="py-3 px-4">{event.price}</td>
                         <td className="py-3 px-4">
-                          <img src={event.imageUrl} alt={event.title} className="w-12 h-12 object-cover mx-auto" />
+                        <Image
+  src={event.imageUrl}
+  alt={event.title}
+  width={48} 
+  height={48} 
+  className="object-cover mx-auto"
+/>
                         </td>
                         <td className={`py-3 px-4 ${event.isblocked ? "text-red-500" : "text-green-500"}`}>
                           {event.isblocked ? "Inactive" : "Active"}

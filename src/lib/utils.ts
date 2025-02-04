@@ -33,18 +33,40 @@ export function generateId(length: number = 8) {
 }
 
 /**
- * Safely access nested object properties
+ * Safely access nested object properties with improved type safety
  * @param obj - Object to access
  * @param path - Path to the property
  * @param defaultValue - Default value if property doesn't exist
  * @returns Property value or default value
  */
-export function get(obj: any, path: string, defaultValue: any = undefined) {
-  const travel = (regexp: RegExp) =>
-    String.prototype.split
-      .call(path, regexp)
-      .filter(Boolean)
-      .reduce((res, key) => (res !== null && res !== undefined ? res[key] : res), obj);
-  const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
-  return result === undefined || result === obj ? defaultValue : result;
+export function get<T, D = undefined>(
+  obj: T, 
+  path: string, 
+  defaultValue?: D
+): D extends undefined 
+  ? (T extends Record<string, unknown> 
+     ? unknown 
+     : D) 
+  : D {
+  const keys = path.replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
+    .filter(Boolean);
+
+  let result: unknown = obj;
+
+  for (const key of keys) {
+    if (result == null || typeof result !== 'object') {
+      result = undefined;
+      break;
+    }
+    result = (result as Record<string, unknown>)[key];
+  }
+
+  return (result === undefined || result === obj 
+    ? defaultValue 
+    : result) as D extends undefined 
+      ? (T extends Record<string, unknown> 
+         ? unknown 
+         : D) 
+      : D;
 }

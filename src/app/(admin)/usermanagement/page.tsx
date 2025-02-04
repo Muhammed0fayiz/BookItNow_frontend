@@ -2,17 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faLock, faWallet, faSignOutAlt, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '@/shared/axiousintance';
 import { Dialog, Transition } from '@headlessui/react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/component/adminSidebar';
+
+// Define detailed interfaces for API responses
+interface UserApiResponse {
+    _id: string;
+    username: string;
+    email: string;
+    isblocked: boolean;
+    isVerified: boolean;
+}
+
+interface PerformerApiResponse {
+    _id: string;
+    userId: {
+        toString: () => string;
+        isBlocked: boolean;
+    };
+    bandName: string;
+    mobileNumber: string;
+    rating: number;
+}
+
 interface User {
     id: string;
     name: string;
     email: string;
     isBlocked: boolean;
-    isVerified?: boolean;
+    isVerified: boolean;
 }
 
 interface Performer {
@@ -26,14 +47,15 @@ interface Performer {
 
 type Item = User | Performer;
 
+// Type guard
 function isUser(item: Item): item is User {
     return 'email' in item;
 }
 
 const UserPerformerManagement = () => {
     const [loading, setLoading] = useState(true);
+   
     const [sessionValid, setSessionValid] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [performers, setPerformers] = useState<Performer[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -70,23 +92,23 @@ const UserPerformerManagement = () => {
             const fetchData = async () => {
                 try {
                     const [usersResponse, performersResponse] = await Promise.all([
-                        axiosInstance.get('/admin/getUsers'),
-                        axiosInstance.get('/admin/performers')
+                        axiosInstance.get<UserApiResponse[]>('/admin/getUsers'),
+                        axiosInstance.get<{ success: boolean; data: PerformerApiResponse[] }>('/admin/performers')
                     ]);
 
                     if (Array.isArray(usersResponse.data)) {
-                        const validUsers = usersResponse.data.map((user: any): User => ({
-                            id: user._id || '',
+                        const validUsers: User[] = usersResponse.data.map((user: UserApiResponse) => ({
+                            id: user._id,
                             name: user.username || 'N/A',
                             email: user.email || 'N/A',
-                            isBlocked: user.isblocked || false,
-                            isVerified: user.isVerified || false
+                            isBlocked: user.isblocked,
+                            isVerified: user.isVerified
                         }));
                         setUsers(validUsers);
                     }
 
                     if (performersResponse.data.success && Array.isArray(performersResponse.data.data)) {
-                        const performersData = performersResponse.data.data.map((performer: any): Performer => ({
+                        const performersData: Performer[] = performersResponse.data.data.map((performer: PerformerApiResponse) => ({
                             _id: performer._id,
                             userId: performer.userId.toString(),
                             bandName: performer.bandName,
@@ -107,7 +129,7 @@ const UserPerformerManagement = () => {
 
     const handleLogout = async () => {
         try {
-            const response = await axiosInstance.post('/admin/adminLogout');
+            const response = await axiosInstance.post<{ success: boolean; message: string }>('/admin/adminLogout');
             if (response.data.success) {
                 setTimeout(() => {
                     router.replace('/adminlogin');
@@ -151,7 +173,6 @@ const UserPerformerManagement = () => {
         }
     };
 
-    const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
     const openConfirmation = (item: Item) => {
         setSelectedItem(item);
         setConfirmationOpen(true);
@@ -206,8 +227,7 @@ const UserPerformerManagement = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 flex">
-        
-            <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
+         <Sidebar sidebarOpen={false} handleLogout={handleLogout} />
             <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">
                 <div className="flex-1 p-8">
                     <div className="mt-0 bg-white rounded-lg shadow-lg p-8">
@@ -249,7 +269,7 @@ const UserPerformerManagement = () => {
                                 <thead>
                                     <tr className="bg-indigo-700 text-white">
                                         <th className="p-4">{view === 'users' ? 'Name' : 'Band Name'}</th>
-                                        <th className="p-4">{view === 'users' ? 'Email' : 'mobileNumber'}</th>
+                                        <th className="p-4">{view === 'users' ? 'Email' : 'Mobile Number'}</th>
                                         <th className="p-4">{view === 'users' ? 'Verified' : 'Rating'}</th>
                                         <th className="p-4">Status</th>
                                         <th className="p-4">Actions</th>
@@ -288,7 +308,7 @@ const UserPerformerManagement = () => {
                             <button
                                 onClick={handlePreviousPage}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 bg-gray-300 rounded"
+                                className={`px-4 py-2 rounded ${currentPage === 1 ? 'bg-gray-200' : 'bg-gray-300'}`}
                             >
                                 Previous
                             </button>
@@ -298,7 +318,7 @@ const UserPerformerManagement = () => {
                             <button
                                 onClick={handleNextPage}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 bg-gray-300 rounded"
+                                className={`px-4 py-2 rounded ${currentPage === totalPages ? 'bg-gray-200' : 'bg-gray-300'}`}
                             >
                                 Next
                             </button>
@@ -306,35 +326,36 @@ const UserPerformerManagement = () => {
                     </div>
                 </div>
             </div>
+
             <Transition show={confirmationOpen} as={React.Fragment}>
-    <Dialog onClose={() => setConfirmationOpen(false)}>
-        <div className="fixed inset-0 bg-black bg-opacity-30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="bg-white rounded-lg p-6 w-96">
-                <Dialog.Title className="text-lg font-bold mb-4">
-                    {updating ? 'Updating...' : 
-                    selectedItem && 
-                    `Are you sure you want to ${selectedItem.isBlocked ? 'unblock' : 'block'} ${isUser(selectedItem) ? selectedItem.name : selectedItem.bandName}?`}
-                </Dialog.Title>
-                <div className="flex justify-between">
-                    <button
-                        className="px-4 py-2 text-white bg-red-500 rounded"
-                        onClick={() => selectedItem && handleStatusChange(selectedItem)}
-                        disabled={updating || !selectedItem}
-                    >
-                        Yes
-                    </button>
-                    <button
-                        className="px-4 py-2 text-gray-500 bg-gray-200 rounded"
-                        onClick={() => setConfirmationOpen(false)}
-                    >
-                        No
-                    </button>
-                </div>
-            </Dialog.Panel>
-        </div>
-    </Dialog>
-</Transition>
+                <Dialog onClose={() => setConfirmationOpen(false)}>
+                    <div className="fixed inset-0 bg-black bg-opacity-30" aria-hidden="true" />
+                    <div className="fixed inset-0 flex items-center justify-center p-4">
+                        <Dialog.Panel className="bg-white rounded-lg p-6 w-96">
+                            <Dialog.Title className="text-lg font-bold mb-4">
+                                {updating ? 'Updating...' : 
+                                selectedItem && 
+                                `Are you sure you want to ${selectedItem.isBlocked ? 'unblock' : 'block'} ${isUser(selectedItem) ? selectedItem.name : selectedItem.bandName}?`}
+                            </Dialog.Title>
+                            <div className="flex justify-between">
+                                <button
+                                    className="px-4 py-2 text-white bg-red-500 rounded"
+                                    onClick={() => selectedItem && handleStatusChange(selectedItem)}
+                                    disabled={updating || !selectedItem}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    className="px-4 py-2 text-gray-500 bg-gray-200 rounded"
+                                    onClick={() => setConfirmationOpen(false)}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </Dialog.Panel>
+                    </div>
+                </Dialog>
+            </Transition>
         </div>
     );
 };

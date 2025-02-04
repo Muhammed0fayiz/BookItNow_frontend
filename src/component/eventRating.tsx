@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import axiosInstance from "@/shared/axiousintance";
+import Image from "next/image"; 
 
 interface Rating {
   _id: string;
@@ -28,12 +29,12 @@ const EventRatingPage: React.FC = () => {
         setIsLoading(true);
         const response = await axiosInstance.get(`/ratings/event/${id}`);
         
-        const fetchedRatings = response.data;
+        const fetchedRatings: Rating[] = response.data;
         setRatings(fetchedRatings);
 
-        // Calculate average rating
-        const totalRating = fetchedRatings.reduce((sum, rating) => sum + rating.rating, 0);
-        setAverageRating(totalRating / fetchedRatings.length);
+        // Calculate average rating with explicit type handling
+        const totalRating = fetchedRatings.reduce((sum: number, rating: Rating) => sum + rating.rating, 0);
+        setAverageRating(fetchedRatings.length > 0 ? totalRating / fetchedRatings.length : 0);
       } catch (err) {
         setError('Failed to fetch ratings');
         console.error(err);
@@ -47,7 +48,7 @@ const EventRatingPage: React.FC = () => {
     }
   }, [id]);
 
-  const renderStars = (rating: number) => {
+const renderStars = (rating: number) => {
     return (
       <div className="flex">
         {[...Array(5)].map((_, index) => (
@@ -109,9 +110,11 @@ const EventRatingPage: React.FC = () => {
                 className="bg-white shadow-md rounded-lg p-6"
               >
                 <div className="flex items-center mb-4">
-                  <img 
+                  <Image
                     src={rating.userId.profileImage || '/default-avatar.png'} 
                     alt={rating.userId.name}
+                    width={500} 
+                    height={300}
                     className="w-10 h-10 rounded-full mr-4"
                   />
                   <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, X, Upload, CheckCircle } from 'lucide-react';
 import { axiosInstanceMultipart } from '@/shared/axiousintance';
+import Image from "next/image";
 
 interface PerformerDetails {
   userId?: string;
@@ -25,7 +26,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
   const [formData, setFormData] = useState({
     bandName: performerDetails?.bandName || '',
     place: performerDetails?.place || '',
-    mobileNumber: performerDetails?.mobileNumber || '', // Changed from mobileNum to match backend
+    mobileNumber: performerDetails?.mobileNumber || '',
     image: performerDetails?.image || '',
   });
 
@@ -52,7 +53,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
     switch (name) {
       case 'bandName':
         return value.length < 2 ? 'Band name must be at least 2 characters long' : '';
-      case 'mobileNumber': // Updated field name
+      case 'mobileNumber':
         return !value.match(/^\d{10}$/) ? 'Mobile number must be 10 digits' : '';
       case 'place':
         return value.length < 2 ? 'Place must be at least 2 characters long' : '';
@@ -74,7 +75,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (e) => {
-        const img = new Image();
+        const img = new window.Image(); // Fixed Image constructor
         img.src = e.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -173,7 +174,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
     
     const newErrors: Record<string, string> = {};
     Object.keys(formData).forEach(key => {
-      if (key !== 'image') { // Skip image validation
+      if (key !== 'image') {
         const error = validateField(key, formData[key as keyof typeof formData]);
         if (error) newErrors[key] = error;
       }
@@ -190,7 +191,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('bandName', formData.bandName);
       formDataToSubmit.append('place', formData.place);
-      formDataToSubmit.append('mobileNumber', formData.mobileNumber); // Updated field name
+      formDataToSubmit.append('mobileNumber', formData.mobileNumber);
       if (profilePic) {
         formDataToSubmit.append('image', profilePic);
       }
@@ -248,8 +249,10 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
           >
             {imagePreview ? (
               <div className="relative group">
-                <img
+                <Image
                   src={imagePreview}
+                  width={500}
+                  height={300}
                   alt="Profile"
                   className="w-32 h-32 rounded-full object-cover shadow-lg"
                 />
@@ -374,4 +377,4 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
   );
 };
 
-export default EditPerformerProfileForm
+export default EditPerformerProfileForm;

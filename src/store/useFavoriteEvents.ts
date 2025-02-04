@@ -31,9 +31,9 @@ export const useFavoritesStore = create<FavoritesStore>((set, get) => ({
         throw new Error('Invalid response format: Expected an array.');
       }
   
-      const favorites: FavoriteEvent[] = data.map((event: any) => ({
+      const favorites: FavoriteEvent[] = data.map((event: FavoriteEvent) => ({
         ...event,
-        date: event.date ? new Date(event.date).toISOString() : null,
+
         createdAt: event.createdAt ? new Date(event.createdAt).toISOString() : null,
         updatedAt: event.updatedAt ? new Date(event.updatedAt).toISOString() : null,
       }));

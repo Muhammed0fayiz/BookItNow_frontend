@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import useChatNotifications from '@/store/useChatNotification';
 
@@ -11,26 +10,8 @@ interface NavbarProps {
   pageTitle?: string;  // Add optional pageTitle prop
 }
 
-const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, toggleSidebar, pageTitle }) => {
-  const router = useRouter();
-  const pathname = usePathname();
+const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, toggleSidebar}) => {
   const { totalUnreadMessage } = useChatNotifications();
-
-  // Default title logic
-  const getPageTitle = () => {
-    if (pageTitle) return pageTitle;
-    
-    const path = pathname?.toLowerCase();
-    switch (path) {
-      case '/eventhistory':
-        return 'Event History';
-      case '/favorites':
-      case '/fav':
-        return 'Favorite Events';
-      default:
-        return 'Dashboard';
-    }
-  };
 
   return (
     <nav className="bg-white shadow-sm h-16 fixed right-0 left-0 md:left-64 z-40">

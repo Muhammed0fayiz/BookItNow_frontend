@@ -1,41 +1,67 @@
 import { create } from 'zustand';
-import { PerformerUpcomingEvent, PerformerUpcomingEventsStore } from '@/types/store';
 import axiosInstance from '@/shared/axiousintance';
-// import axiosInstance from '@/shared/axiosInstance';
 
-export const useEventHistory = create<PerformerUpcomingEventsStore>((set, get) => ({
-  performerupcomingEvents: [],
+export interface PerformerEventHistory {
+  _id: string;
+  imageUrl?: string;
+  title: string;
+  date: string;
+  time: string;
+  place: string;
+  category: string;
+  bookingStatus: string;
+  price: number;
+  status: 'Confirmed' | 'Pending' | 'Cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PerformerEventHistoryStore {
+  performerEvents: PerformerEventHistory[];
+  isLoading: boolean;
+  error: string | null;
+  totalCount: number;
+  fetchAllEvents: () => Promise<void>;
+  getUserIdFromToken: () => string | null;
+  removeEvent: (eventId: string) => void;
+}
+
+export const useEventHistory = create<PerformerEventHistoryStore>((set, get) => ({
+  performerEvents: [],
   isLoading: false,
   error: null,
   totalCount: 0,
   
-
-  // Fetch all upcoming events for the performer
   fetchAllEvents: async () => {
     set({ isLoading: true, error: null });
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
+        const response = await axiosInstance.get(`/performerEvent/eventhistory/${userId}`, {
+          withCredentials: true
+        });
         
-        const response = await axiosInstance.get(`/performerEvent/eventhistory/${userId}`,{withCredentials: true});
-        const events: PerformerUpcomingEvent[] = response.data.events.map((event: any) => ({
+        const events: PerformerEventHistory[] = response.data.events.map((event: PerformerEventHistory) => ({
           ...event,
           date: new Date(event.date).toISOString(),
           createdAt: new Date(event.createdAt).toISOString(),
           updatedAt: new Date(event.updatedAt).toISOString(),
         }));
-        set({ performerupcomingEvents: events,
-          totalCount:response.data.totalCount, isLoading: false });
+        
+        set({ 
+          performerEvents: events,
+          totalCount: response.data.totalCount, 
+          isLoading: false 
+        });
       } else {
         set({ error: 'Unable to fetch user ID from token', isLoading: false });
       }
     } catch (error) {
-      set({ error: 'Failed to fetch upcoming events', isLoading: false });
-      console.error('Error fetching upcoming events:', error);
+      set({ error: 'Failed to fetch events', isLoading: false });
+      console.error('Error fetching events:', error);
     }
   },
 
-  // Extract user ID from the token stored in cookies
   getUserIdFromToken: () => {
     try {
       const getCookie = (name: string): string | undefined => {
@@ -58,10 +84,9 @@ export const useEventHistory = create<PerformerUpcomingEventsStore>((set, get) =
     }
   },
 
-  // Remove an event by its ID
-  removeUpcomingEvent: (eventId: string) => {
+  removeEvent: (eventId: string) => {
     set((state) => ({
-      performerupcomingEvents: state.performerupcomingEvents.filter((event) => event._id !== eventId),
+      performerEvents: state.performerEvents.filter((event) => event._id !== eventId),
     }));
   },
 }));

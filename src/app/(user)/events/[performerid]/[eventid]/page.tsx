@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useAllEventsStore from "@/store/useAllEvents";
 import usePerformersStore from "@/store/useAllPerformerStore";
-import { Calendar, MapPin, Clock, Share2, MessageCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, Share2} from "lucide-react";
 import useUserStore from "@/store/useUserStore";
 import axiosInstance from "@/shared/axiousintance";
 import EventPayment from "@/component/eventPayment";
@@ -11,7 +11,7 @@ import BookingConfirmationModal from "@/component/bookingconfirmation";
 import axios from "axios";
 import useChatNotifications from "@/store/useChatNotification";
 import WalletPaymentModal from "@/component/WalletPayment";
-
+import Image from "next/image"
 const EventDetailsPage = () => {
   const router = useRouter();
   const params = useParams();
@@ -21,7 +21,7 @@ const EventDetailsPage = () => {
   const { events, fetchAllEvents } = useAllEventsStore();
   const { performers, fetchAllPerformers } = usePerformersStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  // const [isLiked, setIsLiked] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
@@ -30,6 +30,14 @@ const EventDetailsPage = () => {
   const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
   // Form state
+  interface PaymentIntent {
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    // Add other relevant properties
+  }
+  
 
   const [formData, setFormData] = useState({
     place: "",
@@ -53,7 +61,7 @@ const EventDetailsPage = () => {
     };
     loadUserProfile();
   }, [fetchUserProfile]);
-  const { totalUnreadMessage, notifications, fetchNotifications } =
+  const { totalUnreadMessage,fetchNotifications } =
     useChatNotifications();
   useEffect(() => {
     fetchNotifications().catch((err) =>
@@ -330,7 +338,7 @@ const EventDetailsPage = () => {
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntent: any) => {
+  const handlePaymentSuccess = async (paymentIntent: PaymentIntent) => {
     try {
       const response = await axiosInstance.post(
         "/userEvent/events/book",
@@ -548,9 +556,11 @@ const EventDetailsPage = () => {
             {/* Left Side - Image */}
             <div className="lg:w-1/2 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10" />
-              <img
+              <Image
                 src={event.imageUrl}
                 alt={event.title}
+                width={500}
+                height={300}
                 className={`w-full h-full object-cover min-h-[500px] transition-transform duration-700 group-hover:scale-110 ${
                   isImageLoaded ? "opacity-100" : "opacity-0"
                 }`}

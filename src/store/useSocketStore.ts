@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
-import axiosInstance from '@/shared/axiousintance';
-import { UserStore, UserProfile } from '@/types/store';
+import {  Socket } from 'socket.io-client';
 
 interface SocketStore {
   socket: Socket | null;

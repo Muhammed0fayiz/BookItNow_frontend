@@ -1,8 +1,8 @@
 'use client';
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWallet, faInbox } from '@fortawesome/free-solid-svg-icons';
+import { faInbox } from '@fortawesome/free-solid-svg-icons';
 import axiosInstance from '@/shared/axiousintance';
 import Sidebar from '@/component/adminSidebar';
 
@@ -21,25 +21,27 @@ const formatDate = (dateString: string) => {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    weekday: 'short'
+    weekday: 'short',
   });
 };
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
-    case 'completed': return 'bg-green-100 text-green-800';
-    case 'booking': return 'bg-yellow-100 text-yellow-800';
-    case 'canceled': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'booking':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'canceled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
 const RevenuePage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [sessionValid, setSessionValid] = useState<boolean>(false);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [revenueData, setRevenueData] = useState<AdminRevenue[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const router = useRouter();
@@ -62,30 +64,29 @@ const RevenuePage: React.FC = () => {
     checkSession();
   }, [router]);
 
-  useEffect(() => {
-    if (sessionValid) {
-      fetchRevenueData();
-    }
-  }, [sessionValid, currentPage]);
-
-  const fetchRevenueData = async () => {
+  const fetchRevenueData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/admin/getRevenue', {
-        params: { page: currentPage }
+        params: { page: currentPage },
       });
 
-      const { adminRevinue, totalCount, totalPages } = response.data;
-      
+      const { adminRevinue, totalPages } = response.data;
+
       setRevenueData(adminRevinue);
-      setTotalCount(totalCount);
       setTotalPages(totalPages);
     } catch (error) {
       console.error('Error fetching revenue data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (sessionValid) {
+      fetchRevenueData();
+    }
+  }, [sessionValid, currentPage, fetchRevenueData]);
 
   const handleLogout = async () => {
     try {
@@ -135,13 +136,13 @@ const RevenuePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex">
-      <Sidebar sidebarOpen={sidebarOpen} handleLogout={handleLogout} />
+      <Sidebar sidebarOpen={false} handleLogout={handleLogout} />
 
       <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 ease-in-out">
         <div className="flex-1 p-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border-t-4 border-indigo-600">
             <h2 className="text-3xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Revenue</h2>
-            
+
             {revenueData.length === 0 ? (
               <EmptyState />
             ) : (
@@ -153,14 +154,13 @@ const RevenuePage: React.FC = () => {
                       <th className="p-4 font-semibold">Performer Name</th>
                       <th className="p-4 font-semibold">Event Name</th>
                       <th className="p-4 font-semibold">Status</th>
-                   
                       <th className="p-4 font-semibold">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {revenueData.map((entry, index) => (
-                      <tr 
-                        key={index} 
+                      <tr
+                        key={index}
                         className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-indigo-50 transition-colors duration-200`}
                       >
                         <td className="p-4 font-medium text-gray-800">{entry.userName}</td>
@@ -171,7 +171,6 @@ const RevenuePage: React.FC = () => {
                             {entry.status}
                           </span>
                         </td>
-                   
                         <td className="p-4 text-gray-700">{formatDate(entry.date)}</td>
                       </tr>
                     ))}
@@ -182,17 +181,17 @@ const RevenuePage: React.FC = () => {
 
             {revenueData.length > 0 && (
               <div className="flex justify-between items-center mt-6 bg-gray-100 p-4 rounded-lg">
-                <button 
-                  onClick={handlePrevPage} 
-                  disabled={currentPage === 1} 
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
                   className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 px-4 rounded-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 disabled:opacity-50"
                 >
                   Previous
                 </button>
                 <span className="text-gray-700 font-medium">Page {currentPage} of {totalPages}</span>
-                <button 
-                  onClick={handleNextPage} 
-                  disabled={currentPage === totalPages} 
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
                   className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 px-4 rounded-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 disabled:opacity-50"
                 >
                   Next

@@ -1,34 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import useUserStore from "@/store/useUserStore";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import useWalletHistoryStore from "@/store/useWalletHistory";
-import { loginImage } from "@/datas/logindatas";
 import useChatNotifications from "@/store/useChatNotification";
 import InitialLoading from "@/component/loading";
 import Sidebar from "@/component/userSidebar";
 import Navbar from "@/component/userNavbar";
 
-interface Transaction {
-  _id: string;
-  date: string;
-  amount: number;
-  transactionType: "credit" | "debit";
-  description: string;
-  performer?: string;
-  status: "completed" | "pending" | "failed";
-}
 
 const UserWallet: React.FC = () => {
-  const router = useRouter();
+
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } =
+  const { userProfile, error, fetchUserProfile, handleLogout } =
     useUserStore();
   const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
-  const { totalUnreadMessage, notifications, fetchNotifications } =
+  const { fetchNotifications } =
     useChatNotifications();
 
   useEffect(() => {
@@ -66,19 +55,6 @@ const UserWallet: React.FC = () => {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-600";
-      case "pending":
-        return "bg-yellow-100 text-yellow-600";
-      case "failed":
-        return "bg-red-100 text-red-600";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
   };
 
   if (isInitialLoading) {

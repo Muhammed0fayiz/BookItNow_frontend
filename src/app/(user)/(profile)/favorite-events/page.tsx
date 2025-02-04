@@ -11,14 +11,14 @@ import useChatNotifications from "@/store/useChatNotification"
 import DescriptionViewer from "@/component/descriptionViewer"
 import Sidebar from "@/component/userSidebar"
 import Navbar from "@/component/userNavbar"
-
+import Image from "next/image";
 const FavoriteEvents: React.FC = () => {
   const router = useRouter()
   const [isAllDataLoaded, setIsAllDataLoaded] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore()
   const { favoriteEvents, fetchfavoriteEvents } = useFavoritesStore()
-  const { totalUnreadMessage, notifications, fetchNotifications } = useChatNotifications()
+  const {fetchNotifications } = useChatNotifications()
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -56,38 +56,6 @@ const FavoriteEvents: React.FC = () => {
       }
     } catch (error) {
       console.error("Error removing favorite event:", error)
-    }
-  }
-
-  const formatTime = (timeString: string) => {
-    try {
-      if (!timeString) return "Time not available"
-      if (timeString.includes(":")) {
-        const [hours, minutes] = timeString.split(":")
-        const date = new Date()
-        date.setHours(Number.parseInt(hours), Number.parseInt(minutes))
-        return date.toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-      }
-      return timeString
-    } catch (error) {
-      return timeString
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    } catch (error) {
-      return "Date not available"
     }
   }
 
@@ -153,20 +121,18 @@ const FavoriteEvents: React.FC = () => {
                   className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                 >
                   <div className="relative h-48">
-                    <img
+                    <Image
                       src={event.imageUrl || "/event-placeholder.jpg"}
                       alt={event.title}
+                      width={500} 
+        height={300} 
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
                         target.src = "/event-placeholder.jpg"
                       }}
                     />
-                    {event.bookingStatus === "cancelled" && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <span className="text-white text-lg font-bold">Cancelled</span>
-                      </div>
-                    )}
+                  
                   </div>
 
                   <div className="p-5">
@@ -199,7 +165,7 @@ const FavoriteEvents: React.FC = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleRemoveFavorite(event._id)}
+                     onClick={() => handleRemoveFavorite(event._id || '')} 
                         className="text-red-600 hover:text-red-700 transition-colors duration-300"
                       >
                         <i className="fas fa-heart-broken text-xl"></i>
@@ -215,9 +181,10 @@ const FavoriteEvents: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-3">No Favorite Events</h3>
                 <p className="text-gray-600 text-center mb-8 max-w-md">
-                  You haven't added any events to your favorites yet. Explore our events page to discover amazing
-                  experiences!
-                </p>
+  You haven&apos;t added any events to your favorites yet. Explore our events page to discover amazing
+  experiences!
+</p>
+
                 <a
                   href="/events"
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 flex items-center space-x-2 shadow-lg"
@@ -245,9 +212,9 @@ const FavoriteEvents: React.FC = () => {
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     className={`px-4 py-2 rounded-lg ${
-                      currentPage === page
+                      page === currentPage
                         ? "bg-blue-600 text-white"
-                        : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     {page}
@@ -270,4 +237,3 @@ const FavoriteEvents: React.FC = () => {
 }
 
 export default FavoriteEvents
-

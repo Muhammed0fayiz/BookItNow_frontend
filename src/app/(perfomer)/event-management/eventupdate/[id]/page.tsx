@@ -1,24 +1,13 @@
 'use client';
-
+import { AxiosError } from 'axios';
 import React, { useState, ChangeEvent, FocusEvent, useEffect } from 'react';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useEdgeStore } from '@/lib/edgestore';
 import axiosInstance from '@/shared/axiousintance';
-import { Upload, Calendar, DollarSign, Users, Phone, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Calendar, Users, Phone, FileText, Image as ImageIcon } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { log } from 'node:console';
+import Image from "next/image";
 
-interface Event {
-    _id?: string;
-    title: string;
-    category: string;
-    price: number;
-    teamLeader: string;
-    teamLeaderNumber: string;
-    rating: number;
-    description: string;
-    imageUrl: string;
-}
 
 interface FormData {
   id: string;
@@ -129,55 +118,67 @@ const EventForm: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [submitSuccess]);
 
-  const validateField = (name: keyof FormData, value: any): string => {
+ const validateField = (name: keyof FormData, value: string | File | null): string => {
     if (name === 'imageFile') {
-      if (!value && !imagePreview && !isEditing) return 'Image is required';
+      if (!value) return 'Image is required';
       return '';
     }
+  
 
     const trimmedValue = typeof value === 'string' ? value.trim() : value;
 
-    const validators: Record<keyof FormData, (value: any) => string> = {
+    const validators: Record<keyof FormData, (value: string | File | null) => string> = {
       id: () => '',
       userId: () => '',
       title: (value) => {
-        if (!value) return 'Event name is required';
-        if (value.length < 2) return 'Event name must be at least 2 characters';
-        if (value.length > 15) return 'Event name must be less than 15 characters';
+        if (typeof value === 'string') { // Ensure value is a string before checking length
+          if (!value) return 'Event name is required';
+          if (value.length < 2) return 'Event name must be at least 2 characters';
+          if (value.length > 15) return 'Event name must be less than 15 characters';
+        }
         return '';
       },
       price: (value) => {
-        if (!value) return 'Price is required';
-        const price = Number(value);
-        if (isNaN(price)) return 'Price must be a number';
-        if (price < 1000) return 'Price must be at least 1000';
-        if (price > 1000000) return 'Price cannot exceed 1,000,000';
+        if (typeof value === 'string') { // Ensure value is a string before processing
+          if (!value) return 'Price is required';
+          const price = Number(value);
+          if (isNaN(price)) return 'Price must be a number';
+          if (price < 1000) return 'Price must be at least 1000';
+          if (price > 1000000) return 'Price cannot exceed 1,000,000';
+        }
         return '';
       },
       category: (value) => (!value ? 'Category is required' : ''),
       teamLeader: (value) => {
-        if (!value) return 'Team leader name is required';
-        if (value.length < 2) return 'Team leader name must be at least 2 characters';
-        if (value.length > 20) return 'Team leader name must be less than 20 characters';
-        if (!/^[a-zA-Z\s]*$/.test(value)) return 'Team leader name can only contain letters';
+        if (typeof value === 'string') { // Ensure value is a string before checking length
+          if (!value) return 'Team leader name is required';
+          if (value.length < 2) return 'Team leader name must be at least 2 characters';
+          if (value.length > 20) return 'Team leader name must be less than 20 characters';
+          if (!/^[a-zA-Z\s]*$/.test(value)) return 'Team leader name can only contain letters';
+        }
         return '';
       },
       teamLeaderNumber: (value) => {
-        if (!value) return 'Contact number is required';
-        if (!/^\d{10}$/.test(value)) return 'Please enter a valid 10-digit number';
+        if (typeof value === 'string') { // Ensure value is a string before processing
+          if (!value) return 'Contact number is required';
+          if (!/^\d{10}$/.test(value)) return 'Please enter a valid 10-digit number';
+        }
         return '';
       },
       description: (value) => {
-        if (!value) return 'Description is required';
-        if (value.length < 10) return 'Description must be at least 10 characters';
-        if (value.length > 50) return 'Description cannot exceed 50 characters';
+        if (typeof value === 'string') { // Ensure value is a string before checking length
+          if (!value) return 'Description is required';
+          if (value.length < 10) return 'Description must be at least 10 characters';
+          if (value.length > 50) return 'Description cannot exceed 50 characters';
+        }
         return '';
       },
       imageFile: () => '',
     };
-    
+  
     return validators[name](trimmedValue);
   };
+
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -275,21 +276,20 @@ const EventForm: React.FC = () => {
   
         setSubmitSuccess(true);
         router.replace('/event-management');
-      } catch (error: any) {
-        if (error.response && error.response.data) {
-          setSubmitError(error.response.data.message || 'An error occurred');
+      } catch (error: unknown) {
+              if (error instanceof AxiosError && error.response && error.response.data) {
+              setSubmitError(error.response.data.message || 'An error occurred');
+            } else {
+              setSubmitError('An error occurred while submitting the form');
+            }
+            console.error('Error:', error);
+          }
         } else {
-          setSubmitError('An error occurred while submitting the form');
+          setSubmitError('Please correct the errors before submitting');
         }
-        console.error('Error:', error);
-      }
-    } else {
-      setSubmitError('Please correct the errors before submitting');
-    }
-  
-    setIsSubmitting(false);
-  };
-
+      
+        setIsSubmitting(false);
+      };
   const getInputStateClasses = (fieldName: string): string => {
     if (touched[fieldName]) {
       if (errors[fieldName]) {
@@ -316,11 +316,14 @@ const EventForm: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <img
-              src={imagePreview}
-              alt="Full size preview"
-              className="max-w-full max-h-full object-contain"
-            />
+           <Image
+                      src={imagePreview}
+                      alt="Full size preview"
+                      width={800}
+                      height={600}
+                      className="max-w-full max-h-full object-contain"
+                      priority
+                    />
           </div>
         </div>
       )}
@@ -534,12 +537,15 @@ const EventForm: React.FC = () => {
               {imagePreview && (
                 <div className="mt-4">
                   <div className="relative group rounded-lg overflow-hidden">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-[600px] object-contain cursor-pointer"
-                      onClick={() => setIsImageModalOpen(true)}
-                    />
+                   <Image
+                             src={imagePreview}
+                             alt="Preview"
+                             width={600}
+                             height={600}
+                             className="w-full h-[600px] object-contain cursor-pointer"
+                             onClick={() => setIsImageModalOpen(true)}
+                             priority
+                           />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
                       <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button

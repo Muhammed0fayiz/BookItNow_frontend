@@ -26,7 +26,7 @@ export async function middleware(req: NextRequest) {
     "/performer-upcomingevent",
     "/wallet-management",
   ];
-  const authPath = "/auth";
+  const authPath = "/";
 
   // Function to decode the token
   const decodeToken = (token: string) => {
@@ -109,7 +109,7 @@ export const config = {
   matcher: [
     "/profile",
     "/home",
-    "/auth",
+    "/",
     "/performer-dashboard",
     "/performer-events",
     "/performer-profile",

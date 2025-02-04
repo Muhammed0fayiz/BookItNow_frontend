@@ -24,7 +24,6 @@ interface BlockEventModalProps {
   isOpen, 
   onClose, 
   onBlock, 
-  showTimeInput = true // Provide a default value
 }) => {
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [blockReason, setBlockReason] = useState<string>('');

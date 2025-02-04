@@ -77,7 +77,7 @@ const useUserStore = create<UserStore>((set) => ({
 
   handleLogout: () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
-    window.location.href = '/auth';
+    window.location.href = '/';
   },
 }));
 
