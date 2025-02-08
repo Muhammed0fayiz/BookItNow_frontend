@@ -14,10 +14,10 @@ export async function middleware(req: NextRequest) {
     "/event-history",
     "/favorite-events",
     "/user-wallet",
+    "/about"
   ];
   const performerProtectedPaths = [
     "/performer-dashboard",
-    "/performer-events",
     "/performer-profile",
     "/event-management",
     "/eventupdate",
@@ -25,6 +25,8 @@ export async function middleware(req: NextRequest) {
     "/performer-slotmanagement",
     "/performer-upcomingevent",
     "/wallet-management",
+    "/performer-eventhistory",
+    "/chatsession"
   ];
   const authPath = "/";
 
@@ -60,11 +62,11 @@ export async function middleware(req: NextRequest) {
         }
 
         if (!userProtectedPaths.includes(req.nextUrl.pathname)) {
-          // If user is not on a user-protected path, redirect to home
+
           return NextResponse.redirect(new URL("/home", req.url));
         }
       } else if (user.role === "performer") {
-        // For performers, check isPerformerBlocked
+   
         if (userData.isPerformerBlocked) {
           const redirectResponse = NextResponse.redirect(
             new URL(authPath, req.url)
@@ -76,32 +78,32 @@ export async function middleware(req: NextRequest) {
         }
 
         if (!performerProtectedPaths.includes(req.nextUrl.pathname)) {
-          // If performer is not on a performer-protected path, redirect to dashboard
+       
           return NextResponse.redirect(
             new URL("/performer-dashboard", req.url)
           );
         }
       } else {
-        // Unknown role, redirect to auth
+   
         return NextResponse.redirect(new URL(authPath, req.url));
       }
     } catch (error) {
       console.error("Error verifying token or fetching user:", error);
-      // On error, redirect to /auth
+
       return NextResponse.redirect(new URL(authPath, req.url));
     }
   } else {
-    // No token, check if trying to access protected paths
+  
     if (
       userProtectedPaths.includes(req.nextUrl.pathname) ||
       performerProtectedPaths.includes(req.nextUrl.pathname)
     ) {
-      // Redirect to /auth
+
       return NextResponse.redirect(new URL(authPath, req.url));
     }
   }
 
-  // Proceed to the next middleware or route
+
   return NextResponse.next();
 }
 
@@ -110,10 +112,11 @@ export const config = {
     "/profile",
     "/home",
     "/",
+    "/about",
     "/performer-dashboard",
-    "/performer-events",
     "/performer-profile",
-    "/performer-profile",
+    "/performer-eventhistory",
+     "/chatsession",
     "/event-management",
     "/eventupdate",
     "/events",
