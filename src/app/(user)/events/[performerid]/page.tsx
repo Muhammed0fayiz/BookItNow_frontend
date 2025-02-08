@@ -1,35 +1,66 @@
 "use client";
-import Image from "next/image"
-
+import Image from "next/image";
+import { Events } from '@/types/store';
+import { Performer } from '@/types/store';
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import useAllEventsStore from "@/store/useAllEvents";
-import usePerformersStore from "@/store/useAllPerformerStore";
+
 import useUserStore from "@/store/useUserStore";
-import axiosInstance from "@/shared/axiousintance";
+
 import useChatNotifications from "@/store/useChatNotification";
 import DescriptionViewer from "@/component/performerDiscription";
-// import DescriptionViewer from '@/component/descriptionViewer';
-// Interfaces for type safety
+import { startChat } from "@/services/chat";
+import axiosInstance from "@/shared/axiousintance";
+
 
 const PerformerDetailsPage = () => {
   const router = useRouter();
   const params = useParams();
   const performerId = params.performerid as string;
 
-  const { events, fetchAllEvents } = useAllEventsStore();
-  const { performers, fetchAllPerformers } = usePerformersStore();
+
+  const [performerDetails, setPerformer] = useState<Performer | null>(null);
+  const [performerEventsDetails, setPerformerEvents] = useState<Events[]>([]);
+
   const [activeTab, setActiveTab] = useState<"about" | "events">("about");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { userProfile, fetchUserProfile, } =
-    useUserStore();
-  const { totalUnreadMessage,fetchNotifications } =
-    useChatNotifications();
+  const { userProfile, fetchUserProfile } = useUserStore();
+  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
   // Fetch events and performers on component mount
+
+  interface PerformerResponse {
+    performer: Performer;
+  }
+  
+  interface EventsResponse {
+    data: Events[];
+    success: boolean;
+  }
+
+  
   useEffect(() => {
-    fetchAllEvents();
-    fetchAllPerformers();
-  }, [fetchAllEvents, fetchAllPerformers]);
+    const fetchPerformerData = async () => {
+      try {
+        const [performerRes, eventsRes] = await Promise.all([
+          axiosInstance.get<PerformerResponse>(`/userEvent/getPerformer/${performerId}`),
+          axiosInstance.get<EventsResponse>(`/userEvent/getPerformerEvents/${performerId}`)
+        ]);
+
+
+        
+        setPerformer(performerRes.data.performer);
+        setPerformerEvents(eventsRes.data.data);
+      } catch (error) {
+        console.error("Error fetching performer data:", error);
+      }
+    };
+
+    if (performerId) {
+      fetchPerformerData();
+    }
+  }, [performerId]);
+
+
   useEffect(() => {
     const loadUserProfile = async () => {
       await fetchUserProfile();
@@ -46,13 +77,9 @@ const PerformerDetailsPage = () => {
     );
   }, [fetchNotifications]);
 
-  const performer = performers.find((p) => p.userId === performerId);
 
-  const performerEvents = events.filter(
-    (event) => event.userId === performerId && event.status === "active"
-  );
 
-  if (!performer) {
+  if (!performerDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Performer not found.</p>
@@ -66,11 +93,10 @@ const PerformerDetailsPage = () => {
   };
 
   const startChatWithPerformer = async () => {
-    try {
-      await axiosInstance.post(
-        `/chat/chatwithPerformer/${userProfile?.id}/${performerId}`
-      );
+    if (!userProfile?.id || !performerId) return;
 
+    try {
+      await startChat(userProfile.id, performerId);
       router.push("/chat");
     } catch (error) {
       console.error("Error starting chat:", error);
@@ -220,21 +246,21 @@ const PerformerDetailsPage = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-8">
             <Image
-              src={performer.profileImage || "/default-profile.jpg"}
-              alt={performer.bandName}
+              src={performerDetails.profileImage || "/default-profile.jpg"}
+              alt={performerDetails.bandName}
               width={500}
               height={300}
               className="w-48 h-48 rounded-full object-cover border-4 border-white shadow-lg"
             />
             <div className="mt-6 md:mt-0 text-center md:text-left">
-              <h1 className="text-4xl font-bold mb-2">{performer.bandName}</h1>
+              <h1 className="text-4xl font-bold mb-2">{performerDetails.bandName}</h1>
               <div className="flex items-center justify-center md:justify-start mb-4">
                 <span className="flex items-center">
                   {[...Array(5)].map((_, index) => (
                     <svg
                       key={index}
                       className={`w-5 h-5 ${
-                        index < performer.rating
+                        index < performerDetails.rating
                           ? "text-yellow-400"
                           : "text-gray-300"
                       }`}
@@ -245,13 +271,13 @@ const PerformerDetailsPage = () => {
                     </svg>
                   ))}
                   <span className="ml-2 text-white">
-                    {performer.rating.toFixed(1)} ({performer.totalReviews}{" "}
+                    {performerDetails.rating.toFixed(1)} ({performerDetails.totalReviews}{" "}
                     reviews)
                   </span>
                 </span>
               </div>
-              <p className="text-lg mb-2">📍 {performer.place}</p>
-              <p className="text-lg">📞 {performer.mobileNumber}</p>
+              <p className="text-lg mb-2">📍 {performerDetails.place}</p>
+              <p className="text-lg">📞 {performerDetails.mobileNumber}</p>
 
               {/* Chat Button */}
               <div className="mt-4 flex justify-center md:justify-start space-x-4">
@@ -303,7 +329,7 @@ const PerformerDetailsPage = () => {
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
-              Events ({performerEvents.length})
+              Events ({performerEventsDetails.length})
             </button>
           </div>
         </div>
@@ -314,27 +340,32 @@ const PerformerDetailsPage = () => {
         {activeTab === "about" && (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-semibold mb-4">
-              About {performer.bandName}
+              About {performerDetails.bandName}
             </h2>
-            <p className="text-gray-600 mb-6">    <DescriptionViewer description={performer.description} maxLength={40} /></p>
+            <p className="text-gray-600 mb-6">
+              {" "}
+              <DescriptionViewer
+                description={performerDetails.description}
+                maxLength={40}
+              />
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-xl font-semibold mb-3">Joined Date</h3>
                 <p className="text-gray-600">
-  {new Date(performer.createdAt).toLocaleDateString()}
-</p>
-
+                  {new Date(performerDetails.createdAt).toLocaleDateString()}
+                </p>
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-3">
                   Contact Information
                 </h3>
                 <p className="text-gray-600">
-                  <strong>Mobile:</strong> {performer.mobileNumber}
+                  <strong>Mobile:</strong> {performerDetails.mobileNumber}
                 </p>
                 <p className="text-gray-600">
-                  <strong>Location:</strong> {performer.place}
+                  <strong>Location:</strong> {performerDetails.place}
                 </p>
               </div>
             </div>
@@ -343,7 +374,7 @@ const PerformerDetailsPage = () => {
 
         {activeTab === "events" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {performerEvents.map((event) => (
+            {performerEventsDetails.map((event) => (
               <div
                 key={event._id}
                 className="bg-white rounded-lg shadow-lg overflow-hidden"
@@ -372,7 +403,13 @@ const PerformerDetailsPage = () => {
                       </span>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4"> <DescriptionViewer description={event.description} maxLength={15} /></p>
+                  <p className="text-gray-600 mb-4">
+                    {" "}
+                    <DescriptionViewer
+                      description={event.description}
+                      maxLength={15}
+                    />
+                  </p>
                   <div className="space-y-2">
                     <p className="text-gray-600">
                       <span className="font-semibold">Price:</span> ₹
@@ -407,7 +444,7 @@ const PerformerDetailsPage = () => {
               </div>
             ))}
 
-            {performerEvents.length === 0 && (
+            {performerEventsDetails.length === 0 && (
               <div className="col-span-3 text-center py-12">
                 <p className="text-gray-600">
                   No active events available from this performer.
@@ -536,3 +573,4 @@ const PerformerDetailsPage = () => {
 };
 
 export default PerformerDetailsPage;
+

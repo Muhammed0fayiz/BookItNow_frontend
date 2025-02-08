@@ -1,17 +1,17 @@
-// /** @type {import('next').NextConfig} */
-// const nextConfig = {};
-
-// export default nextConfig;
-
 
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["files.edgestore.dev", "i.pravatar.cc"], // Added "i.pravatar.cc"
+    domains: [
+      "files.edgestore.dev",
+      "i.pravatar.cc",
+      "lh3.googleusercontent.com", 
+    ],
   },
 };
 
 export default nextConfig;
+
 
   

@@ -7,7 +7,7 @@ import { useUIStore } from '@/store/useUIStore';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import usePerformerStore from '@/store/usePerformerStore';
 import useWalletHistoryStore from '@/store/useWalletHistory';
-import axiosInstance from '@/shared/axiousintance';
+
 import usePerformerAllDetails from '@/store/usePerformerAllDetails';
 import { toast, ToastContainer } from 'react-toastify';
 import useChatNotifications from '@/store/useChatNotification';
@@ -19,6 +19,7 @@ import {
   UpcomingEventsPieChart 
 } from '@/component/DashboardCharts';
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
+import { downloadPerformerReport } from '@/services/performer';
 
 const PerformerDashboard: React.FC = () => {
   const router = useRouter();
@@ -54,54 +55,55 @@ const PerformerDashboard: React.FC = () => {
       router.replace('/');
     }, 1000);
   };
+
+
+  const validateDates = (startDate: string, endDate: string) => {
+    const today = new Date();
+    const selectedStartDate = new Date(startDate);
+    const selectedEndDate = new Date(endDate);
+  
+    if (selectedStartDate > today) {
+      return { valid: false, error: 'Start date cannot be in the future' };
+    }
+  
+    if (selectedStartDate > selectedEndDate) {
+      return { valid: false, error: 'Start date cannot be after end date' };
+    }
+  
+    return { valid: true, error: '' };
+  };
+  
   const handleDownloadReport = async () => {
     if (!startDate || !endDate) {
       toast.error('Please select both start and end dates');
       return;
     }
   
-    const today = new Date();
-    const selectedStartDate = new Date(startDate);
-    const selectedEndDate = new Date(endDate);
-  
-  
-    if (selectedStartDate > today) {
-      toast.error('Start date cannot be in the future');
+    const { valid, error } = validateDates(startDate, endDate);
+    if (!valid) {
+      toast.error(error);
       return;
     }
   
-    if (selectedStartDate > selectedEndDate) {
-      toast.error('Start date cannot be after end date');
-      return;
-    }
-
     try {
- 
-
-      const response = await axiosInstance.get(`/performer/downloadReport/${performerDetails?.PId}`, {
-        params: { 
-          startDate, 
-          endDate 
-        },
-        responseType: 'blob'
-      });
-      
-
+      const reportData = await downloadPerformerReport(performerDetails?.PId as string, startDate, endDate);
+  
       // Create a link element to download the file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([reportData]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `performer_report_${startDate}_to_${endDate}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-
+  
       toast.success('Report downloaded successfully');
     } catch (error) {
       toast.error('Failed to download report');
       console.error('Error downloading report:', error);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-100 flex">

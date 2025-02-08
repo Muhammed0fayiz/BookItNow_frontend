@@ -11,6 +11,7 @@ import { useFavoritesStore } from "@/store/useFavoriteEvents"
 import usePerformersStore from "@/store/useAllPerformerStore"
 import DescriptionViewer from "@/component/descriptionViewer"
 import EventRatingPage from "@/component/showEventRating"
+import { getFilteredEvents,getFilteredPerformers} from "@/services/userEvent"
 
 interface Event {
   _id?: string
@@ -82,78 +83,62 @@ const EventsPage = () => {
   // Fetch events with filters
   const fetchFilteredEvents = useCallback(async () => {
     if (!userProfile?.id) {
-      console.log("User profile not yet loaded")
-      return
+      console.log("User profile not yet loaded");
+      return;
     }
-
-    setIsLoading(true)
-    setError(null)
-
+  
+    setIsLoading(true);
+    setError(null);
+  
     try {
-      const response = await axiosInstance.get(`/userEvent/getFilteredEvents/${userProfile?.id}`, {
-        params: {
-          category: selectedCategory !== "all" ? selectedCategory : undefined,
-          order: sortOrder,
-          page: currentPage,
-          search: searchQuery || undefined,
-        },
-      })
-
-      if (response.data) {
-        setEvents(response.data.events || [])
-        setCurrentPage(response.data.currentPage || 1)
-        const pages = Math.ceil(response.data.totalCount / 6)
-        setTotalPages(pages || 1)
-      } else {
-        setEvents([])
-        setTotalPages(1)
-      }
+      const data = await getFilteredEvents(
+        userProfile.id,
+        selectedCategory,
+        sortOrder,
+        currentPage,
+        searchQuery
+      );
+  
+      setEvents(data.events || []);
+      setCurrentPage(data.currentPage || 1);
+      setTotalPages(Math.ceil(data.totalCount / 6) || 1);
     } catch (err) {
-      setError("Error fetching events")
-      setEvents([])
-      setTotalPages(1)
+      setError("Error fetching events");
+      setEvents([]);
+      setTotalPages(1);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [userProfile?.id, selectedCategory, sortOrder, currentPage, searchQuery])
-
+  }, [userProfile?.id, selectedCategory, sortOrder, currentPage, searchQuery]);
   // Fetch performers with filters
   const fetchFilteredPerformers = useCallback(async () => {
     if (!userProfile?.id) {
-      console.log("User profile not yet loaded")
-      return
+      console.log("User profile not yet loaded");
+      return;
     }
-
-    setPerformerLoading(true)
-    setPerformerError(null)
-
+  
+    setPerformerLoading(true);
+    setPerformerError(null);
+  
     try {
-      const response = await axiosInstance.get(`/userEvent/getFilteredPerformers/${userProfile.id}`, {
-        params: {
-          order: performerSortOrder,
-          page: performerCurrentPage,
-          search: searchQuery || undefined,
-        },
-      })
-
-      if (response.data) {
-        setFilteredPerformers(response.data.performers || [])
-        setPerformerCurrentPage(response.data.currentPage || 1)
-        const pages = Math.ceil(response.data.totalCount / 6)
-        setPerformerTotalPages(pages || 1)
-      } else {
-        setFilteredPerformers([])
-        setPerformerTotalPages(1)
-      }
+      const data = await getFilteredPerformers(
+        userProfile.id,
+        performerSortOrder,
+        performerCurrentPage,
+        searchQuery
+      );
+  
+      setFilteredPerformers(data.performers || []);
+      setPerformerCurrentPage(data.currentPage || 1);
+      setPerformerTotalPages(Math.ceil(data.totalCount / 6) || 1);
     } catch (err) {
-      setPerformerError("Error fetching performers")
-      setFilteredPerformers([])
-      setPerformerTotalPages(1)
+      setPerformerError("Error fetching performers");
+      setFilteredPerformers([]);
+      setPerformerTotalPages(1);
     } finally {
-      setPerformerLoading(false)
+      setPerformerLoading(false);
     }
-  }, [userProfile?.id, performerSortOrder, performerCurrentPage, searchQuery])
-
+  }, [userProfile?.id, performerSortOrder, performerCurrentPage, searchQuery]);
   // Initial data loading
   useEffect(() => {
     const loadInitialData = async () => {

@@ -12,6 +12,7 @@ import { useUIStore } from '@/store/useUIStore';
 import usePerformerStore from '@/store/usePerformerStore';
 import axiosInstance from '@/shared/axiousintance';
 import { useSlotStore } from '@/store/useslotDetails';
+import { addSlot } from '@/services/performer';
 
 // Type Definitions
 interface Slot {
@@ -55,64 +56,56 @@ const SlotManagement: React.FC = () => {
 
   // Updated Slot Management Handlers
   const handleAddSlot = async (date: Date) => {
+    if (!performerDetails?.userId) {
+      alert('User ID is missing');
+      return;
+    }
+  
     if (isAfter(new Date(), date)) {
       alert("Cannot add slots for past dates");
       return;
     }
   
     try {
-      const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
-        date: date.toISOString(),
-        action: 'add'
-      },{withCredentials:true});
+      const response = await addSlot(performerDetails.userId, date);
   
-      if (response.data.status === 403) {
-        alert(response.data.message || "Slot already exists or cannot be added");
-     
+      if (response.status === 403) {
+        alert(response.message || "Slot already exists or cannot be added");
         return;
       }
   
-      if (response.data.success) {
-        setSlots(prevSlots => [...prevSlots, { 
-          id: `slot-${Date.now()}`, 
-          date, 
-          isBooked: false 
-        }]);
-        fetchSlotDetails('performerId');
+      if (response.success) {
+        setSlots(prevSlots => [
+          ...prevSlots, 
+          { id: `slot-${Date.now()}`, date, isBooked: false }
+        ]);
       } else {
-        alert(response.data.message || "Failed to add slot");
+        alert(response.message || "Failed to add slot");
       }
-      fetchSlotDetails('performerId');
     } catch (error) {
       console.error("Error adding slot:", error);
-      alert('This day is already booked for an event.');
-
+      alert('This day is already booked for an event or there was an error.');
+    } finally {
+      fetchSlotDetails('performerId');
     }
   };
   
-  const handleRemoveSlot = async (slotId: string) => {
+  
+  const handleRemoveSlot = async (slotId:string) => {
     try {
-      const slotToRemove = slotss.find(slot => slot.id === slotId);
-      if (!slotToRemove) {
-        alert("Slot not found");
-        return;
-      }
+      const response = await axiosInstance.post(`/remove-slot/${slotId}`, {
+        userId: performerDetails?.userId, // Pass the performer ID here
+      });
   
-      const response = await axiosInstance.post(`/performer/updateSlotStatus/${performerDetails?.PId}`, {
-        date: slotToRemove.date.toISOString(),
-        action: 'remove'
-      },{withCredentials:true});
-    
-      if (response.data.success) {
-        setSlots(prevSlots => prevSlots.filter(slot => slot.id !== slotId));
-      } else {
-        alert(response.data.message || "Failed to remove slot");
-      }  fetchSlotDetails('performerId');
+      if (response.data.message === 'Slot removed successfully') {
+        console.log('Slot removed');
+        // You can also update the UI to reflect the removed slot.
+      }
     } catch (error) {
-      console.error("Error removing slot:", error);
-      alert("Failed to remove slot. Please try again.");
+      console.error('Error removing slot:', error);
     }
   };
+  
 
   // Authentication Handler
   const handleLogout = () => {

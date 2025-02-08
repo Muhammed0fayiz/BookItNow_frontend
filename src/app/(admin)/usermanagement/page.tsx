@@ -3,30 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '@/shared/axiousintance';
 import { Dialog, Transition } from '@headlessui/react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/component/adminSidebar';
+import { adminLogout, checkAdminSession, fetchPerformers, fetchUsers, updateStatus } from '@/services/admin';
+import { toast } from 'sonner';
 
 // Define detailed interfaces for API responses
-interface UserApiResponse {
-    _id: string;
-    username: string;
-    email: string;
-    isblocked: boolean;
-    isVerified: boolean;
-}
-
-interface PerformerApiResponse {
-    _id: string;
-    userId: {
-        toString: () => string;
-        isBlocked: boolean;
-    };
-    bandName: string;
-    mobileNumber: string;
-    rating: number;
-}
 
 interface User {
     id: string;
@@ -53,9 +36,9 @@ function isUser(item: Item): item is User {
 }
 
 const UserPerformerManagement = () => {
-    const [loading, setLoading] = useState(true);
+
    
-    const [sessionValid, setSessionValid] = useState(false);
+ const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState<User[]>([]);
     const [performers, setPerformers] = useState<Performer[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -66,112 +49,110 @@ const UserPerformerManagement = () => {
     const [updating, setUpdating] = useState(false);
     const itemsPerPage = 4;
     const router = useRouter();
+  useEffect(() => {
+    const verifySession = async () => {
+      const isAuthenticated = await checkAdminSession();
+      if (!isAuthenticated) {
+        router.replace('/adminlogin');
+      }
+    };
+  
+    verifySession();
+  }, [router]);
+  
 
-    useEffect(() => {
-        const checkSession = async () => {
-            try {
-                const response = await axiosInstance.get('/admin/checkSession');
-                if (response.data.isAuthenticated) {
-                    setSessionValid(true);
-                } else {
-                    router.replace('/adminlogin');
-                }
-            } catch (error) {
-                console.error('Session check failed:', error);
-                router.replace('/adminlogin');
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
 
-        checkSession();
+      const fetchData = async () => {
+        try {
+          const [usersResponse, performersResponse] = await Promise.all([
+            fetchUsers(),
+            fetchPerformers(),
+          ]);
+
+          const validUsers: User[] = usersResponse.map(user => ({
+            id: user._id,
+            name: user.username || 'N/A',
+            email: user.email || 'N/A',
+            isBlocked: user.isblocked,
+            isVerified: user.isVerified,
+          }));
+          setUsers(validUsers);
+
+          const performersData: Performer[] = performersResponse.map(performer => ({
+            _id: performer._id,
+            userId: performer.userId.toString(),
+            bandName: performer.bandName,
+            mobileNumber: performer.mobileNumber,
+            rating: performer.rating,
+            isBlocked: performer.userId.isBlocked,
+          }));
+          setPerformers(performersData);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      };
+
+      fetchData();
+    
+  }, []);
+
+   useEffect(() => {
+      const verifySession = async () => {
+        const isAuthenticated = await checkAdminSession();
+        if (!isAuthenticated) {
+          router.replace('/adminlogin');
+        }
+      };
+    
+      verifySession();
     }, [router]);
-
-    useEffect(() => {
-        if (sessionValid) {
-            const fetchData = async () => {
-                try {
-                    const [usersResponse, performersResponse] = await Promise.all([
-                        axiosInstance.get<UserApiResponse[]>('/admin/getUsers'),
-                        axiosInstance.get<{ success: boolean; data: PerformerApiResponse[] }>('/admin/performers')
-                    ]);
-
-                    if (Array.isArray(usersResponse.data)) {
-                        const validUsers: User[] = usersResponse.data.map((user: UserApiResponse) => ({
-                            id: user._id,
-                            name: user.username || 'N/A',
-                            email: user.email || 'N/A',
-                            isBlocked: user.isblocked,
-                            isVerified: user.isVerified
-                        }));
-                        setUsers(validUsers);
-                    }
-
-                    if (performersResponse.data.success && Array.isArray(performersResponse.data.data)) {
-                        const performersData: Performer[] = performersResponse.data.data.map((performer: PerformerApiResponse) => ({
-                            _id: performer._id,
-                            userId: performer.userId.toString(),
-                            bandName: performer.bandName,
-                            mobileNumber: performer.mobileNumber,
-                            rating: performer.rating,
-                            isBlocked: performer.userId.isBlocked,
-                        }));
-                        setPerformers(performersData);
-                    }
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                }
-            };
-
-            fetchData();
-        }
-    }, [sessionValid]);
-
-    const handleLogout = async () => {
-        try {
-            const response = await axiosInstance.post<{ success: boolean; message: string }>('/admin/adminLogout');
-            if (response.data.success) {
-                setTimeout(() => {
-                    router.replace('/adminlogin');
-                }, 1000);
-            } else {
-                console.error('Logout failed:', response.data.message);
-            }
-        } catch (error) {
-            console.error('Error during logout:', error);
-        }
-    };
-
-    const handleStatusChange = async (item: Item) => {
-        setUpdating(true);
-        try {
-            const newIsBlocked = !item.isBlocked;
-            const endpoint = isUser(item) ? `/admin/updateUserStatus/${item.id}` : `/admin/updatePerformerStatus/${item.userId}`;
-            const payload = { isBlocked: newIsBlocked };
-
-            await axiosInstance.post(endpoint, payload);
-
-            if (isUser(item)) {
-                setUsers(prevUsers =>
-                    prevUsers.map(user =>
-                        user.id === item.id ? { ...user, isBlocked: newIsBlocked } : user
-                    )
-                );
-            } else {
-                setPerformers(prevPerformers =>
-                    prevPerformers.map(performer =>
-                        performer.userId === item.userId ? { ...performer, isBlocked: newIsBlocked } : performer
-                    )
-                );
-            }
-
-            setConfirmationOpen(false);
-        } catch (error) {
-            console.error('Error updating status:', error);
-        } finally {
-            setUpdating(false);
-        }
-    };
+    
+  const handleLogout = async () => {
+    try {
+      const response = await adminLogout(); 
+      if (response.success) {
+        toast.success('Logged out successfully');
+        setTimeout(() => {
+          router.replace('/adminlogin');
+        }, 1000);
+      } else {
+        toast.error('Logout failed: ' + response.message);
+      }
+    } catch (error) {
+      toast.error('Error during logout');
+      console.error('Error during logout:', error);
+    }
+  };
+  const handleStatusChange = async (item: Item) => {
+    setUpdating(true);
+    try {
+      const newIsBlocked = !item.isBlocked;
+      const isUserItem = isUser(item);
+  
+      await updateStatus(isUserItem ? item.id : item.userId, newIsBlocked, isUserItem);
+  
+      if (isUserItem) {
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
+            user.id === item.id ? { ...user, isBlocked: newIsBlocked } : user
+          )
+        );
+      } else {
+        setPerformers(prevPerformers =>
+          prevPerformers.map(performer =>
+            performer.userId === item.userId ? { ...performer, isBlocked: newIsBlocked } : performer
+          )
+        );
+      }
+  
+      setConfirmationOpen(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
     const openConfirmation = (item: Item) => {
         setSelectedItem(item);
@@ -194,6 +175,8 @@ const UserPerformerManagement = () => {
         currentPage * itemsPerPage
     );
 
+
+
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, view]);
@@ -210,20 +193,24 @@ const UserPerformerManagement = () => {
         }
     };
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+          setLoading(false);
+        }, 500);
+        return () => clearTimeout(timer);
+      }, []);
     if (loading) {
         return (
-            <div className="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
-                <div className="text-blue-600 text-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                    <h2 className="text-2xl font-semibold">Loading...</h2>
-                </div>
+          <div className="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+            <div className="text-blue-600 text-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+              <h2 className="text-2xl font-semibold">Loading...</h2>
             </div>
+          </div>
         );
-    }
+      }
 
-    if (!sessionValid) {
-        return null;
-    }
+ 
 
     return (
         <div className="min-h-screen bg-gray-100 flex">

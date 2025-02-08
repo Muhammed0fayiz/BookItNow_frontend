@@ -8,10 +8,15 @@ import useUserStore from "@/store/useUserStore";
 import axiosInstance from "@/shared/axiousintance";
 import EventPayment from "@/component/eventPayment";
 import BookingConfirmationModal from "@/component/bookingconfirmation";
-import axios from "axios";
+
 import useChatNotifications from "@/store/useChatNotification";
 import WalletPaymentModal from "@/component/WalletPayment";
 import Image from "next/image"
+import {  PaymentIntent } from '../../../../../types/user';
+
+
+
+import { checkEventAvailability, processWalletPayment, bookEvent } from "@/services/userEvent";
 const EventDetailsPage = () => {
   const router = useRouter();
   const params = useParams();
@@ -30,15 +35,7 @@ const EventDetailsPage = () => {
   const [showWalletPaymentModal, setShowWalletPaymentModal] = useState(false);
 
   // Form state
-  interface PaymentIntent {
-    id: string;
-    amount: number;
-    currency: string;
-    status: string;
-    // Add other relevant properties
-  }
-  
-
+ 
   const [formData, setFormData] = useState({
     place: "",
     date: "",
@@ -138,46 +135,41 @@ const EventDetailsPage = () => {
     return isValid;
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Reset previous availability error
     setAvailabilityError("");
-
-    if (validateForm()) {
-      try {
-        const response = await axiosInstance.post(
-          "/userEvent/checkavailable",
-          {
-            formData: formData,
-            eventId: eventId,
-            performerId: performerId,
-            userId: userProfile?.id,
-          },
-          { withCredentials: true }
-        );
-
-        if (response.data.data === true) {
-          setShowConfirmation(true);
-        } else {
-          setAvailabilityError(
-            "This date is not available. Please choose another date."
-          );
-
-          // Clear the error message after 1 second
-          setTimeout(() => {
-            setAvailabilityError("");
-          }, 2000);
-        }
-      } catch (error) {
-        setAvailabilityError("Error checking availability. Please try again.");
-        console.error("Availability check failed:", error);
-
-        setTimeout(() => {
-          setAvailabilityError("");
-        }, 2000);
-      }
+    
+    if (!validateForm()) return;
+    
+    if (!userProfile?.id) {
+      setAvailabilityError("Please log in to continue");
+      return;
     }
+  
+    try {
+      const response = await checkEventAvailability(formData, eventId, performerId, userProfile.id);
+      
+      if (response.data) {
+        setShowConfirmation(true);
+      } else {
+        setAvailabilityError("This date is not available. Please choose another date.");
+        clearErrorMessage();
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === "User ID is required") {
+        setAvailabilityError("Please log in to continue");
+      } else {
+        setAvailabilityError("Error checking availability. Please try again.");
+      }
+      clearErrorMessage();
+    }
+  };
+  
+  // Function to clear error message after 2 seconds
+  const clearErrorMessage = () => {
+    setTimeout(() => {
+      setAvailabilityError("");
+    }, 2000);
   };
   const handleWalletPaymentClick = async () => {
     // Reset previous errors
@@ -238,126 +230,83 @@ const EventDetailsPage = () => {
   };
   
   const handleWalletPaymentConfirm = async () => {
-    // Reset previous errors
     setAvailabilityError("");
     setPaymentError("");
-
-    // Check if event exists before proceeding
+  
     if (!event) {
       setPaymentError("Event details are missing");
       setShowWalletPaymentModal(false);
       return;
     }
-
-    // Perform form validation first
-    if (validateForm()) {
-      try {
-        // Check event availability
-        const response = await axiosInstance.post(
-          "/userEvent/checkavailable",
-          {
-            formData: formData,
-            eventId: eventId,
-            performerId: performerId,
-            userId: userProfile?.id,
-          },
-          { withCredentials: true }
-        );
-
-        if (response.data.data === true) {
-          // Validate wallet balance
-          if (
-            !userProfile?.walletBalance ||
-            event.price * 0.1 > userProfile.walletBalance
-          ) {
-            setPaymentError("Insufficient wallet balance");
-            setShowWalletPaymentModal(false);
-            return;
-          }
-
-          // Proceed with wallet payment
-          try {
-            const walletPaymentResponse = await axiosInstance.post(
-              "/userEvent/walletPayment",
-              {
-                formData: formData,
-                eventId: eventId,
-                performerId: performerId,
-                userId: userProfile?.id,
-                amount: event.price * 0.1,
-              },
-              { withCredentials: true }
-            );
-
-            if (walletPaymentResponse.status === 200) {
-              setShowWalletPaymentModal(false);
-              router.replace("/events/paymentsuccess");
-            }
-          } catch (paymentError: unknown) {
-            if (axios.isAxiosError(paymentError)) {
-              if (paymentError.response) {
-                switch (paymentError.response.status) {
-                  case 400:
-                    setPaymentError("Insufficient wallet balance");
-                    break;
-                  case 403:
-                    setPaymentError("Payment unauthorized");
-                    break;
-                  default:
-                    setPaymentError("Wallet payment failed. Please try again.");
-                }
-              }
-              // Hide wallet payment modal on any error
-              setShowWalletPaymentModal(false);
-            } else {
-              setPaymentError("An unexpected error occurred");
-              // Hide wallet payment modal on any error
-              setShowWalletPaymentModal(false);
-            }
-          }
-        } else {
-          setAvailabilityError(
-            "This date is not available. Please choose another date."
-          );
-          setShowWalletPaymentModal(false);
-
-          // Clear the error message after 1 second
-          setTimeout(() => {
-            setAvailabilityError("");
-          }, 1000);
-        }
-      } catch (error) {
-        setAvailabilityError("Error checking availability. Please try again.");
-        setShowWalletPaymentModal(false);
-        console.error("Availability check failed:", error);
-
-        setTimeout(() => {
-          setAvailabilityError("");
-        }, 1000);
-      }
+  
+    if (!userProfile?.id) {
+      setPaymentError("Please log in to continue");
+      setShowWalletPaymentModal(false);
+      return;
     }
-  };
-
-  const handlePaymentSuccess = async (paymentIntent: PaymentIntent) => {
+  
+    if (!validateForm()) {
+      setShowWalletPaymentModal(false);
+      return;
+    }
+  
     try {
-      const response = await axiosInstance.post(
-        "/userEvent/events/book",
-        {
-          formData: formData,
-          eventId: eventId,
-          performerId: performerId,
-          userId: userProfile?.id,
-          paymentIntent: paymentIntent,
-        },
-        { withCredentials: true }
+      const availabilityResponse = await checkEventAvailability(
+        formData, 
+        eventId, 
+        performerId, 
+        userProfile.id
       );
-
-      if (response.status === 200) {
-        router.replace("/events/paymentsuccess");
+  
+      if (availabilityResponse.data) {
+        if (!userProfile.walletBalance || event.price * 0.1 > userProfile.walletBalance) {
+          setPaymentError("Insufficient wallet balance");
+          setShowWalletPaymentModal(false);
+          return;
+        }
+  
+        const paymentResponse = await processWalletPayment(
+          formData,
+          eventId,
+          performerId,
+          userProfile.id,
+          event.price * 0.1
+        );
+  
+        if (paymentResponse) {
+          setShowWalletPaymentModal(false);
+          router.replace("/events/paymentsuccess");
+        }
+      } else {
+        setAvailabilityError("This date is not available. Please choose another date.");
+        setShowWalletPaymentModal(false);
+        setTimeout(() => setAvailabilityError(""), 1000);
       }
     } catch (error) {
-      setPaymentError("Booking failed. Please try again.");
-      console.error("Booking failed:", error);
+      if (error instanceof Error && error.message === "User ID is required") {
+        setPaymentError("Please log in to continue");
+      } else {
+        setPaymentError("Payment failed. Please try again.");
+      }
+      setShowWalletPaymentModal(false);
+    }
+  };
+  
+  const handlePaymentSuccess = async (paymentIntent: PaymentIntent) => {
+    if (!userProfile?.id) {
+      setPaymentError("Please log in to continue");
+      return;
+    }
+  
+    try {
+      await bookEvent(formData, eventId, performerId, userProfile.id, paymentIntent);
+      router.replace("/events/paymentsuccess");
+    } catch (error) {
+      if (error instanceof Error && error.message === "User ID is required") {
+        setPaymentError("Please log in to continue");
+      } else {
+        setPaymentError("Booking failed. Please try again.");
+      }
     }
   };
   const handleConfirmBooking = () => {

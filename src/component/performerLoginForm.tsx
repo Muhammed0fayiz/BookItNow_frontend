@@ -3,7 +3,8 @@ import React, { ChangeEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import axiosInstance from '@/shared/axiousintance';
+
+import { performerLogin } from '@/services/performer';
 
 interface PerformerLoginFormProps {
   toggleForm: () => void;
@@ -43,15 +44,16 @@ export const PerformerLoginForm: React.FC<PerformerLoginFormProps> = ({ toggleFo
     return isValid;
   };
 
-  const performerLogin = async () => {
+  const handleLogin = async () => {
     if (validateLoginForm()) {
       const loadingToast = toast.loading('Logging in...');
       try {
-        const response = await axiosInstance.post('/performer/performerlogin', performerLoginData);
+        const response= await performerLogin(performerLoginData)
+   
         toast.dismiss(loadingToast);
   
-        if (response.data && response.data.token) {
-          document.cookie = `userToken=${response.data.token}; path=/; secure;`;
+        if (response?.token) {
+          document.cookie = `userToken=${response.token}; path=/; secure;`;
           toast.success('Login successful!');
           router.replace('/performer-dashboard');
         } else {
@@ -112,7 +114,7 @@ export const PerformerLoginForm: React.FC<PerformerLoginFormProps> = ({ toggleFo
       {loginErrors.password && <p className="text-red-500 mb-2 text-sm">{loginErrors.password}</p>}
               
       <button 
-        onClick={performerLogin} 
+        onClick={handleLogin} 
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
       >
         Log In

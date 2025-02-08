@@ -1,166 +1,162 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import useUserStore from "@/store/useUserStore"
-import { useUserEventHistory } from "@/store/useUserEventHistory"
-import axiosInstance from "@/shared/axiousintance"
-import "@fortawesome/fontawesome-free/css/all.min.css"
-import RatingModal from "@/component/rating"
-import type { UpcomingEvent } from "@/types/store"
-import useChatNotifications from "@/store/useChatNotification"
-import Sidebar from "@/component/userSidebar"
-import Navbar from "@/component/userNavbar"
-import Image from "next/image"
+import type React from "react";
+import { useState, useEffect } from "react";
+import useUserStore from "@/store/useUserStore";
+import { useUserEventHistory } from "@/store/useUserEventHistory";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import RatingModal from "@/component/rating";
+import type { UpcomingEvent } from "@/types/store";
+import useChatNotifications from "@/store/useChatNotification";
+import Sidebar from "@/component/userSidebar";
+import Navbar from "@/component/userNavbar";
+import Image from "next/image";
+import { addEventRating, fetchEventHistory } from "@/services/userEvent";
 
 const EventHistory: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
-  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore()
-  const { upcomingEvents, fetchAllEvents, totalCount } = useUserEventHistory()
-  const [events, setEvents] = useState<UpcomingEvent[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState<number>(0)
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState<boolean>(false)
-  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null)
-  const [isAllDataLoaded, setIsAllDataLoaded] = useState(false)
-  const [isLoadingEvents, setIsLoadingEvents] = useState(false)
-  const { fetchNotifications } = useChatNotifications()
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } =
+    useUserStore();
+  const { upcomingEvents, fetchAllEvents, totalCount } = useUserEventHistory();
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState<boolean>(false);
+  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(
+    null
+  );
+  const [isAllDataLoaded, setIsAllDataLoaded] = useState(false);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const { fetchNotifications } = useChatNotifications();
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        await Promise.all([fetchUserProfile(), fetchAllEvents(), fetchNotifications()])
+        await Promise.all([
+          fetchUserProfile(),
+          fetchAllEvents(),
+          fetchNotifications(),
+        ]);
       } catch (error) {
-        console.error("Error loading initial data:", error)
+        console.error("Error loading initial data:", error);
       } finally {
-        setIsAllDataLoaded(true)
+        setIsAllDataLoaded(true);
       }
-    }
+    };
 
-    loadInitialData()
-  }, [fetchUserProfile, fetchAllEvents, fetchNotifications])
+    loadInitialData();
+  }, [fetchUserProfile, fetchAllEvents, fetchNotifications]);
 
   useEffect(() => {
     if (upcomingEvents) {
-      setEvents(upcomingEvents)
+      setEvents(upcomingEvents);
     }
-  }, [upcomingEvents])
+  }, [upcomingEvents]);
 
   useEffect(() => {
-    const pages = Math.ceil(totalCount / 8)
-    setTotalPages(pages)
-  }, [totalCount])
+    const pages = Math.ceil(totalCount / 8);
+    setTotalPages(pages);
+  }, [totalCount]);
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
+    setSidebarOpen(!sidebarOpen);
+  };
 
   const handlePreviousClick = () => {
-    const newPage = Math.max(1, currentPage - 1)
-    paginationEvent(newPage)
-  }
+    const newPage = Math.max(1, currentPage - 1);
+    getEventHistory(newPage);
+  };
 
   const handleNextClick = () => {
-    const newPage = Math.min(totalPages, currentPage + 1)
-    paginationEvent(newPage)
-  }
+    const newPage = Math.min(totalPages, currentPage + 1);
+    getEventHistory(newPage);
+  };
 
-  const paginationEvent = async (page: number) => {
+  const getEventHistory = async (page: number) => {
     try {
-      setIsLoadingEvents(true)
-      const response = await axiosInstance.get(`/userEvent/userEventHistory/${userProfile?.id}?page=${page}`, {
-        withCredentials: true,
-      })
-      const events: UpcomingEvent[] = response.data.events.pastEventHistory.map((event: UpcomingEvent) => ({
-        ...event,
-        date: new Date(event.date).toISOString(),
-        createdAt: new Date(event.createdAt).toISOString(),
-        updatedAt: new Date(event.updatedAt).toISOString(),
-      }))
+      setIsLoadingEvents(true);
 
-      setEvents(events)
-      setCurrentPage(page)
+      if (!userProfile?.id) {
+        throw new Error("User ID is missing");
+      }
+
+      const events = await fetchEventHistory(userProfile.id, page);
+
+      setEvents(events);
+      setCurrentPage(page);
     } catch (error) {
-      console.error("Error fetching events:", error)
+      console.error("Error fetching events:", error);
     } finally {
-      setIsLoadingEvents(false)
+      setIsLoadingEvents(false);
     }
-  }
+  };
 
   const formatTime = (timeString: string) => {
     try {
-      if (!timeString) return "Time not available"
+      if (!timeString) return "Time not available";
 
       if (timeString.includes(":")) {
-        const [hours, minutes] = timeString.split(":")
-        const date = new Date()
-        date.setHours(Number.parseInt(hours), Number.parseInt(minutes))
+        const [hours, minutes] = timeString.split(":");
+        const date = new Date();
+        date.setHours(Number.parseInt(hours), Number.parseInt(minutes));
         return date.toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: true,
-        })
+        });
       }
-      return timeString
+      return timeString;
     } catch (error) {
-      console.log("Time parsing error:", error)
-      return timeString
+      console.log("Time parsing error:", error);
+      return timeString;
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "long",
         day: "numeric",
-      })
+      });
     } catch (error) {
-      console.log("Date parsing error:", error)
-      return "Date not available"
+      console.log("Date parsing error:", error);
+      return "Date not available";
     }
-  }
+  };
 
   const handleRateEvent = (event: UpcomingEvent) => {
-    setSelectedEvent(event)
-    setIsRatingModalOpen(true)
-  }
+    setSelectedEvent(event);
+    setIsRatingModalOpen(true);
+  };
 
   const submitRating = async (rating: number, review?: string) => {
-    if (!selectedEvent) return
-
+    if (!selectedEvent) return;
+  
     try {
-      await axiosInstance.post(
-        `/userEvent/add-rating/${selectedEvent._id}`,
-        {
-          eventId: selectedEvent._id,
-          rating,
-          review,
-        },
-        { withCredentials: true },
-      )
-
-      setIsRatingModalOpen(false)
-      setSelectedEvent(null)
-      await paginationEvent(currentPage)
+      await addEventRating(selectedEvent._id, rating, review);
+  
+      setIsRatingModalOpen(false);
+      setSelectedEvent(null);
+      await getEventHistory(currentPage); // Refresh event history after rating
     } catch (error) {
-      console.error("Error submitting rating:", error)
+      console.error('Error submitting rating:', error);
     }
-  }
+  };
 
   const getEventCardClass = (status: string) => {
     const baseClasses =
-      "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform hover:scale-105 relative"
-    return status === "cancelled" ? `${baseClasses} opacity-90` : baseClasses
-  }
+      "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform hover:scale-105 relative";
+    return status === "cancelled" ? `${baseClasses} opacity-90` : baseClasses;
+  };
 
   if (!isAllDataLoaded || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex justify-center items-center">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -169,12 +165,15 @@ const EventHistory: React.FC = () => {
         <div className="text-red-500 bg-red-100 p-4 rounded-lg">
           <p className="font-semibold">Error loading profile</p>
           <p className="text-sm">{error}</p>
-          <button onClick={() => fetchUserProfile()} className="mt-2 text-blue-600 hover:text-blue-800">
+          <button
+            onClick={() => fetchUserProfile()}
+            className="mt-2 text-blue-600 hover:text-blue-800"
+          >
             Try Again
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -192,15 +191,23 @@ const EventHistory: React.FC = () => {
       </div>
 
       <div className="flex-1 md:ml-64">
-        <Navbar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} pageTitle="Event History" />
+        <Navbar
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          pageTitle="Event History"
+        />
 
         <div className="pt-16 p-6">
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-2xl font-bold text-gray-800">Event History</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Event History
+              </h2>
             </div>
             <p className="text-gray-600">
-              {totalCount > 0 ? `Showing ${events.length} of ${totalCount} past events` : "No past events found"}
+              {totalCount > 0
+                ? `Showing ${events.length} of ${totalCount} past events`
+                : "No past events found"}
             </p>
           </div>
 
@@ -209,7 +216,9 @@ const EventHistory: React.FC = () => {
               events.map((event: UpcomingEvent) => (
                 <div
                   key={event._id}
-                  className={`${getEventCardClass(event.bookingStatus)} hover:shadow-xl transition-all duration-300`}
+                  className={`${getEventCardClass(
+                    event.bookingStatus
+                  )} hover:shadow-xl transition-all duration-300`}
                 >
                   <div className="relative h-48">
                     <Image
@@ -222,7 +231,11 @@ const EventHistory: React.FC = () => {
                     <div className="absolute bottom-2 right-2">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium
-                        ${event.bookingStatus === "cancelled" ? "bg-red-600 text-white" : "bg-blue-600 text-white"}`}
+                        ${
+                          event.bookingStatus === "cancelled"
+                            ? "bg-red-600 text-white"
+                            : "bg-blue-600 text-white"
+                        }`}
                       >
                         {event.category}
                       </span>
@@ -230,20 +243,27 @@ const EventHistory: React.FC = () => {
                   </div>
 
                   <div
-                    className={`p-4 flex flex-col justify-between h-64 ${event.bookingStatus === "cancelled" ? "opacity-75" : ""}`}
+                    className={`p-4 flex flex-col justify-between h-64 ${
+                      event.bookingStatus === "cancelled" ? "opacity-75" : ""
+                    }`}
                   >
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">{event.title}</h3>
-                     
+                      <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
+                        {event.title}
+                      </h3>
                     </div>
                     <div className="space-y-2 mt-2">
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-calendar-alt w-4 text-blue-600 text-xs"></i>
-                        <span className="text-xs ml-2">{formatDate(event.date)}</span>
+                        <span className="text-xs ml-2">
+                          {formatDate(event.date)}
+                        </span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-clock w-4 text-blue-600 text-xs"></i>
-                        <span className="text-xs ml-2">{formatTime(event.time)}</span>
+                        <span className="text-xs ml-2">
+                          {formatTime(event.time)}
+                        </span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-map-marker-alt w-4 text-blue-600 text-xs"></i>
@@ -256,18 +276,24 @@ const EventHistory: React.FC = () => {
                         <span className="text-xs text-gray-600">Price</span>
                         <p
                           className={`text-base font-bold ${
-                            event.bookingStatus === "cancelled" ? "text-gray-500 line-through" : "text-blue-600"
+                            event.bookingStatus === "cancelled"
+                              ? "text-gray-500 line-through"
+                              : "text-blue-600"
                           }`}
                         >
                           ₹{event.price.toLocaleString()}
                         </p>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-xs text-gray-600 mb-1">Booking Status</span>
+                        <span className="text-xs text-gray-600 mb-1">
+                          Booking Status
+                        </span>
                         <span
                           className={`px-2 py-1 rounded-full text-xs
                           ${
-                            event.bookingStatus === "canceled" ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"
+                            event.bookingStatus === "canceled"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-blue-100 text-blue-600"
                           }`}
                         >
                           {event.bookingStatus}
@@ -275,17 +301,18 @@ const EventHistory: React.FC = () => {
                       </div>
                     </div>
 
-                    {event.bookingStatus === "completed" && event.isRated === false && (
-                      <button
-                        onClick={() => handleRateEvent(event)}
-                        className="mt-4 w-full py-2 px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors duration-300"
-                      >
-                        <span className="flex items-center justify-center">
-                          <i className="fas fa-star mr-2"></i>
-                          Rate Event
-                        </span>
-                      </button>
-                    )}
+                    {event.bookingStatus === "completed" &&
+                      event.isRated === false && (
+                        <button
+                          onClick={() => handleRateEvent(event)}
+                          className="mt-4 w-full py-2 px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors duration-300"
+                        >
+                          <span className="flex items-center justify-center">
+                            <i className="fas fa-star mr-2"></i>
+                            Rate Event
+                          </span>
+                        </button>
+                      )}
                   </div>
                 </div>
               ))
@@ -294,9 +321,12 @@ const EventHistory: React.FC = () => {
                 <div className="bg-blue-50 rounded-full p-6 mb-4">
                   <i className="fas fa-calendar-alt text-blue-600 text-3xl"></i>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Past Events</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  No Past Events
+                </h3>
                 <p className="text-gray-600 text-center mb-6">
-                  You don&apos;t have any past events. Browse our events page to find something interesting!
+                  You don&apos;t have any past events. Browse our events page to
+                  find something interesting!
                 </p>
 
                 <a
@@ -324,7 +354,7 @@ const EventHistory: React.FC = () => {
                 {[...Array(totalPages)].map((_, index) => (
                   <button
                     key={index + 1}
-                    onClick={() => paginationEvent(index + 1)}
+                    onClick={() => getEventHistory(index + 1)}
                     disabled={isLoadingEvents}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300
                       ${
@@ -356,8 +386,8 @@ const EventHistory: React.FC = () => {
         <RatingModal
           isOpen={isRatingModalOpen}
           onClose={() => {
-            setIsRatingModalOpen(false)
-            setSelectedEvent(null)
+            setIsRatingModalOpen(false);
+            setSelectedEvent(null);
           }}
           onSubmit={submitRating}
           eventTitle={selectedEvent.title}
@@ -365,8 +395,7 @@ const EventHistory: React.FC = () => {
         />
       )}
     </div>
-  )
-}
+  );
+};
 
-export default EventHistory
-
+export default EventHistory;

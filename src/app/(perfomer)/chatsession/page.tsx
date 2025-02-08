@@ -4,13 +4,14 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import mongoose from 'mongoose';
 import { Menu, MessageCircle, Send, Search } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+// import axiosInstance from '@/shared/axiousintance';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useUIStore } from '@/store/useUIStore';
 import Sidebar from '@/component/performersidebar';
 import useChatRooms from '@/store/chatstore';
 import useChatNotifications from '@/store/useChatNotification';
 import useSocketStore from '@/store/useSocketStore';
+import { chatService, chatSocketService } from "@/services/chat";
 
 export interface ChatRoom {
   profileImage: string;
@@ -33,10 +34,10 @@ interface Message {
   role?: string;
 }
 
-interface OnlineStatus {
-  isOnline: boolean;
-  lastSeen?: Date;
-}
+// interface OnlineStatus {
+//   isOnline: boolean;
+//   lastSeen?: Date;
+// }
 
 const ChatSession: React.FC = () => {
   const router = useRouter();
@@ -46,8 +47,7 @@ const ChatSession: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>({ isOnline: false });
-
+  
   const { chatRooms, fetchAllChatRooms } = useChatRooms();
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const { socket } = useSocketStore();
@@ -57,34 +57,18 @@ const ChatSession: React.FC = () => {
     fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
   }, [fetchNotifications]);
 
-  useEffect(() => {
-    if (selectedChatRoom && socket && performerDetails?.PId) {
-      socket.on('receiveMessage', ({ senderId, message }) => {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          {
-            _id: new mongoose.Types.ObjectId().toString(),
-            roomId: selectedChatRoom.otherId,
-            senderId: new mongoose.Types.ObjectId(senderId),
-            receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-            message: message,
-            timestamp: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            __v: 0,
-            role: 'receiver',
-          },
-        ]);
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('receiveMessage');
-      }
-    };
-  }, [selectedChatRoom, socket, performerDetails]);
-
+   useEffect(() => {
+     const cleanup = chatSocketService.setupMessageListener(
+       socket,
+       selectedChatRoom,
+       (newMessage) => {
+         setMessages((prevMessages) => [...prevMessages, newMessage]);
+       }
+     );
+ 
+     return cleanup;
+   }, [selectedChatRoom, socket]);
+ 
   useEffect(() => {
     fetchAllChatRooms();
   }, [fetchAllChatRooms]);
@@ -93,73 +77,74 @@ const ChatSession: React.FC = () => {
     console.log('Fetching data...');
     fetchPerformerDetails();
   }, [fetchPerformerDetails]);
-
   useEffect(() => {
     const fetchMessages = async () => {
-      if (selectedChatRoom) {
+      if (selectedChatRoom && performerDetails?.PId) {
         try {
-          // Fetch online status
-          const onlineResponse = await axiosInstance.post(
-            `/chat/onlineUser/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`
-          );
-          setOnlineStatus(onlineResponse.data);
-
+          // Update online status
+          await chatService.updateUserOnlineStatus(selectedChatRoom.myId, selectedChatRoom.otherId);
+          
           // Fetch messages
-          const response = await axiosInstance.get(
-            `/chat/chat-with/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`,
-            { withCredentials: true }
-          );
-          setMessages(response.data.data || []);
+          const messages = await chatService.getChatMessages(selectedChatRoom.myId, selectedChatRoom.otherId);
+          setMessages(messages);
+          
+          // Fetch notifications
+          const notifications = await chatService.getMessageNotifications(selectedChatRoom.myId);
+          console.log("res", notifications);
         } catch (error) {
-          console.error('Error fetching messages:', error);
+          console.error("Error fetching messages:", error);
         }
       }
     };
-
     fetchMessages();
-  }, [selectedChatRoom]);
+  }, [selectedChatRoom, performerDetails]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() !== '' && selectedChatRoom && socket) {
+    if (newMessage.trim() && selectedChatRoom && performerDetails?.PId && socket) {
       try {
-        const response = await axiosInstance.post(
-          `/chat/handleSendMessage/${selectedChatRoom.myId}/${selectedChatRoom.otherId}`,
-          { message: newMessage },
-          { withCredentials: true }
+        // Send message through API
+    await chatService.sendMessage(
+          performerDetails.PId,
+          selectedChatRoom.otherId,
+          newMessage
         );
+  
+        // Emit socket event
 
-        console.log("xc:😍", selectedChatRoom.myId);
-        socket.emit('sendMessage', {
-          senderId: selectedChatRoom.myId,
-          receiverId: selectedChatRoom.otherId,
-          message: newMessage
-        });
 
-        if (response.data) {
-          setMessages(prevMessages => [...prevMessages, {
-            _id: response.data._id,
-            roomId: response.data.roomId,
-            senderId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-            receiverId: new mongoose.Types.ObjectId(selectedChatRoom.otherId),
-            message: newMessage,
-            timestamp: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            __v: 0,
-            role: 'sender'
-          }]);
-        }
-
-        setNewMessage('');
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    }
-  };
+         // Emit socket event
+                chatSocketService.emitMessage(
+                  socket,
+                  selectedChatRoom.myId,
+                  selectedChatRoom.otherId,
+                  newMessage
+                );
+     
+  
+        // Optimistically add new message
+          const newMessageObj: Message = {
+                _id: `temp-${Date.now()}`,
+                roomId: "",
+                senderId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
+                receiverId: new mongoose.Types.ObjectId(selectedChatRoom.otherId),
+                message: newMessage,
+                timestamp: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                __v: 0,
+              };
+      
+              setMessages((prevMessages) => [...prevMessages, newMessageObj]);
+              setNewMessage("");
+            } catch (error) {
+              console.error("Error sending message:", error);
+            }
+          }
+        };
 
   const handleLogout = () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
@@ -241,9 +226,9 @@ const ChatSession: React.FC = () => {
                           <Image 
                             src={room.profileImage} 
                             alt={room.userName} 
-                            width={48}
-                            height={48}
-                            className="rounded-full mr-3 border-2 border-white shadow-md"
+                            width={32}
+                            height={32}
+                             className="w-8 h-8 rounded-full mr-3"
                           />
                         </div>
                         <div>
@@ -267,20 +252,20 @@ const ChatSession: React.FC = () => {
                               height={48}
                               className="rounded-full mr-3 border-2 border-white shadow-md"
                             />
-                            <span className={`absolute bottom-0 right-3 w-3 h-3 ${
+                            {/* <span className={`absolute bottom-0 right-3 w-3 h-3 ${
                               onlineStatus.isOnline ? 'bg-green-500' : 'bg-gray-400'
-                            } rounded-full border-2 border-white`}></span>
+                            } rounded-full border-2 border-white`}></span> */}
                           </div>
                           <div>
                             <p className="text-lg font-semibold text-indigo-800">
                               {selectedChatRoom.userName}
                             </p>
-                            <p className="text-sm text-indigo-600">
+                            {/* <p className="text-sm text-indigo-600">
                               {onlineStatus.isOnline ? 'Online' : 'Offline'}
                               {!onlineStatus.isOnline && onlineStatus.lastSeen && 
                                 ` - Last seen ${new Date(onlineStatus.lastSeen).toLocaleString()}`
                               }
-                            </p>
+                            </p> */}
                           </div>
                         </div>
                         {messages.map((message) => (

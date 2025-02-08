@@ -2,8 +2,8 @@
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axiosInstance from '@/shared/axiousintance';
-import axios from 'axios';
+
+import { adminLogin, checkSession } from '@/services/admin';
 
 interface AdminLoginData {
   email: string;
@@ -45,17 +45,19 @@ const AdminLogin: React.FC = () => {
 
 
   useEffect(() => {
-    const checkSession = async () => {
+    const verifySession = async () => {
       try {
-        const response = await axiosInstance.get('/admin/checkSession'); // Example endpoint
-        if (response.data.isAuthenticated) {
-          router.push('/dashboard');
+        const sessionData = await checkSession(); 
+        
+        if (sessionData.isAuthenticated) {
+          router.push('/dashboard'); 
         }
       } catch (error) {
         console.error('Session check failed:', error);
       }
     };
-    checkSession();
+
+    verifySession();
   }, [router]);
   const handleAdminLoginChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,28 +88,20 @@ const AdminLogin: React.FC = () => {
     setIsSubmitting(true); // Disable button while submitting
   
     try {
-      const response = await axiosInstance.post('/admin/adminLogin', adminLoginData);
-      if (response.data.success) {
+      const response = await adminLogin(adminLoginData); // Use the service function
+      if (response.success) {
         router.push('/dashboard');
       } else {
-        setGeneralError(response.data.message || 'Login failed');
+        setGeneralError(response.message || 'Login failed');
       }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        // Handle Axios-specific error
-        setGeneralError(error.response?.data?.message || 'An error occurred. Please try again.');
-      } else if (error instanceof Error) {
-        // Handle generic error
-        setGeneralError(error.message);
-      } else {
-        // Fallback error message
-        setGeneralError('An unexpected error occurred.');
-      }
+    } catch (error) {
+      setGeneralError(error instanceof Error ? error.message : 'An unexpected error occurred.');
       console.error('Login error:', error);
     } finally {
       setIsSubmitting(false); // Re-enable button after submission
     }
   };
+  
   
 
   return (

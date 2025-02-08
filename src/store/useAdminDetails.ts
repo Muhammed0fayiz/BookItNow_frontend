@@ -1,6 +1,5 @@
+import { fetchAdminDetailsApi } from "@/services/admin";
 import { create } from "zustand";
-
-import axiosInstance from "@/shared/axiousintance";
 
 
 interface AdminDetails {
@@ -26,15 +25,11 @@ const useAdminStore = create<AdminStore>((set) => ({
   fetchAdminDetails: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get("http://localhost:5000/admin/details",{withCredentials:true});
-      if (response.data.success) {
-        set({ adminDetails: response.data.data, isLoading: false });
-      } else {
-        set({ error: "Failed to fetch admin details", isLoading: false });
-      }
+      const adminDetails = await fetchAdminDetailsApi();
+      set({ adminDetails, isLoading: false });
     } catch (err) {
       set({
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: err instanceof Error ? err.message : 'Unknown error',
         isLoading: false,
       });
     }

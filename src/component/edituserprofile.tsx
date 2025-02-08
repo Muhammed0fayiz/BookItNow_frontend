@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstanceMultipart } from '@/shared/axiousintance';
+
 import Image from "next/image";
+import { editUserProfile } from '@/services/user';
 interface EditProfileFormProps {
   onClose: () => void;
   username: string;
@@ -37,25 +38,15 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
     }
 
     try {
-      const formData = new FormData();
-      formData.append('username', userName);
+      const userProfile = new FormData();
+      userProfile.append('username', userName);
       if (profilePic) {
-        formData.append('profilePic', profilePic);
+        userProfile.append('profilePic', profilePic);
       }
 
-      const apiEndpoint = `/updateUserProfile/${userID}`;
-      const response = await axiosInstanceMultipart.put(apiEndpoint, formData,  {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        withCredentials: true,
-      });
- 
-      
-      console.log('Profile updated successfully', response.data);
-   
+      const response = await editUserProfile(userID,userProfile);
+      console.log('Profile updated successfully', response);
       onClose();
-   
     } catch (error) {
       console.error('Failed to update profile:', error);
     } finally {

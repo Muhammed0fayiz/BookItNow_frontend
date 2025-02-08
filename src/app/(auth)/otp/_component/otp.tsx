@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { useState, ChangeEvent, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { AxiosError } from 'axios';
-import axiosInstance from '@/shared/axiousintance';
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, ChangeEvent, useEffect } from "react";
+import { AxiosError } from "axios";
+import { checkOtp, resendOtp } from "@/services/user";
 
-const OtpPage = () => {
-  const [otp, setOtp] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [email, setEmail] = useState<string | null>(null);
+const OtpPageContent = () => {
+  const [otp, setOtp] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
   const [timer, setTimer] = useState<number>(60);
   const [showVerifyButton, setShowVerifyButton] = useState<boolean>(true);
   const [showResendButton, setShowResendButton] = useState<boolean>(false);
@@ -18,11 +19,13 @@ const OtpPage = () => {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const queryEmail = searchParams.get('email');
+    const queryEmail = searchParams.get("email");
     if (queryEmail) {
       setEmail(queryEmail);
     } else {
-      setError('Email not provided in URL. Please check the link and try again.');
+      setError(
+        "Email not provided in URL. Please check the link and try again."
+      );
     }
   }, [searchParams]);
 
@@ -43,19 +46,20 @@ const OtpPage = () => {
   const handleOtpChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setOtp(value);
-    // Clear error when user starts typing
     if (error) {
-      setError('');
+      setError("");
     }
   };
 
   const validateForm = (): boolean => {
     if (!email) {
-      setError('Email is missing from the URL. Please check the link and try again.');
+      setError(
+        "Email is missing from the URL. Please check the link and try again."
+      );
       return false;
     }
     if (otp.length !== 6 || !/^\d+$/.test(otp)) {
-      setError('Please enter a valid 6-digit OTP.');
+      setError("Please enter a valid 6-digit OTP.");
       return false;
     }
     return true;
@@ -65,35 +69,35 @@ const OtpPage = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const response = await axiosInstance.post('/verify-otp', { email, otp });
-        console.log('OTP verification response:', response.data);
+        const response = await checkOtp(email, otp);
+        console.log("OTP verification response:", response);
         setShowSuccessPopup(true);
         setTimeout(() => {
-          router.push('/auth');
+          router.push("/");
         }, 1000);
-      } catch (err) {
-        handleAxiosError(err, 'OTP verification failed. Please try again.');
+      } catch (error) {
+        handleAxiosError(error, "OTP verification failed. Please try again.");
       }
     }
   };
 
   const handleResendOtp = async () => {
     if (!email) {
-      setError('Email is missing. Unable to resend OTP.');
+      setError("Email is missing. Unable to resend OTP.");
       return;
     }
 
+    setError("");
     setShowResendButton(false);
     setShowVerifyButton(true);
     setTimer(60);
-    setOtp('');
-    setError('');
+    setOtp("");
 
     try {
-      const response = await axiosInstance.post(`/resendotp/${email}`);
-      console.log('OTP resent:', response.data);
+      const response = await resendOtp(email); // Call the API function
+      console.log("OTP resent:", response);
     } catch (err) {
-      handleAxiosError(err, 'Failed to resend OTP. Please try again.');
+      handleAxiosError(err, "Failed to resend OTP. Please try again.");
       setShowResendButton(true);
       setShowVerifyButton(false);
     }
@@ -101,13 +105,13 @@ const OtpPage = () => {
 
   const handleAxiosError = (err: unknown, defaultMessage: string) => {
     if (err instanceof AxiosError) {
-      console.error('API Error:', err.response?.data || err.message);
+      console.error("API Error:", err.response?.data || err.message);
       setError(err.response?.data?.message || defaultMessage);
     } else if (err instanceof Error) {
-      console.error('Error:', err.message);
+      console.error("Error:", err.message);
       setError(err.message);
     } else {
-      console.error('Unknown error:', err);
+      console.error("Unknown error:", err);
       setError(defaultMessage);
     }
   };
@@ -117,25 +121,31 @@ const OtpPage = () => {
       <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
         <h1 className="text-3xl font-bold mb-6 text-center">Enter OTP</h1>
         {error && <p className="text-red-600 text-center mb-4">{error}</p>}
-        {email && <p className="text-gray-600 text-center mb-4">Verifying OTP for: {email}</p>}
-        
+        {email && (
+          <p className="text-gray-600 text-center mb-4">
+            Verifying OTP for: {email}
+          </p>
+        )}
+
         {showSuccessPopup && (
           <div className="mb-4 p-4 rounded-md bg-green-50 border border-green-500">
             <div className="flex items-center">
-              <svg 
-                className="w-5 h-5 text-green-500 mr-2" 
-                fill="none" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="w-5 h-5 text-green-500 mr-2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
                 <h4 className="text-green-800 font-medium">Success!</h4>
-                <p className="text-green-700 text-sm">Sign up successful! Redirecting...</p>
+                <p className="text-green-700 text-sm">
+                  Sign up successful! Redirecting...
+                </p>
               </div>
             </div>
           </div>
@@ -169,10 +179,20 @@ const OtpPage = () => {
             Resend OTP
           </button>
         ) : (
-          <p className="text-gray-600 text-center mt-4">Resend OTP in {timer} seconds</p>
+          <p className="text-gray-600 text-center mt-4">
+            Resend OTP in {timer} seconds
+          </p>
         )}
       </div>
     </div>
+  );
+};
+
+const OtpPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OtpPageContent />
+    </Suspense>
   );
 };
 

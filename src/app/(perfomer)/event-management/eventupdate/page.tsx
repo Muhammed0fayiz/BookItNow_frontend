@@ -4,9 +4,10 @@ import React, { useState, ChangeEvent, FocusEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useEdgeStore } from '@/lib/edgestore';
-import axiosInstance from '@/shared/axiousintance';
+
 import { Upload, Calendar,Users, Phone, FileText, Image as ImageIcon } from 'lucide-react';
 import Image from "next/image";
+import { uploadPEvent } from '@/services/performerEvent';
 interface FormData {
   id: string;
   title: string;
@@ -87,7 +88,7 @@ const EventForm: React.FC = () => {
       id: () => '',
       userId: () => '',
       title: (value) => {
-        if (typeof value === 'string') { // Ensure value is a string before checking length
+        if (typeof value === 'string') {
           if (!value) return 'Event name is required';
           if (value.length < 2) return 'Event name must be at least 2 characters';
           if (value.length > 15) return 'Event name must be less than 15 characters';
@@ -95,7 +96,7 @@ const EventForm: React.FC = () => {
         return '';
       },
       price: (value) => {
-        if (typeof value === 'string') { // Ensure value is a string before processing
+        if (typeof value === 'string') { 
           if (!value) return 'Price is required';
           const price = Number(value);
           if (isNaN(price)) return 'Price must be a number';
@@ -106,7 +107,7 @@ const EventForm: React.FC = () => {
       },
       category: (value) => (!value ? 'Category is required' : ''),
       teamLeader: (value) => {
-        if (typeof value === 'string') { // Ensure value is a string before checking length
+        if (typeof value === 'string') { 
           if (!value) return 'Team leader name is required';
           if (value.length < 2) return 'Team leader name must be at least 2 characters';
           if (value.length > 20) return 'Team leader name must be less than 20 characters';
@@ -115,14 +116,14 @@ const EventForm: React.FC = () => {
         return '';
       },
       teamLeaderNumber: (value) => {
-        if (typeof value === 'string') { // Ensure value is a string before processing
+        if (typeof value === 'string') { 
           if (!value) return 'Contact number is required';
           if (!/^\d{10}$/.test(value)) return 'Please enter a valid 10-digit number';
         }
         return '';
       },
       description: (value) => {
-        if (typeof value === 'string') { // Ensure value is a string before checking length
+        if (typeof value === 'string') { 
           if (!value) return 'Description is required';
           if (value.length < 10) return 'Description must be at least 10 characters';
           if (value.length > 50) return 'Description cannot exceed 50 characters';
@@ -190,60 +191,68 @@ const EventForm: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError('');
   
-    const touchedFields: TouchedFields = {};
-    Object.keys(formData).forEach((key) => {
-      touchedFields[key] = true;
-    });
+    // Mark all fields as touched
+    const touchedFields: TouchedFields = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {} as TouchedFields);
+  
     setTouched(touchedFields);
   
-    if (validateForm()) {
-      try {
-        const submitFormData = new FormData();
+    if (!validateForm()) {
+      setSubmitError('Please correct the errors before submitting');
+      setIsSubmitting(false);
+      return;
+    }
   
-        if (formData.imageFile) {
-          const imageResponse = await edgestore.publicFiles.upload({
-            file: formData.imageFile,
-          });
+    try {
+      const submitFormData = new FormData();
   
-          if (imageResponse?.url) {
-            submitFormData.append('imageUrl', imageResponse.url);
-          } else {
-            setSubmitError('Image upload failed');
-            return;
-          }
-        }
-  
-        Object.entries(formData).forEach(([key, value]) => {
-          if (key !== 'imageFile' && value !== null) {
-            submitFormData.append(key, value.toString());
-          }
+      // Upload image if exists
+      if (formData.imageFile) {
+        const imageResponse = await edgestore.publicFiles.upload({
+          file: formData.imageFile,
         });
   
-       await axiosInstance.post(
-          `/performerEvent/uploadEvents/${performerDetails?.PId}`,
-          submitFormData
-        );
+        if (!imageResponse?.url) {
+          setSubmitError('Image upload failed');
+          setIsSubmitting(false);
+          return;
+        }
   
-        setFormData(INITIAL_FORM_STATE);
-        setImagePreview(null);
-        setErrors({});
-        setTouched({});
-        setSubmitSuccess(true);
-        router.replace('/event-management');
-      } catch (error: unknown) {
-        if (error instanceof AxiosError && error.response && error.response.data) {
+        submitFormData.append('imageUrl', imageResponse.url);
+      }
+  
+      // Append other form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'imageFile' && value !== null) {
+          submitFormData.append(key, value.toString());
+        }
+      });
+  
+      // Call API service
+
+      await uploadPEvent(performerDetails?.PId as string, submitFormData);
+  
+      // Reset form state
+      setFormData(INITIAL_FORM_STATE);
+      setImagePreview(null);
+      setErrors({});
+      setTouched({});
+      setSubmitSuccess(true);
+      router.replace('/event-management');
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response?.data) {
         setSubmitError(error.response.data.message || 'An error occurred');
       } else {
         setSubmitError('An error occurred while submitting the form');
       }
-      console.error('Error:', error);
+      console.error('Error:ddddddddddddd', error);
+    } finally {
+      setIsSubmitting(false);
     }
-  } else {
-    setSubmitError('Please correct the errors before submitting');
-  }
-
-  setIsSubmitting(false);
-};
+  };
+  
   const getInputStateClasses = (fieldName: string): string => {
     if (touched[fieldName]) {
       if (errors[fieldName]) {

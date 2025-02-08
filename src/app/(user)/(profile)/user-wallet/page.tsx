@@ -9,16 +9,12 @@ import InitialLoading from "@/component/loading";
 import Sidebar from "@/component/userSidebar";
 import Navbar from "@/component/userNavbar";
 
-
 const UserWallet: React.FC = () => {
-
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const { userProfile, error, fetchUserProfile, handleLogout } =
-    useUserStore();
+  const { userProfile, error, fetchUserProfile, handleLogout } = useUserStore();
   const { walletHistory, fetchWalletHistory } = useWalletHistoryStore();
-  const { fetchNotifications } =
-    useChatNotifications();
+  const { fetchNotifications } = useChatNotifications();
 
   useEffect(() => {
     const loadInitialData = async () => {

@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInbox } from '@fortawesome/free-solid-svg-icons';
 import { Dialog, Transition } from '@headlessui/react';
-import axiosInstance from '@/shared/axiousintance';
 import VideoDescriptionModal from '@/component/videoDescriptionModal';
 import Sidebar from '@/component/adminSidebar';
+import { adminLogout, checkAdminSession, fetchTempPerformers, grantPerformerPermission, rejectPerformerPermission } from '@/services/admin';
+import { toast } from 'sonner';
 
 type Performer = {
   id: string;
@@ -32,7 +33,7 @@ type ApiPerformer = {
 
 const Verification: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [sessionValid, setSessionValid] = useState<boolean>(false);
+
   const [performers, setPerformers] = useState<Performer[]>([]);
   const [confirmationOpen, setConfirmationOpen] = useState<boolean>(false);
   const [selectedPerformer, setSelectedPerformer] = useState<Performer | null>(null);
@@ -52,84 +53,80 @@ const Verification: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
+     const verifySession = async () => {
+       const isAuthenticated = await checkAdminSession();
+       if (!isAuthenticated) {
+         router.replace('/adminlogin');
+       }
+     };
+   
+     verifySession();
+   }, [router]);
+   
+   useEffect(() => {
+    const fetchPerformers = async () => {
       try {
-        const response = await axiosInstance.get('/admin/checkSession');
-        if (response.data.isAuthenticated) {
-          setSessionValid(true);
-        } else {
-          router.replace('/adminlogin');
-        }
+        const performersData = await fetchTempPerformers();
+        const formattedPerformers = performersData.map((performer: ApiPerformer): Performer => ({
+          id: performer._id,
+          bandName: performer.bandName,
+          createdAt: performer.createdAt,
+          video: performer.video,
+          mobileNumber: performer.mobileNumber,
+          description: performer.description,
+          isVerified: performer.isVerified || false,
+          isRejected: performer.isRejected || false,
+        }));
+        setPerformers(formattedPerformers);
       } catch (error) {
-        console.error('Session check failed:', error);
-        router.replace('/adminlogin');
+        console.error('Error fetching performers:', error);
       }
     };
-
-    checkSession();
-  }, [router]);
-
-  useEffect(() => {
-    if (sessionValid) {
-      const fetchPerformers = async () => {
-        try {
-          const response = await axiosInstance.get('/admin/getTempPerformers');
-          if (response.data && response.data.data) {
-            const performersData = response.data.data.map((performer: ApiPerformer): Performer => ({
-              id: performer._id,
-              bandName: performer.bandName,
-              createdAt: performer.createdAt,
-              video: performer.video,
-              mobileNumber: performer.mobileNumber,
-              description: performer.description,
-              isVerified: performer.isVerified || false,
-              isRejected: performer.isRejected || false,
-            }));
-            setPerformers(performersData);
-          }
-        } catch (error) {
-          console.error('Error fetching performers:', error);
-        }
-      };
-      fetchPerformers();
-    }
-  }, [sessionValid]);
-
+    
+    fetchPerformers();
+  }, []);
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.post('/admin/adminLogout');
-      if (response.data.success) {
+      const response = await adminLogout(); 
+      if (response.success) {
+        toast.success('Logged out successfully');
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
+      } else {
+        toast.error('Logout failed: ' + response.message);
       }
     } catch (error) {
+      toast.error('Error during logout');
       console.error('Error during logout:', error);
     }
   };
 
   const handleVerificationStatusChange = async (id: string, status: boolean) => {
+    if (!id) {
+      console.error('Error: Performer ID is required');
+      return;
+    }
+  
     try {
       if (status) {
-        await axiosInstance.post(`/admin/grant-performer-permission/${id}`, {
-          isVerified: true,
-          isRejected: false,
-        });
+        await grantPerformerPermission(id);
       } else {
-        await axiosInstance.post(`/admin/reject-performer-permission/${id}`, {
-          isVerified: false,
-          isRejected: true,
-          rejectReason: rejectReason,
-        });
+        if (!rejectReason.trim()) {
+          console.error('Error: Reject reason is required');
+          return;
+        }
+        await rejectPerformerPermission(id, rejectReason);
       }
-
+  
       setPerformers((prevPerformers) =>
         prevPerformers.map((performer) =>
           performer.id === id ? { ...performer, isVerified: status, isRejected: !status } : performer
         )
       );
+  
       setConfirmationOpen(false);
-      setRejectReason('');
+      setRejectReason(''); // Reset reject reason after rejection
     } catch (error) {
       console.error('Error updating performer status:', error);
     }
@@ -177,7 +174,7 @@ const Verification: React.FC = () => {
     );
   }
 
-  if (!sessionValid) return null;
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex">

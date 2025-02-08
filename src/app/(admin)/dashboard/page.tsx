@@ -11,6 +11,7 @@ import useAdminDetails from '@/store/useAdminDetails';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/component/adminSidebar';
+import { adminLogout, checkAdminSession, downloadAdminReport } from '@/services/admin';
 
 
 const AdminDashboard = () => {
@@ -21,70 +22,77 @@ const AdminDashboard = () => {
   const router = useRouter();
   const { adminDetails, fetchAdminDetails } = useAdminDetails();
 
-
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.post('/admin/adminLogout');
-      if (response.data.success) {
+      const response = await adminLogout(); 
+      if (response.success) {
         toast.success('Logged out successfully');
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
       } else {
-        toast.error('Logout failed: ' + response.data.message);
+        toast.error('Logout failed: ' + response.message);
       }
     } catch (error) {
       toast.error('Error during logout');
       console.error('Error during logout:', error);
     }
   };
+  
 
   const handleDownloadReport = async () => {
-  if (!startDate || !endDate) {
-       toast.error('Please select both start and end dates');
-       return;
-     }
-   
-     const today = new Date();
-     const selectedStartDate = new Date(startDate);
-     const selectedEndDate = new Date(endDate);
-   
-   
-     if (selectedStartDate > today) {
-       toast.error('Start date cannot be in the future');
-       return;
-     }
-   
-     if (selectedStartDate > selectedEndDate) {
-       toast.error('Start date cannot be after end date');
-       return;
-     }
-
+    if (!startDate || !endDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+  
+    const today = new Date();
+    const selectedStartDate = new Date(startDate);
+    const selectedEndDate = new Date(endDate);
+  
+    if (selectedStartDate > today) {
+      toast.error('Start date cannot be in the future');
+      return;
+    }
+  
+    if (selectedStartDate > selectedEndDate) {
+      toast.error('Start date cannot be after end date');
+      return;
+    }
+  
     try {
-      const response = await axiosInstance.get('/admin/downloadReport', {
-        params: { 
-          startDate, 
-          endDate 
-        },
-        responseType: 'blob'
-      });
-      
-
+      const fileData = await downloadAdminReport(startDate, endDate);
+  
       // Create a link element to download the file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([fileData]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `admin_report_${startDate}_to_${endDate}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-
+  
       toast.success('Report downloaded successfully');
     } catch (error) {
-      toast.error('Failed to download report');
-      console.error('Error downloading report:', error);
-    }
+  if (error instanceof Error) {
+    toast.error(error.message);
+    console.error('Error downloading report:', error);
+  } else {
+    toast.error('An unknown error occurred');
+    console.error('Error downloading report:', error);
+  }}
   };
+  useEffect(() => {
+    const verifySession = async () => {
+      const isAuthenticated = await checkAdminSession();
+      if (!isAuthenticated) {
+        router.replace('/adminlogin');
+      }
+    };
+  
+    verifySession();
+  }, [router]);
+  
 
   useEffect(() => {
     fetchAdminDetails();

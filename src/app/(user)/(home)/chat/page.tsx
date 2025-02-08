@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import axiosInstance from "@/shared/axiousintance";
+
 import useUserStore from "@/store/useUserStore";
 import useChatRooms from "@/store/chatstore";
 import mongoose from "mongoose";
@@ -10,6 +10,9 @@ import { Send } from "lucide-react";
 import useChatNotifications from "@/store/useChatNotification";
 import useSocketStore from "@/store/useSocketStore";
 import Image from "next/image";
+
+import { chatService, chatSocketService } from "@/services/chat";
+
 // Updated Message interface to match backend structure
 interface Message {
   _id: string;
@@ -54,41 +57,17 @@ const Chat = () => {
 
 
   useEffect(() => {
-    if (selectedChatRoom && socket) {
-      // Updated message handling logic
-      socket.on("receiveMessage", ({ senderId, message }) => {
-     
-        if (selectedChatRoom.otherId === senderId) {
-          setMessages((prevMessages) => [
-            ...prevMessages,
-            {
-              _id: new mongoose.Types.ObjectId().toString(),
-              roomId: selectedChatRoom.otherId,
-              senderId: new mongoose.Types.ObjectId(senderId),
-              receiverId: new mongoose.Types.ObjectId(selectedChatRoom.myId),
-              message: message,
-              timestamp: new Date(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              __v: 0,
-              role: "receiver",
-            },
-          ]);
-        } else {
-          // Optionally, you could update a notification counter for the other chat room
-          console.log(
-            `Received message from ${senderId} while chatting with ${selectedChatRoom.otherId}`
-          );
-        }
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off("receiveMessage");
+    const cleanup = chatSocketService.setupMessageListener(
+      socket,
+      selectedChatRoom,
+      (newMessage) => {
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
       }
-    };
+    );
+
+    return cleanup;
   }, [selectedChatRoom, socket]);
+
   useEffect(() => {
     fetchNotifications().catch((err) =>
       console.error("Error fetching notifications:", err)
@@ -113,19 +92,16 @@ const Chat = () => {
     const fetchMessages = async () => {
       if (selectedChatRoom && userProfile?.id) {
         try {
-         await axiosInstance.post(
-            `/chat/onlineUser/${userProfile.id}/${selectedChatRoom.otherId}`
-          );
-          const response = await axiosInstance.get(
-            `/chat/chat-with/${userProfile.id}/${selectedChatRoom.otherId}`
-          );
-
-          setMessages(response.data.data || []);
-          const live = await axiosInstance.get(
-            `/chat/messageNotification/${userProfile.id}`
-          );
-          // SUSTA
-          console.log("res", live);
+          // Update online status
+          await chatService.updateUserOnlineStatus(userProfile.id, selectedChatRoom.otherId);
+          
+          // Fetch messages
+          const messages = await chatService.getChatMessages(userProfile.id, selectedChatRoom.otherId);
+          setMessages(messages);
+          
+          // Fetch notifications
+          const notifications = await chatService.getMessageNotifications(userProfile.id);
+          console.log("res", notifications);
         } catch (error) {
           console.error("Error fetching messages:", error);
         }
@@ -138,29 +114,27 @@ const Chat = () => {
   const profilePage = () => router.replace("/profile");
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() && selectedChatRoom) {
+    if (newMessage.trim() && selectedChatRoom && userProfile?.id) {
       try {
-        if (!userProfile?.id) {
-          console.error("User profile not found");
-          return;
-        }
-        await axiosInstance.post(
-          `/chat/handleSendMessage/${userProfile.id}/${selectedChatRoom.otherId}`,
-          { message: newMessage }
+        // Send message through API
+        await chatService.sendMessage(
+          userProfile.id,
+          selectedChatRoom.otherId,
+          newMessage
         );
-     
 
-        if (socket)
-          socket.emit("sendMessage", {
-            senderId: selectedChatRoom.myId,
-            receiverId: selectedChatRoom.otherId,
-            message: newMessage,
-          });
+        // Emit socket event
+        chatSocketService.emitMessage(
+          socket,
+          selectedChatRoom.myId,
+          selectedChatRoom.otherId,
+          newMessage
+        );
 
-        // Optimistically add the new message to the messages array
+        // Optimistically add new message
         const newMessageObj: Message = {
           _id: `temp-${Date.now()}`,
-          roomId: "", // You might want to set this appropriately
+          roomId: "",
           senderId: new mongoose.Types.ObjectId(userProfile.id),
           receiverId: new mongoose.Types.ObjectId(selectedChatRoom.otherId),
           message: newMessage,

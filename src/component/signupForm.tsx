@@ -3,25 +3,20 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import * as yup from 'yup';
-import axiosInstance from '@/shared/axiousintance';
 import { AxiosError } from 'axios';
-
+import { SignUpData} from '../types/user'
+import { signUp } from '@/services/user';
 interface SignUpFormProps {
   toggleForm: () => void;
 }
 
-interface SignUpData {
-  fullName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+
 
 type FormErrors = {
   [key in keyof SignUpData]?: string;
 };
 
-// Define validation schema
+// Define validation schema (keep existing schema)
 const signUpSchema = yup.object().shape({
   fullName: yup
   .string()
@@ -47,8 +42,6 @@ const signUpSchema = yup.object().shape({
       .required('Password is required'),
     confirmPassword: yup
       .string()
-      .oneOf([yup.ref('password')], 'Passwords do not match')
-      .matches(/^\S*$/, 'Confirm Password should not contain spaces')
       .required('Please confirm your password')
   });
 
@@ -85,6 +78,16 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
   const validateForm = async (): Promise<boolean> => {
     try {
       await signUpSchema.validate(signUpData, { abortEarly: false });
+      
+      // Additional password match check on submit
+      if (signUpData.password !== signUpData.confirmPassword) {
+        setErrors(prev => ({
+          ...prev,
+          confirmPassword: 'Passwords do not match'
+        }));
+        return false;
+      }
+
       setErrors({});
       return true;
     } catch (error) {
@@ -106,7 +109,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
     if (isValid) {
       const loadingToast = toast.loading('Signing up...');
       try {
-       await axiosInstance.post('/signup', signUpData);
+   await signUp(signUpData); // Call service function
         toast.dismiss(loadingToast);
         toast.success('Sign up successful! Redirecting to OTP page...');
         setTimeout(() => {
@@ -114,8 +117,8 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
         }, 2000);
       } catch (error) {
         toast.dismiss(loadingToast);
-        
-        // Ensure error is properly typed
+  
+        // Handle error properly
         if (error instanceof AxiosError && error.response?.status === 401) {
           setemailexisterror(error.response.data.message);
           setTimeout(() => setemailexisterror(false), 3000);
@@ -151,22 +154,22 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
       {errors.email && <p className="text-red-500 mb-2">{errors.email}</p>}
       
       <div className="relative w-full mb-4">
-  <input 
-    type={showPassword ? "text" : "password"}
-    name="password" 
-    value={signUpData.password} 
-    onChange={handleSignUpChange} 
-    placeholder="Password" 
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none pr-10"
-  />
-  <button 
-    type="button"
-    onClick={() => setShowPassword(!showPassword)}
-    className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center"
-  >
-    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-  </button>
-</div>
+        <input 
+          type={showPassword ? "text" : "password"}
+          name="password" 
+          value={signUpData.password} 
+          onChange={handleSignUpChange} 
+          placeholder="Password" 
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none pr-10"
+        />
+        <button 
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center"
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
       {errors.password && <p className="text-red-500 mb-2">{errors.password}</p>}
       
       <div className="relative w-full mb-4">
@@ -181,7 +184,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ toggleForm }) => {
         <button 
           type="button"
           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-        className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center"
+          className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center"
         >
           {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>

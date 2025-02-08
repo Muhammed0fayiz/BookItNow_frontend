@@ -3,10 +3,11 @@ import { AxiosError } from 'axios';
 import React, { useState, ChangeEvent, FocusEvent, useEffect } from 'react';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useEdgeStore } from '@/lib/edgestore';
-import axiosInstance from '@/shared/axiousintance';
+
 import { Upload, Calendar, Users, Phone, FileText, Image as ImageIcon } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from "next/image";
+import { editEvent, getEditEvent } from '@/services/performerEvent';
 
 
 interface FormData {
@@ -56,17 +57,15 @@ const EventForm: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await axiosInstance.get(`/performerEvent/getEvent/${id}`);
-        console.log('ers',response.data);
-        
-        const eventData = response.data.data;
-        console.log('evendat',eventData.title);
-        
-        
+        const response = await getEditEvent(id as string);
+        console.log('Event Response:', response.data);
+  
+        const eventData = response.data;
+        console.log('Event Title:', eventData.title);
+  
         setFormData({
           id: eventData._id || '',
           title: eventData.title || '',
@@ -78,24 +77,23 @@ const EventForm: React.FC = () => {
           description: eventData.description || '',
           imageFile: null
         });
-
+  
         if (eventData.imageUrl) {
           setImagePreview(eventData.imageUrl);
         }
-        
+  
         setIsEditing(true);
-        console.log('even',Event);
-        
       } catch (error) {
-        console.error("Error fetching event:", error);
+        console.error('Error fetching event:', error);
         setSubmitError('Error loading event data');
       }
     };
-
+  
     if (id) {
       fetchEvent();
     }
   }, [id]);
+  
 
   useEffect(() => {
     fetchPerformerDetails();
@@ -119,10 +117,7 @@ const EventForm: React.FC = () => {
   }, [submitSuccess]);
 
  const validateField = (name: keyof FormData, value: string | File | null): string => {
-    if (name === 'imageFile') {
-      if (!value) return 'Image is required';
-      return '';
-    }
+    
   
 
     const trimmedValue = typeof value === 'string' ? value.trim() : value;
@@ -235,61 +230,66 @@ const EventForm: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError('');
   
-    const touchedFields: TouchedFields = {};
-    Object.keys(formData).forEach((key) => {
-      touchedFields[key] = true;
-    });
+    // Mark all fields as touched
+    const touchedFields: TouchedFields = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {} as TouchedFields);
+  
     setTouched(touchedFields);
   
-    if (validateForm()) {
-      try {
-        const submitFormData = new FormData();
+    if (!validateForm()) {
+      setSubmitError('Please correct the errors before submitting');
+      setIsSubmitting(false);
+      return;
+    }
   
-        if (formData.imageFile) {
-          const imageResponse = await edgestore.publicFiles.upload({
-            file: formData.imageFile,
-          });
+    try {
+      const submitFormData = new FormData();
   
-          if (imageResponse?.url) {
-            submitFormData.append('imageUrl', imageResponse.url);
-          } else {
-            setSubmitError('Image upload failed');
-            return;
-          }
-        } else if (imagePreview) {
-          // If there's an existing image preview but no new file, keep the existing URL
-          submitFormData.append('imageUrl', imagePreview);
-        }
-  
-        Object.entries(formData).forEach(([key, value]) => {
-          if (key !== 'imageFile' && value !== null) {
-            submitFormData.append(key, value.toString());
-          }
+      // Upload new image if file exists
+      if (formData.imageFile) {
+        const imageResponse = await edgestore.publicFiles.upload({
+          file: formData.imageFile,
         });
   
-        if (isEditing) {
-          await axiosInstance.put(
-            `/performerEvent/editEvent/${performerDetails?.PId}/${id}`,
-            submitFormData
-          );
-        } 
-  
-        setSubmitSuccess(true);
-        router.replace('/event-management');
-      } catch (error: unknown) {
-              if (error instanceof AxiosError && error.response && error.response.data) {
-              setSubmitError(error.response.data.message || 'An error occurred');
-            } else {
-              setSubmitError('An error occurred while submitting the form');
-            }
-            console.error('Error:', error);
-          }
-        } else {
-          setSubmitError('Please correct the errors before submitting');
+        if (!imageResponse?.url) {
+          setSubmitError('Image upload failed');
+          setIsSubmitting(false);
+          return;
         }
-      
-        setIsSubmitting(false);
-      };
+  
+        submitFormData.append('imageUrl', imageResponse.url);
+      } else if (imagePreview) {
+     
+        submitFormData.append('imageUrl', imagePreview);
+      }
+  
+      // Append other form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'imageFile' && value !== null) {
+          submitFormData.append(key, value.toString());
+        }
+      });
+  
+      // Call API service for editing event
+      await editEvent(performerDetails?.PId as string, id as string, submitFormData);
+  
+      // Reset form state
+      setSubmitSuccess(true);
+      router.replace('/event-management');
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response?.data) {
+        setSubmitError(error.response.data.message || 'An error occurred');
+      } else {
+        setSubmitError('An error occurred while submitting the form');
+      }
+      console.error('Error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   const getInputStateClasses = (fieldName: string): string => {
     if (touched[fieldName]) {
       if (errors[fieldName]) {
@@ -508,10 +508,10 @@ const EventForm: React.FC = () => {
             </div>
 
             <div className="relative group md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="imageFile">
-                <ImageIcon className="w-4 h-4 inline-block mr-2" />
-                Event Image {!isEditing && <span className="text-red-500">*</span>}
-              </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="imageFile">
+  <ImageIcon className="w-4 h-4 inline-block mr-2" />
+  Event Image
+</label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg border-gray-300 hover:border-indigo-500 transition-colors duration-200">
                 <div className="space-y-1 text-center">
                   {!imagePreview && <Upload className="mx-auto h-12 w-12 text-gray-400" />}

@@ -1,31 +1,37 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useUpcomingEventsStore } from '@/store/useUserUpcomingEvents';
-import '@fortawesome/fontawesome-free/css/all.min.css';
-import useUserStore from '@/store/useUserStore';
-import { UpcomingEvent } from '@/types/store';
-import axiosInstance from '@/shared/axiousintance';
-import CancelEventModal from '@/component/cancelEventModal';
-import { Calendar} from 'lucide-react';
-import useChatNotifications from '@/store/useChatNotification';
-import DescriptionViewer from '@/component/descriptionViewer';
-import Sidebar from '@/component/userSidebar';
-import Navbar from '@/component/userNavbar';
+import React, { useState, useEffect } from "react";
+import { useUpcomingEventsStore } from "@/store/useUserUpcomingEvents";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import useUserStore from "@/store/useUserStore";
+import { UpcomingEvent } from "@/types/store";
+import CancelEventModal from "@/component/cancelEventModal";
+import { Calendar } from "lucide-react";
+import useChatNotifications from "@/store/useChatNotification";
+import DescriptionViewer from "@/component/descriptionViewer";
+import Sidebar from "@/component/userSidebar";
+import Navbar from "@/component/userNavbar";
 import Image from "next/image";
+import { cancelUserEvent, fetchUserUpcomingEvents } from "@/services/userEvent";
 const UpcomingEvents: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { upcomingEvents, fetchAllEvents, totalCount } = useUpcomingEventsStore();
-  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore();
-  const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
+  const { upcomingEvents, fetchAllEvents, totalCount } =
+    useUpcomingEventsStore();
+  const { userProfile, isLoading, error, fetchUserProfile, handleLogout } =
+    useUserStore();
+  const [cancellingEventId, setCancellingEventId] = useState<string | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<UpcomingEvent | null>(
+    null
+  );
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [isAllDataLoaded, setIsAllDataLoaded] = useState(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-  const {fetchNotifications } = useChatNotifications();
+  const { fetchNotifications } = useChatNotifications();
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -33,10 +39,10 @@ const UpcomingEvents: React.FC = () => {
         await Promise.all([
           fetchUserProfile(),
           fetchAllEvents(),
-          fetchNotifications()
+          fetchNotifications(),
         ]);
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        console.error("Error loading initial data:", error);
       } finally {
         setIsAllDataLoaded(true);
       }
@@ -58,34 +64,29 @@ const UpcomingEvents: React.FC = () => {
 
   const handlePreviousClick = () => {
     const newPage = Math.max(1, currentPage - 1);
-    paginationEvent(newPage);
+    userUpcomingEvents(newPage);
   };
 
   const handleNextClick = () => {
     const newPage = Math.min(totalPages, currentPage + 1);
-    paginationEvent(newPage);
+    userUpcomingEvents(newPage);
   };
 
-  const paginationEvent = async (page: number) => {
+  const userUpcomingEvents = async (page: number) => {
     try {
-      console.log('Fetching events for page:', page);
-      setIsLoadingEvents(true);
-      const response = await axiosInstance.get(
-        `/userEvent/userUpcomingEvents/${userProfile?.id}?page=${page}`,
-        { withCredentials: true }
-      );
+      if (!userProfile?.id) {
+        throw new Error("User ID is missing");
+      }
 
-      const events: UpcomingEvent[] = response.data.events.map((event:UpcomingEvent ) => ({
-        ...event,
-        date: new Date(event.date).toISOString(),
-        createdAt: new Date(event.createdAt).toISOString(),
-        updatedAt: new Date(event.updatedAt).toISOString(),
-      }));
+      console.log("Fetching events for page:", page);
+      setIsLoadingEvents(true);
+
+      const events = await fetchUserUpcomingEvents(userProfile.id, page);
 
       setEvents(events);
       setCurrentPage(page);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error("Error fetching events:", error);
     } finally {
       setIsLoadingEvents(false);
     }
@@ -101,40 +102,36 @@ const UpcomingEvents: React.FC = () => {
 
     try {
       setCancellingEventId(selectedEvent._id);
-      const response = await axiosInstance.post(
-        `/userEvent/cancelevent/${selectedEvent._id}`,
-        { withCredentials: true }
-      );
 
-      console.log('Cancellation response:', response.data);
+      const response = await cancelUserEvent(selectedEvent._id);
+      console.log("Cancellation response:", response);
     } catch (error) {
-      console.error('Error cancelling event:', error);
-      alert('Failed to cancel event. Please try again.');
+      alert("Failed to cancel event. Please try again.");
     } finally {
       setCancellingEventId(null);
       setIsModalOpen(false);
       setSelectedEvent(null);
-      paginationEvent(currentPage);
+      userUpcomingEvents(currentPage);
     }
   };
 
   const formatTime = (timeString: string) => {
     try {
-      if (!timeString) return 'Time not available';
+      if (!timeString) return "Time not available";
 
-      if (timeString.includes(':')) {
-        const [hours, minutes] = timeString.split(':');
+      if (timeString.includes(":")) {
+        const [hours, minutes] = timeString.split(":");
         const date = new Date();
         date.setHours(parseInt(hours), parseInt(minutes));
-        return date.toLocaleTimeString('en-IN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
+        return date.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
         });
       }
       return timeString;
     } catch (error) {
-      console.log('Time parsing error:', error);
+      console.log("Time parsing error:", error);
       return timeString;
     }
   };
@@ -142,24 +139,23 @@ const UpcomingEvents: React.FC = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return date.toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
-      console.log('Date parsing error:', error);
-      return 'Date not available';
+      console.log("Date parsing error:", error);
+      return "Date not available";
     }
   };
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
   const getEventCardClass = (status: string) => {
-    const baseClasses = "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform hover:scale-105 relative";
-    return status === 'cancelled'
-      ? `${baseClasses} opacity-90`
-      : baseClasses;
+    const baseClasses =
+      "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform hover:scale-105 relative";
+    return status === "cancelled" ? `${baseClasses} opacity-90` : baseClasses;
   };
 
   if (!isAllDataLoaded || isLoading) {
@@ -190,7 +186,11 @@ const UpcomingEvents: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar - Fixed position */}
-      <div className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <div
+        className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
         <Sidebar
           sidebarOpen={sidebarOpen}
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -201,7 +201,11 @@ const UpcomingEvents: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 md:ml-64">
         {/* Navbar */}
-        <Navbar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} pageTitle="Upcoming Events" />
+        <Navbar
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          pageTitle="Upcoming Events"
+        />
 
         {/* Main Content */}
         <div className="pt-16 p-6">
@@ -209,12 +213,14 @@ const UpcomingEvents: React.FC = () => {
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
               <Calendar className="w-8 h-8 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-800">Upcoming Events</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Upcoming Events
+              </h2>
             </div>
             <p className="text-gray-600 ml-11">
               {totalCount > 0
                 ? `Showing ${events.length} of ${totalCount} upcoming events`
-                : 'No upcoming events found'}
+                : "No upcoming events found"}
             </p>
           </div>
 
@@ -224,10 +230,12 @@ const UpcomingEvents: React.FC = () => {
               events.map((event: UpcomingEvent) => (
                 <div
                   key={event._id}
-                  className={`${getEventCardClass(event.bookingStatus)} hover:shadow-xl transition-all duration-300`}
+                  className={`${getEventCardClass(
+                    event.bookingStatus
+                  )} hover:shadow-xl transition-all duration-300`}
                 >
                   {/* Cancelled Overlay */}
-                  {event.bookingStatus === 'cancelled' && (
+                  {event.bookingStatus === "cancelled" && (
                     <div className="absolute inset-0 bg-gray-200 bg-opacity-30 z-10 flex flex-col items-center justify-center">
                       <div className="bg-red-600 text-white px-4 py-2 rounded-md transform -rotate-12 shadow-lg">
                         <span className="text-lg font-bold">CANCELLED</span>
@@ -239,30 +247,45 @@ const UpcomingEvents: React.FC = () => {
                     <Image
                       src={event.imageUrl || "/event-placeholder.jpg"}
                       alt={event.title}
-                      width={500} 
-                      height={300} 
-                      className={`w-full h-full object-cover ${event.bookingStatus === 'cancelled' ? 'filter grayscale' : ''}`}
+                      width={500}
+                      height={300}
+                      className={`w-full h-full object-cover ${
+                        event.bookingStatus === "cancelled"
+                          ? "filter grayscale"
+                          : ""
+                      }`}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = "/event-placeholder.jpg";
                       }}
                     />
                     <div className="absolute top-2 right-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium
-                        ${event.bookingStatus === 'cancelled'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-blue-600 text-white'}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium
+                        ${
+                          event.bookingStatus === "cancelled"
+                            ? "bg-red-600 text-white"
+                            : "bg-blue-600 text-white"
+                        }`}
+                      >
                         {event.category}
                       </span>
                     </div>
                   </div>
 
-                  <div className={`p-4 ${event.bookingStatus === 'cancelled' ? 'opacity-75' : ''}`}>
+                  <div
+                    className={`p-4 ${
+                      event.bookingStatus === "cancelled" ? "opacity-75" : ""
+                    }`}
+                  >
                     <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
                       {event.title}
                     </h3>
                     <p className="text-gray-600 text-xs mb-3 line-clamp-2">
-                      <DescriptionViewer description={event.description} maxLength={20} />
+                      <DescriptionViewer
+                        description={event.description}
+                        maxLength={7}
+                      />
                     </p>
 
                     <div className="space-y-2">
@@ -288,35 +311,44 @@ const UpcomingEvents: React.FC = () => {
                       </div>
                       <div className="flex items-center text-gray-600">
                         <i className="fas fa-phone w-4 text-blue-600 text-xs"></i>
-                        <span className="text-xs ml-2">{event.teamLeaderNumber}</span>
+                        <span className="text-xs ml-2">
+                          {event.teamLeaderNumber}
+                        </span>
                       </div>
                     </div>
 
                     <div className="mt-4 flex justify-between items-center">
                       <div>
                         <span className="text-xs text-gray-600">Price</span>
-                        <p className={`text-base font-bold ${
-                          event.bookingStatus === 'cancelled'
-                            ? 'text-gray-500 line-through'
-                            : 'text-blue-600'
-                        }`}>
+                        <p
+                          className={`text-base font-bold ${
+                            event.bookingStatus === "cancelled"
+                              ? "text-gray-500 line-through"
+                              : "text-blue-600"
+                          }`}
+                        >
                           ₹{event.price.toLocaleString()}
                         </p>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-xs text-gray-600 mb-1">Booking Status</span>
-                        <span className={`px-2 py-1 rounded-full text-xs
-                          ${event.bookingStatus === 'canceled'
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-blue-100 text-blue-600'
-                          }`}>
+                        <span className="text-xs text-gray-600 mb-1">
+                          Booking Status
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs
+                          ${
+                            event.bookingStatus === "canceled"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-blue-100 text-blue-600"
+                          }`}
+                        >
                           {event.bookingStatus}
                         </span>
                       </div>
                     </div>
 
                     {/* Display either Cancel Button or Cancelled Message */}
-                    {event.bookingStatus === 'canceled' ? (
+                    {event.bookingStatus === "canceled" ? (
                       <div className="mt-4 w-full py-2 px-4 rounded-md bg-red-100 text-red-600 text-sm text-center font-medium">
                         Event Cancelled
                       </div>
@@ -325,9 +357,10 @@ const UpcomingEvents: React.FC = () => {
                         onClick={() => handleCancelEvent(event)}
                         disabled={cancellingEventId === event._id}
                         className={`mt-4 w-full py-2 px-4 rounded-md text-white text-sm font-medium
-                          ${cancellingEventId === event._id
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-red-600 hover:bg-red-700 transition-colors duration-300'
+                          ${
+                            cancellingEventId === event._id
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-red-600 hover:bg-red-700 transition-colors duration-300"
                           }`}
                       >
                         <span className="flex items-center justify-center">
@@ -345,10 +378,13 @@ const UpcomingEvents: React.FC = () => {
                 <div className="bg-blue-50 rounded-full p-6 mb-4">
                   <Calendar className="w-12 h-12 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Upcoming Events</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  No Upcoming Events
+                </h3>
                 <p className="text-gray-600 text-center mb-6">
-  You don&apos;t have any upcoming events scheduled. Browse our events page to find something interesting!
-</p>
+                  You don&apos;t have any upcoming events scheduled. Browse our
+                  events page to find something interesting!
+                </p>
 
                 <a
                   href="/events"
@@ -376,12 +412,13 @@ const UpcomingEvents: React.FC = () => {
                 {[...Array(totalPages)].map((_, index) => (
                   <button
                     key={index + 1}
-                    onClick={() => paginationEvent(index + 1)}
+                    onClick={() => userUpcomingEvents(index + 1)}
                     disabled={isLoadingEvents}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300
-                      ${currentPage === index + 1
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ${
+                        currentPage === index + 1
+                          ? "bg-blue-600 text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
                       }`}
                   >
                     {index + 1}

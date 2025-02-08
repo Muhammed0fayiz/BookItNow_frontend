@@ -1,20 +1,24 @@
-'use client';
-import React, { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Menu,  Plus, Edit2, Trash2, Phone, Star } from 'lucide-react';
-import Sidebar from '@/component/performersidebar';
-import { useUIStore } from '@/store/useUIStore';
+"use client";
+import React, { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Menu, Plus, Edit2, Trash2, Phone, Star } from "lucide-react";
+import Sidebar from "@/component/performersidebar";
+import { useUIStore } from "@/store/useUIStore";
 import Image from "next/image";
 
-import usePerformerStore from '@/store/usePerformerStore';
-import usePerformerEventsStore from '@/store/usePerformerEvents';
-import axiosInstance from '@/shared/axiousintance';
-import useChatNotifications from '@/store/useChatNotification';
+import usePerformerStore from "@/store/usePerformerStore";
+import usePerformerEventsStore from "@/store/usePerformerEvents";
+import useChatNotifications from "@/store/useChatNotification";
 
-import PerformerDescriptionViewer from '@/component/performerEventDescription';
-import PerformerAppeal from '@/component/performerAppeal';
+import PerformerDescriptionViewer from "@/component/performerEventDescription";
+import PerformerAppeal from "@/component/performerAppeal";
 
-import useUserStore from '@/store/useUserStore';
+import useUserStore from "@/store/useUserStore";
+import {
+  blockUnblockPerformerEvent,
+  deletePerformerEvent,
+  getBlockedEventDetails,
+} from "@/services/performerEvent";
 
 interface Event {
   _id?: string;
@@ -34,10 +38,10 @@ const isValidEvent = (event: Partial<Event>): event is Event => {
   return !!(
     event.title &&
     event.category &&
-    typeof event.price === 'number' &&
+    typeof event.price === "number" &&
     event.teamLeader &&
     event.teamLeaderNumber &&
-    typeof event.rating === 'number' &&
+    typeof event.rating === "number" &&
     event.description &&
     event.imageUrl
   );
@@ -48,7 +52,10 @@ interface DashboardSectionProps {
   children: ReactNode;
 }
 
-const DashboardSection: React.FC<DashboardSectionProps> = ({ title, children }) => (
+const DashboardSection: React.FC<DashboardSectionProps> = ({
+  title,
+  children,
+}) => (
   <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
     <h2 className="text-xl font-semibold mb-4">{title}</h2>
     {children}
@@ -62,9 +69,9 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => (
         key={index}
         size={16}
         className={`${
-          index < Math.floor(rating) 
-            ? 'text-yellow-400 fill-current' 
-            : 'text-gray-300'
+          index < Math.floor(rating)
+            ? "text-yellow-400 fill-current"
+            : "text-gray-300"
         }`}
       />
     ))}
@@ -75,26 +82,22 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => (
 const EventManagementDashboard: React.FC = () => {
   const router = useRouter();
   const { events, fetchPerformerEvents, setEvents } = usePerformerEventsStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const { sidebarOpen,toggleSidebar, toggleChat } = useUIStore();
+  const [searchTerm, setSearchTerm] = useState("");
+  const { sidebarOpen, toggleSidebar, toggleChat } = useUIStore();
   const { performerDetails, fetchPerformerDetails } = usePerformerStore();
-  const { 
-    userProfile,  
-    fetchUserProfile, 
-  
-  } = useUserStore();
+  const { userProfile, fetchUserProfile } = useUserStore();
   const [selectedBlockedEvent, setSelectedBlockedEvent] = useState<{
     id: string;
     blockDetails?: { reason: string; blockedAt: string };
   } | null>(null);
-  const {  totalUnreadMessage,fetchNotifications } =
-  
-  useChatNotifications();
-    useEffect(() => {
-        fetchNotifications().catch((err) => console.error('Error fetching notifications:', err));
-      }, [fetchNotifications]);
+  const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
   useEffect(() => {
-    console.log('Fetching data...');
+    fetchNotifications().catch((err) =>
+      console.error("Error fetching notifications:", err)
+    );
+  }, [fetchNotifications]);
+  useEffect(() => {
+    console.log("Fetching data...");
     fetchPerformerDetails();
     fetchPerformerEvents();
   }, [fetchPerformerDetails, fetchPerformerEvents]);
@@ -103,56 +106,49 @@ const EventManagementDashboard: React.FC = () => {
       await fetchUserProfile();
     };
     loadUserProfile();
-
-
-    
   }, [fetchUserProfile]);
   useEffect(() => {
-    console.log('Fetched Events:', events);
+    console.log("Fetched Events:", events);
   }, [events]);
 
-  const handleBlockUnblock = async (id: string | undefined) => {
-    if (!id) {
-      console.error('ID is required');
+  const handleBlockUnblock = async (eventId: string | undefined) => {
+    if (!eventId) {
+      console.error("ID is required");
       return;
     }
 
     try {
-      const response = await axiosInstance.put(`/performerEvent/blockUnblockEvents/${id}`,{withCredentials:true});
-      if (response.status === 200) {
-        setEvents(events.map(event => {
-          if (event._id === id) {
-            return {
-              ...event,
-              isperformerblockedevents: !event.isperformerblockedevents
-            };
-          }
-          return event;
-        }));
-      }
+      await blockUnblockPerformerEvent(eventId);
+      setEvents(
+        events.map((event) =>
+          event._id === eventId
+            ? {
+                ...event,
+                isperformerblockedevents: !event.isperformerblockedevents,
+              }
+            : event
+        )
+      );
     } catch (error) {
-      console.error('Error blocking/unblocking event:', error);
+      console.error("Error blocking/unblocking event:", error);
     }
   };
+
   const handleViewBlockDetails = async (eventId: string) => {
     try {
-      console.log('hello');
-      
-      const response = await axiosInstance.get(`/performerEvent/getEvent/${eventId}`);
+      console.log("Fetching blocked event details...");
 
-      console.log('evend detiala',response);
-      
+      const eventData = await getBlockedEventDetails(eventId);
+
       setSelectedBlockedEvent({
         id: eventId,
         blockDetails: {
-          reason: response.data.data.
-          blockingReason,
-          blockedAt: response.data.data.
-          blockingPeriod
-        }
+          reason: eventData.data.blockingReason,
+          blockedAt: eventData.data.blockingPeriod,
+        },
       });
     } catch (error) {
-      console.error('Error fetching event details:', error);
+      console.error("Error fetching event details:", error);
     }
   };
 
@@ -163,14 +159,13 @@ const EventManagementDashboard: React.FC = () => {
   }> = ({ event, onEdit, onDelete }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="relative">
-      <Image
-  src={event.imageUrl}
-  alt={event.title}
-
-  width={500} 
-  height={300} 
-  className="w-full h-48 object-cover"
-/>
+        <Image
+          src={event.imageUrl}
+          alt={event.title}
+          width={500}
+          height={300}
+          className="w-full h-48 object-cover"
+        />
 
         {event.isblocked && (
           <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-center py-1">
@@ -185,28 +180,26 @@ const EventManagementDashboard: React.FC = () => {
             ₹{event.price.toLocaleString()}
           </span>
         </div>
- 
+
         <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
             {event.category}
           </span>
 
-
-
-      
-
           <div className="flex gap-2">
             {event.isblocked ? (
-                 <button 
-                 onClick={() => handleViewBlockDetails(event._id!)}
-                 className="bg-green-400 text-red-800 px-2 py-1 rounded-full"
-               >
-                Contact 
-               </button>
+              <button
+                onClick={() => handleViewBlockDetails(event._id!)}
+                className="bg-green-400 text-red-800 px-2 py-1 rounded-full"
+              >
+                Contact
+              </button>
             ) : (
               <button
                 className={`px-2 py-1 rounded-full text-sm ${
-                  event.isperformerblockedevents ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                  event.isperformerblockedevents
+                    ? "bg-green-500 text-white"
+                    : "bg-red-500 text-white"
                 }`}
                 onClick={() => handleBlockUnblock(event._id)}
               >
@@ -216,7 +209,12 @@ const EventManagementDashboard: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-gray-600 mb-4 line-clamp-2"><PerformerDescriptionViewer description={event.description} maxLength={15} /></p>
+        <p className="text-gray-600 mb-4 line-clamp-2">
+          <PerformerDescriptionViewer
+            description={event.description}
+            maxLength={15}
+          />
+        </p>
         <div className="border-t pt-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold">Team Leader:</span>
@@ -251,26 +249,26 @@ const EventManagementDashboard: React.FC = () => {
       </div>
     </div>
   );
-  
 
   const validEvents = events.filter(isValidEvent);
-  
-  const filteredEvents = validEvents.filter(event => 
-    event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const filteredEvents = validEvents.filter(
+    (event) =>
+      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleLogout = () => {
-    console.log('enter logout');
-    document.cookie = 'userToken=; Max-Age=0; path=/;';
+    console.log("enter logout");
+    document.cookie = "userToken=; Max-Age=0; path=/;";
     setTimeout(() => {
-      router.replace('/');
+      router.replace("/");
     }, 1000);
   };
 
   const handleCreateEvent = () => {
-    router.replace('/event-management/eventupdate');
+    router.replace("/event-management/eventupdate");
   };
 
   const handleEditEvent = (eventId: string) => {
@@ -278,23 +276,24 @@ const EventManagementDashboard: React.FC = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      try {
-        const response = await axiosInstance.delete(`/performerEvent/deleteEvent/${eventId}`);
-        if (response.status === 200) {
-          const updatedEvents = events.filter(event => event._id !== eventId);
-          setEvents(updatedEvents);
-        }
-      } catch (error) {
-        console.error('Error deleting event:', error);
-        alert('Failed to delete event. Please try again.');
-      }
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this event?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deletePerformerEvent(eventId);
+      setEvents(events.filter((event) => event._id !== eventId));
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      alert("Failed to delete event. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar 
+      <Sidebar
         isOpen={sidebarOpen}
         performerDetails={performerDetails}
         onLogout={handleLogout}
@@ -303,8 +302,8 @@ const EventManagementDashboard: React.FC = () => {
       <div className="flex-1 md:ml-64">
         <nav className="bg-white shadow-md fixed top-0 right-0 left-0 md:left-64 flex justify-between items-center px-6 py-4 z-10">
           <div className="flex items-center">
-            <button 
-              className="md:hidden text-blue-600 mr-4" 
+            <button
+              className="md:hidden text-blue-600 mr-4"
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
             >
@@ -313,29 +312,40 @@ const EventManagementDashboard: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-blue-600">BookItNow</h1>
           <div className="flex items-center">
-            <button 
-              onClick={toggleChat} 
+            <button
+              onClick={toggleChat}
               className="text-blue-600 hover:bg-blue-100 p-2 rounded-full transition duration-300"
               aria-label="Toggle chat"
             >
-              
-              <a href="/chatsession" className="relative text-gray-700 hover:text-blue-600 transition duration-300">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z" />
-              </svg>
-              {totalUnreadMessage > 0 && (
-  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-    {totalUnreadMessage}
-  </span>
-)}
-            </a>
-              
+              <a
+                href="/chatsession"
+                className="relative text-gray-700 hover:text-blue-600 transition duration-300"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {totalUnreadMessage > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                    {totalUnreadMessage}
+                  </span>
+                )}
+              </a>
             </button>
-          
           </div>
         </nav>
 
-        <div className={`p-6 mt-20 ${sidebarOpen ? 'blur-sm' : ''}`}>
+        <div className={`p-6 mt-20 ${sidebarOpen ? "blur-sm" : ""}`}>
           <DashboardSection title="Quick Actions">
             <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
               <button
@@ -345,7 +355,6 @@ const EventManagementDashboard: React.FC = () => {
                 <Plus size={20} />
                 Create New Event
               </button>
-            
 
               <div className="relative flex-grow">
                 <input
@@ -358,7 +367,8 @@ const EventManagementDashboard: React.FC = () => {
               </div>
 
               <div className="text-blue-600 font-medium">
-                Total Events: <span className="font-bold">{validEvents.length}</span>
+                Total Events:{" "}
+                <span className="font-bold">{validEvents.length}</span>
               </div>
             </div>
           </DashboardSection>
@@ -366,7 +376,7 @@ const EventManagementDashboard: React.FC = () => {
           <DashboardSection title="Event List">
             {filteredEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredEvents.map(event => (
+                {filteredEvents.map((event) => (
                   <EventCard
                     key={event._id}
                     event={event}
@@ -380,14 +390,12 @@ const EventManagementDashboard: React.FC = () => {
             )}
           </DashboardSection>
           <PerformerAppeal
-        eventId={selectedBlockedEvent?.id || ''}
-        isOpen={!!selectedBlockedEvent}
-        performerEmail={userProfile?.email}
-        onClose={() => setSelectedBlockedEvent(null)}
-        blockDetails={selectedBlockedEvent?.blockDetails}
-       
-   
-      />
+            eventId={selectedBlockedEvent?.id || ""}
+            isOpen={!!selectedBlockedEvent}
+            performerEmail={userProfile?.email}
+            onClose={() => setSelectedBlockedEvent(null)}
+            blockDetails={selectedBlockedEvent?.blockDetails}
+          />
         </div>
       </div>
     </div>

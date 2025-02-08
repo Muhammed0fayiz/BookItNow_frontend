@@ -3,8 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInbox } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '@/shared/axiousintance';
+
 import Sidebar from '@/component/adminSidebar';
+import { adminLogout, checkAdminSession, fetchRevenueData } from '@/services/admin';
+import { toast } from 'sonner';
 
 type AdminRevenue = {
   userName: string;
@@ -40,39 +42,27 @@ const getStatusColor = (status: string) => {
 
 const RevenuePage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [sessionValid, setSessionValid] = useState<boolean>(false);
+
   const [revenueData, setRevenueData] = useState<AdminRevenue[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await axiosInstance.get('/admin/checkSession');
-        if (response.data.isAuthenticated) {
-          setSessionValid(true);
-        } else {
-          router.replace('/adminlogin');
-        }
-      } catch (error) {
-        console.error('Session check failed:', error);
+    const verifySession = async () => {
+      const isAuthenticated = await checkAdminSession();
+      if (!isAuthenticated) {
         router.replace('/adminlogin');
       }
     };
-
-    checkSession();
+  
+    verifySession();
   }, [router]);
-
-  const fetchRevenueData = useCallback(async () => {
+  
+  const getRevenueData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/admin/getRevenue', {
-        params: { page: currentPage },
-      });
-
-      const { adminRevinue, totalPages } = response.data;
-
+      const { adminRevinue, totalPages } = await fetchRevenueData(currentPage);
       setRevenueData(adminRevinue);
       setTotalPages(totalPages);
     } catch (error) {
@@ -83,20 +73,23 @@ const RevenuePage: React.FC = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    if (sessionValid) {
-      fetchRevenueData();
-    }
-  }, [sessionValid, currentPage, fetchRevenueData]);
+    getRevenueData();
+  }, [getRevenueData]);
+
 
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.post('/admin/adminLogout');
-      if (response.data.success) {
+      const response = await adminLogout(); 
+      if (response.success) {
+        toast.success('Logged out successfully');
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
+      } else {
+        toast.error('Logout failed: ' + response.message);
       }
     } catch (error) {
+      toast.error('Error during logout');
       console.error('Error during logout:', error);
     }
   };
@@ -132,7 +125,7 @@ const RevenuePage: React.FC = () => {
     );
   }
 
-  if (!sessionValid) return null;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex">
