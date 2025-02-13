@@ -28,7 +28,7 @@ export async function middleware(req: NextRequest) {
     "/performer-upcomingevent",
     "/wallet-management",
     "/performer-eventhistory",
-    "/chatsession",
+
  
   ];
   const authPath = "/";
