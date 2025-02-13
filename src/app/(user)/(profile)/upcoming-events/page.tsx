@@ -397,45 +397,50 @@ const UpcomingEvents: React.FC = () => {
             )}
 
             {/* Enhanced Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-8 mb-6">
-                <button
-                  onClick={handlePreviousClick}
-                  disabled={currentPage === 1 || isLoadingEvents}
-                  className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                                bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
-                >
-                  <i className="fas fa-chevron-left mr-2"></i>
-                  Previous
-                </button>
+            {/* Enhanced Pagination */}
+{totalPages > 1 && (
+  <div className="col-span-full flex justify-center items-center mt-8 mb-6">
+    <div className="inline-flex items-center justify-center space-x-2">
+      <button
+        onClick={handlePreviousClick}
+        disabled={currentPage === 1 || isLoadingEvents}
+        className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                    bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
+      >
+        <i className="fas fa-chevron-left mr-2"></i>
+        Previous
+      </button>
 
-                {[...Array(totalPages)].map((_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => userUpcomingEvents(index + 1)}
-                    disabled={isLoadingEvents}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300
-                      ${
-                        currentPage === index + 1
-                          ? "bg-blue-600 text-white"
-                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+      <div className="flex items-center space-x-2">
+        {[...Array(totalPages)].map((_, index) => (
+          <button
+            key={index + 1}
+            onClick={() => userUpcomingEvents(index + 1)}
+            disabled={isLoadingEvents}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-300
+              ${
+                currentPage === index + 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
 
-                <button
-                  onClick={handleNextClick}
-                  disabled={currentPage === totalPages || isLoadingEvents}
-                  className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                                bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
-                >
-                  Next
-                  <i className="fas fa-chevron-right ml-2"></i>
-                </button>
-              </div>
-            )}
+      <button
+        onClick={handleNextClick}
+        disabled={currentPage === totalPages || isLoadingEvents}
+        className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                    bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors duration-300"
+      >
+        Next
+        <i className="fas fa-chevron-right ml-2"></i>
+      </button>
+    </div>
+  </div>
+)}
           </div>
         </div>
       </div>

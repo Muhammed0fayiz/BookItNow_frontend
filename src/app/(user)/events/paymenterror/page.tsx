@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const PaymentError: React.FC = () => {
+const PaymentErrorContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -39,10 +39,26 @@ const PaymentError: React.FC = () => {
   );
 };
 
-const PaymentErrorPage = () => (
-  <Suspense fallback={<div>Loading...</div>}>
-    <PaymentError />
-  </Suspense>
+// This component wraps the error content with suspense
+const PaymentError = () => {
+  return (
+    <React.Suspense fallback={<PaymentErrorFallback />}>
+      <PaymentErrorContent />
+    </React.Suspense>
+  );
+};
+
+// Fallback component to show while loading
+const PaymentErrorFallback = () => (
+  <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full text-center">
+      <div className="animate-pulse">
+        <div className="h-16 w-16 bg-gray-200 rounded-full mx-auto mb-4" />
+        <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-2" />
+        <div className="h-4 bg-gray-200 rounded w-full mx-auto" />
+      </div>
+    </div>
+  </div>
 );
 
-export default PaymentErrorPage;
+export default PaymentError;
