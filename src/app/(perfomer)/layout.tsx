@@ -1,68 +1,62 @@
 'use client';
 import React, { ReactNode, useEffect, useState } from 'react';
-import axiosInstance from '@/shared/axiousintance';
 import { io } from 'socket.io-client';
 import usePerformerStore from '@/store/usePerformerStore';
-
 import useSocketStore from '@/store/useSocketStore';
 import { NotificationBox } from '@/component/NotificationBox';
 import useChatNotifications from '@/store/useChatNotification';
+import { checkUserOnline, updateOfflineStatus } from '@/services/chat';
+import { getUserDetails } from '@/services/user';
+
+
 interface LayoutProps {
   children: ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-
-  const { performerDetails} = usePerformerStore();
+  const { performerDetails } = usePerformerStore();
   const { fetchNotifications } = useChatNotifications();
-  const { setSocket, disconnectSocket,socket} = useSocketStore();
-   const [notifications, setNotifications] = useState<Array<{ bandName: string; profileImage: string; message: string }>>([]);
+  const { setSocket, disconnectSocket, socket } = useSocketStore();
+  const [notifications, setNotifications] = useState<Array<{ bandName: string; profileImage: string; message: string }>>([]);
+
   useEffect(() => {
-     const socket = io('http://localhost:5000', { withCredentials: true });
-      console.log(":😘 ",performerDetails?.PId)
-     if (performerDetails?.PId) {
-       socket.emit('userConnected', performerDetails?.PId)
-     }
- 
-     // Store socket in Zustand
-     setSocket(socket);
- 
-     // Clean up on unmount
-     return () => {
-       disconnectSocket();
-     };
-   }, [performerDetails?.PId, setSocket, disconnectSocket]);
-   useEffect(()=>{
-   
-    if(socket){
-    
+    const socket = io('http://localhost:5000', { withCredentials: true });
 
-      socket.on('yougotamsg',async({senderId,message})=>{
-        console.log('is',performerDetails?.PId,'is');
-      
-        fetchNotifications(performerDetails?.PId)
-       
+    if (performerDetails?.PId) {
+      socket.emit('userConnected', performerDetails.PId);
+    }
+
+    // Store socket in Zustand
+    setSocket(socket);
+
+    // Clean up on unmount
+    return () => {
+      disconnectSocket();
+    };
+  }, [performerDetails?.PId, setSocket, disconnectSocket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('yougotamsg', async ({ senderId, message }) => {
+        fetchNotifications(performerDetails?.PId);
+
         try {
-          
+          const isOnline = await checkUserOnline(senderId, performerDetails?.PId);
 
-          const isOnline = await axiosInstance.get(
-            `/chat/checkOnline/${senderId}/${performerDetails?.PId}`
-          );
-if(isOnline.data.onlineUser==false){
-  const response = await axiosInstance.get(`/getUser/${senderId}`, { withCredentials: true });
-  const userData = response.data.response;
-  setNotifications(prev => [...prev, {
-    bandName: userData.username,
-    profileImage: userData.profileImage,
-    message: message
-  }]);
-}else{
-  console.log("User is online. Skipping performer data fetch.");
-}
-          
-         
+          if (!isOnline) {
+            const userData = await getUserDetails(senderId);
+            if (userData) {
+              setNotifications(prev => [...prev, {
+                bandName: userData.username,
+                profileImage: userData.profileImage,
+                message: message
+              }]);
+            }
+          } else {
+            console.log("User is online. Skipping performer data fetch.");
+          }
         } catch (error) {
-          console.error('Error fetching performer data:', error);
+          console.error('Error processing message:', error);
         }
       });
     }
@@ -72,46 +66,32 @@ if(isOnline.data.onlineUser==false){
         socket.off('yougotamsg');
       }
     };
-  }, [socket,performerDetails?.PId, fetchNotifications]);
+  }, [socket, performerDetails?.PId, fetchNotifications]);
 
   useEffect(() => {
- 
-    const updateUserStatus = async () => {
-      try {
-        if (performerDetails?.PId) {
-          await axiosInstance.post(`/chat/offlineUser/${performerDetails.PId}`);
-          console.log('hel',performerDetails.PId)
-        }
-      } catch (error) {
-        console.error('Error updating user status:', error);
-      }
-    };
+    updateOfflineStatus(performerDetails?.PId);
+  }, [performerDetails?.PId]);
 
-    updateUserStatus();
-  }, [performerDetails?.PId]); 
   const removeNotification = (index: number) => {
     setNotifications(prev => prev.filter((_, i) => i !== index));
   };
+
   return (
     <div>
-      <header>
-
-      </header>
+      <header></header>
       <main>{children}</main>
-      <footer>
-     
-      </footer>
-          <div className="fixed top-4 right-4 z-50">
-              {notifications.map((notification, index) => (
-                <NotificationBox
-                  key={index}
-                  bandName={notification.bandName}
-                  profileImage={notification.profileImage}
-                  message={notification.message}
-                  onClose={() => removeNotification(index)}
-                />
-              ))}
-            </div>
+      <footer></footer>
+      <div className="fixed top-4 right-4 z-50">
+        {notifications.map((notification, index) => (
+          <NotificationBox
+            key={index}
+            bandName={notification.bandName}
+            profileImage={notification.profileImage}
+            message={notification.message}
+            onClose={() => removeNotification(index)}
+          />
+        ))}
+      </div>
     </div>
   );
 };

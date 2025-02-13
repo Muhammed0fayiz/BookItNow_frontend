@@ -140,3 +140,49 @@ export const fetchChatNotifications = async (userId: string): Promise<ChatRespon
     throw error;
   }
 };
+
+
+
+
+// Check if the sender is online
+export const checkOnlineStatus = async (senderId: string, userId: string) => {
+  try {
+    const response = await axiosInstance.get(`/chat/checkOnline/${senderId}/${userId}`);
+    return response.data.onlineUser;
+  } catch (error) {
+    console.error("Error checking online status:", error);
+    return null;
+  }
+};
+
+
+
+// Mark user as offline
+export const markUserOffline = async (userId: string) => {
+  try {
+    await axiosInstance.post(`/chat/offlineUser/${userId}`);
+  } catch (error) {
+    console.error("Error updating user status:", error);
+  }
+};
+export const checkUserOnline = async (senderId: string, performerId?: string) => {
+  try {
+    const response = await axiosInstance.get(`/chat/checkOnline/${senderId}/${performerId}`);
+    return response.data.onlineUser;
+  } catch (error) {
+    console.error('Error checking user online status:', error);
+    return null;
+  }
+};
+
+
+
+export const updateOfflineStatus = async (performerId?: string) => {
+  try {
+    if (performerId) {
+      await axiosInstance.post(`/chat/offlineUser/${performerId}`);
+    }
+  } catch (error) {
+    console.error('Error updating user offline status:', error);
+  }
+};

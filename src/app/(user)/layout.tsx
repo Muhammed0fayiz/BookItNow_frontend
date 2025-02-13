@@ -1,11 +1,13 @@
 "use client";
 import React, { ReactNode, useEffect, useState } from "react";
-import axiosInstance from "@/shared/axiousintance";
-import useUserStore from "@/store/useUserStore";
 import { io } from "socket.io-client";
+import useUserStore from "@/store/useUserStore";
 import useChatNotifications from "@/store/useChatNotification";
 import { NotificationBox } from "@/component/NotificationBox";
 import useSocketStore from "@/store/useSocketStore";
+import { checkOnlineStatus, markUserOffline } from "@/services/chat";
+import { getPerformerDetails } from "@/services/performer";
+// import { checkOnlineStatus, getPerformerDetails, markUserOffline } from "@/services/chatService";
 
 interface LayoutProps {
   children: ReactNode;
@@ -34,59 +36,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [userProfile?.id, setSocket, disconnectSocket]);
 
   useEffect(() => {
-    if (socket) {
-      socket.on("yougotamsg", async ({ senderId, message }) => {
-        fetchNotifications(userProfile?.id);
-        try {
-          const isOnline = await axiosInstance.get(
-            `/chat/checkOnline/${senderId}/${userProfile?.id}`
-          );
-
-          console.log("id", isOnline.data.onlineUser);
-          if (isOnline.data.onlineUser == false) {
-            const response = await axiosInstance.get(
-              `/performer/getPerformer/${senderId}`,
-              { withCredentials: true }
-            );
-            const performerData = response.data.response;
-
-            // Update notifications
-            setNotifications((prev) => [
-              ...prev,
-              {
-                bandName: performerData.bandName,
-                profileImage: performerData.profileImage,
-                message: message,
-              },
-            ]);
-          } else {
-            console.log("User is online. Skipping performer data fetch.");
-          }
-        } catch (error) {
-          console.error("Error fetching performer data:", error);
+    if (!socket || !userProfile?.id) return;
+  
+    socket.on("yougotamsg", async ({ senderId, message }) => {
+      fetchNotifications(userProfile.id);
+      
+      const isOnline = await checkOnlineStatus(senderId, userProfile.id);
+  
+      if (!isOnline) {
+        const performerData = await getPerformerDetails(senderId);
+        if (performerData) {
+          setNotifications((prev) => [
+            ...prev,
+            {
+              bandName: performerData.bandName,
+              profileImage: performerData.profileImage,
+              message: message,
+            },
+          ]);
         }
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off("yougotamsg");
+      } else {
+        console.log("User is online. Skipping performer data fetch.");
       }
+    });
+  
+    return () => {
+      socket.off("yougotamsg");
     };
   }, [socket, userProfile?.id, fetchNotifications]);
-
+  
   useEffect(() => {
-    const updateUserStatus = async () => {
-      try {
-        if (userProfile?.id) {
-          await axiosInstance.post(`/chat/offlineUser/${userProfile.id}`);
-        }
-      } catch (error) {
-        console.error("Error updating user status:", error);
-      }
-    };
-
-    updateUserStatus();
+    if (userProfile?.id) {
+      markUserOffline(userProfile.id);
+    }
   }, [userProfile?.id]);
 
   const removeNotification = (index: number) => {
