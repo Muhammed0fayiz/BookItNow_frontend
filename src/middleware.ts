@@ -14,7 +14,9 @@ export async function middleware(req: NextRequest) {
     "/event-history",
     "/favorite-events",
     "/user-wallet",
-    "/about"
+    "/about",
+    "/events/paymenterror",
+    "/events/paymentsuccess"
   ];
   const performerProtectedPaths = [
     "/performer-dashboard",
@@ -26,55 +28,56 @@ export async function middleware(req: NextRequest) {
     "/performer-upcomingevent",
     "/wallet-management",
     "/performer-eventhistory",
-    "/chatsession"
+    "/chatsession",
+ 
   ];
   const authPath = "/";
 
-
+  // Function to check if the current path matches any protected user path
   const isUserProtectedPath = (pathname: string) => {
     return userProtectedPaths.some(path => {
-
+      // Check for exact match
       if (pathname === path) return true;
-
+      // Check for dynamic events route match
       if (path === "/events" && 
           pathname.startsWith("/events/") &&
-          pathname.split("/").length === 4) return true;
+          pathname.split("/").length === 4 && 
+          // Exclude payment routes
+          pathname !== "/events/paymenterror" &&
+          pathname !== "/events/success") return true;
       return false;
     });
   };
 
-
+  // Function to check if the current path matches any protected performer path
   const isPerformerProtectedPath = (pathname: string) => {
     return performerProtectedPaths.some(path => {
-
+      // Check for exact match
       if (pathname === path) return true;
-
+      // Check for dynamic route match
       if (path === "/event-management/eventupdate" && 
           pathname.startsWith("/event-management/eventupdate/")) return true;
       return false;
     });
   };
 
-
+  // Function to decode the token
   const decodeToken = (token: string) => {
     const payload = token.split(".")[1];
     return JSON.parse(atob(payload));
   };
 
-
+  // If the user has a token
   if (token) {
     try {
-
       const user = decodeToken(token);
       
-
       const response = await axiosInstance.get(`/getUser/${user.id}`, {
         withCredentials: true,
       });
       const userData = response.data.response;
 
       if (user.role === "user") {
-
         if (userData.isblocked) {
           const redirectResponse = NextResponse.redirect(
             new URL(authPath, req.url)
@@ -137,7 +140,9 @@ export const config = {
     "/event-management/eventupdate",
     "/event-management/eventupdate/:id*",
     "/events",
-    "/events/:performerid/:eventid*", 
+    "/events/:performerid/:eventid*",
+    "/events/paymenterror",
+    "/events/paymentsuccess",
     "/upcoming-events",
     "/chatsession",
     "/performer-slotmanagement",

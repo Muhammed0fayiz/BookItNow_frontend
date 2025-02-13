@@ -252,10 +252,16 @@ const EventDetailsPage = () => {
           userProfile.id,
           event.price * 0.1
         );
-  
+  console.log('pay',paymentResponse)
         if (paymentResponse) {
+
+          if(paymentResponse.data==null){
+            setShowWalletPaymentModal(false);
+            router.replace(`/events/paymenterror?eventId=${eventId}&performerId=${performerId}`);
+          }else{
           setShowWalletPaymentModal(false);
           router.replace("/events/paymentsuccess");
+          }
         }
       } else {
         setAvailabilityError("This date is not available. Please choose another date.");
@@ -279,8 +285,12 @@ const EventDetailsPage = () => {
     }
   
     try {
-      await bookEvent(formData, eventId, performerId, userProfile.id, paymentIntent);
+     const bookingstatus= await bookEvent(formData, eventId, performerId, userProfile.id, paymentIntent);
+     if (bookingstatus.data == null) {
+      router.replace(`/events/paymenterror?eventId=${eventId}&performerId=${performerId}`);
+    } else {
       router.replace("/events/paymentsuccess");
+    }
     } catch (error) {
       if (error instanceof Error && error.message === "User ID is required") {
         setPaymentError("Please log in to continue");
