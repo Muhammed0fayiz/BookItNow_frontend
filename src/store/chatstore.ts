@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
 import { ChatRoom } from '@/types/store';
+import { fetchAllChatRooms } from '@/services/chat';
 
 interface ChatState {
   chatRooms: ChatRoom[];
@@ -27,11 +27,10 @@ const useChatRooms = create<ChatState>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get<{ data: ChatRoom[] }>(`/chat/chatrooms/${id}`,{withCredentials:true});
-      console.log('Fetched chat rooms:', response.data.data);
-      set({ chatRooms: response.data.data, isLoading: false });
+      const chatRooms = await fetchAllChatRooms(id);
+      set({ chatRooms, isLoading: false });
+      console.log('Fetched chat rooms:', chatRooms);
     } catch (error) {
-      console.error('Error fetching chat rooms:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch chat rooms',
         isLoading: false,

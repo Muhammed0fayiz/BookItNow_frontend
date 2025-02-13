@@ -1,14 +1,12 @@
-// store/useSlotStore.ts
 import { create } from 'zustand';
 import { SlotStore, SlotMangement } from '@/types/store';
-import axiosInstance from '@/shared/axiousintance';
+import { getSlotDetails } from '@/services/performer';
 
 export const useSlotStore = create<SlotStore>((set, get) => ({
   slots: null,
   isLoading: false,
   error: null,
 
-  // Method to get user ID from cookie
   getUserIdFromToken: () => {
     try {
       const getCookie = (name: string): string | undefined => {
@@ -34,43 +32,28 @@ export const useSlotStore = create<SlotStore>((set, get) => ({
 
   fetchSlotDetails: async () => {
     set({ isLoading: true, error: null });
+
     try {
-      // If no performerId is provided, try to get it from the token
       const userId = get().getUserIdFromToken();
+      if (!userId) throw new Error('No user ID found');
 
-      if (!userId) {
-        throw new Error('No user ID found');
-      }
+      const data = await getSlotDetails(userId); // Call the service function
 
-      const response = await axiosInstance.get(`/performer/getslot/${userId}`,{withCredentials: true});
-      console.log('Response:', response);
-
-      const data = response.data?.data || {}; // Safely access `data`
-
-      // Transform the response data to match our interface
       const slotDetails: SlotMangement = {
         bookingDates: Array.isArray(data.bookingDates)
           ? data.bookingDates.map((date: string) => new Date(date))
           : [],
         unavailableDates: Array.isArray(data.unavailableDates)
           ? data.unavailableDates.map((date: string) => new Date(date))
-          : []
+          : [],
       };
 
-      set({ 
-        slots: slotDetails, 
-        isLoading: false 
-      });
+      set({ slots: slotDetails, isLoading: false });
 
       return slotDetails;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch slot details';
-      set({ 
-        error: errorMessage, 
-        isLoading: false,
-        slots: null
-      });
-      console.error('Error fetching slot details:', error);
+      set({ error: errorMessage, isLoading: false, slots: null });
       throw error;
     }
   },

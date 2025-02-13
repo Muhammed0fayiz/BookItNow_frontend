@@ -1,11 +1,8 @@
+import { fetchChatNotifications } from '@/services/chat';
+import { ChatNotification } from '@/types/chat';
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
 
-interface ChatNotification {
-  userId: string;
-  numberOfMessages: number;
-}
-
+fetchChatNotifications
 interface ChatNotificationsState {
   totalUnreadMessage: number;
   notifications: ChatNotification[];
@@ -21,7 +18,6 @@ const useChatNotifications = create<ChatNotificationsState>((set) => ({
   isLoading: false,
   error: null,
 
-  // Fetch chat notifications
   fetchNotifications: async (userId?: string) => {
     console.log('Fetching chat notifications...');
     set({ isLoading: true, error: null });
@@ -33,20 +29,16 @@ const useChatNotifications = create<ChatNotificationsState>((set) => ({
         return;
       }
 
-      const response = await axiosInstance.get<{
-        data: { totalCount: number; notifications: ChatNotification[] };
-      }>(`/chat/messageNotification/${id}`, { withCredentials: true });
-
-      const { totalCount, notifications } = response.data.data;
+      const { totalCount, notifications } = await fetchChatNotifications(id);
 
       set({
         totalUnreadMessage: totalCount || 0,
         notifications: notifications || [],
         isLoading: false,
       });
+
       console.log('Fetched notifications:', notifications);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch notifications',
         isLoading: false,
@@ -54,7 +46,6 @@ const useChatNotifications = create<ChatNotificationsState>((set) => ({
     }
   },
 
-  // Get user ID from the token
   getUserIdFromToken: () => {
     try {
       const getCookie = (name: string): string | undefined => {

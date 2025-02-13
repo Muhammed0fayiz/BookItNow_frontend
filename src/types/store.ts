@@ -58,15 +58,11 @@ export interface ChatMessage {
 export interface PerformerStore {
   performerDetails: PerformerDetails | null;
   stats: PerformerStats;
-  messages: ChatMessage[];
+
   sidebarOpen: boolean;
-  chatOpen: boolean;
-  newMessage: string;
 
   fetchPerformerDetails: () => Promise<void>;
-  toggleSidebar: () => void;
-  toggleChat: () => void;
-  sendMessage: (message: string) => void;
+
   handleLogout: () => void;
 }
 
@@ -130,8 +126,6 @@ export interface UserStore {
   error: string | null;
   
   fetchUserProfile: () => Promise<void>;
-  updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
-  toggleUserVerification: (userId: string) => Promise<void>;
   handleLogout: () => void;
 }
 

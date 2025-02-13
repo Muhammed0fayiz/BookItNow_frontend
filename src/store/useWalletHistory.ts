@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
 import { WalletDocument } from '@/types/store';
+import { fetchWalletHistory } from '@/services/user';
 
 
 interface WalletHistoryStore {
@@ -8,9 +8,8 @@ interface WalletHistoryStore {
   isLoading: boolean;
   error: string | null;
 
-
   fetchWalletHistory: () => Promise<void>;
-  getUserIdFromToken: () => string | null; 
+  getUserIdFromToken: () => string | null;
 }
 
 const useWalletHistoryStore = create<WalletHistoryStore>((set) => ({
@@ -18,38 +17,22 @@ const useWalletHistoryStore = create<WalletHistoryStore>((set) => ({
   isLoading: false,
   error: null,
 
-
   fetchWalletHistory: async () => {
     try {
       set({ isLoading: true, error: null });
 
       const userId = useWalletHistoryStore.getState().getUserIdFromToken();
-
       if (!userId) {
-        set({
-          error: 'Failed to retrieve user ID from token',
-          isLoading: false,
-        });
+        set({ error: 'Failed to retrieve user ID from token', isLoading: false });
         return;
       }
 
-      const response = await axiosInstance.get(`/getWalletHistory/${userId}`,{withCredentials: true});
-
-      if (response.status === 200) {
-        set({
-          walletHistory: response.data.data || [],
-          isLoading: false,
-        });
-      }
+      const walletHistory = await fetchWalletHistory(userId);
+      set({ walletHistory, isLoading: false });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+      set({ error: 'Failed to fetch wallet history', isLoading: false });
     }
   },
-
 
   getUserIdFromToken: () => {
     try {

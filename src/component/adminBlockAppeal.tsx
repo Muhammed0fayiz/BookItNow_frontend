@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+import { appealBlockedEvent } from '@/services/performer';
+
 
 interface AdminBlockModalProps {
   eventId: string;
@@ -27,13 +28,10 @@ const AdminBlockModal: React.FC<AdminBlockModalProps> = ({
     }
 
     try {
-      await axiosInstance.post(`/performer/appealBlockedEvent/${eventId}`, {
-        appealMessage
-      });
+      await appealBlockedEvent(eventId, appealMessage);
       alert('Appeal submitted successfully');
       onClose();
     } catch (error) {
-      console.error('Error submitting appeal:', error);
       alert('Failed to submit appeal');
     }
   };

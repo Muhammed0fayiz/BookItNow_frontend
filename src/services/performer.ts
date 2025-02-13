@@ -76,9 +76,90 @@ export const fetchEvents = async (performerId: string | undefined, page: number)
       `/performerEvent/performerUpcomingEvents/${performerId}?page=${page}`,
       { withCredentials: true }
     );
-    return response.data; // Return response data directly
+    return response.data; 
   } catch (error) {
     throw new Error('Error fetching events: ' + (error instanceof Error ? error.message : 'Unknown error'));
+  }
+};
+
+export const removeSlot = async (slotId: string, userId: string) => {
+  try {
+    const response = await axiosInstance.post(`/remove-slot/${slotId}`, {
+      userId,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error removing slot:', error);
+    throw error;
+  }
+};
+
+
+export const fetchPerformerDetails = async (userId: string) => {
+  try {
+    const response = await axiosInstance.get(
+      `/performer/performerAllDetails/${userId}`,
+      { withCredentials: true }
+    );
+
+    if (response.status !== 200) {
+      throw new Error("Failed to fetch performer details");
+    }
+
+    return response.data.performerDetails;
+  } catch (error) {
+    console.error("Error fetching performer details:", error);
+    throw error;
+  }
+};
+
+
+
+
+
+
+
+export const getSlotDetails = async (userId: string) => {
+  try {
+    const response = await axiosInstance.get(`/performer/getslot/${userId}`, {
+      withCredentials: true,
+    });
+
+    console.log('Response:', response);
+    return response.data?.data || {}; 
+  } catch (error) {
+    console.error('Error fetching slot details:', error);
+    throw error;
+  }
+};
+
+
+
+export const getPerformerDetails = async (userId: string) => {
+  try {
+    const response = await axiosInstance.get(`/performer/getPerformer/${userId}`, {
+      withCredentials: true,
+    });
+    return response.data.response;
+  } catch (error) {
+    console.error('Failed to fetch performer details:', error);
+    throw error;
+  }
+};
+
+
+
+
+export const appealBlockedEvent = async (eventId: string, appealMessage: string) => {
+  try {
+    const response = await axiosInstance.post(`/performer/appealBlockedEvent/${eventId}`, {
+      appealMessage,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting appeal:', error);
+    throw error;
   }
 };
 

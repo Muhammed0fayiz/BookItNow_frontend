@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { PerformerUpcomingEvent, PerformerUpcomingEventsStore } from '@/types/store';
-import axiosInstance from '@/shared/axiousintance';
-// import axiosInstance from '@/shared/axiosInstance';
+import { PerformerUpcomingEventsStore } from '@/types/store';
+import { fetchUpcomingEvents } from '@/services/performerEvent';
 
 export const useUpcomingEventsStore = create<PerformerUpcomingEventsStore>((set, get) => ({
   performerupcomingEvents: [],
@@ -9,28 +8,19 @@ export const useUpcomingEventsStore = create<PerformerUpcomingEventsStore>((set,
   isLoading: false,
   error: null,
 
-  // Fetch all upcoming events for the performer
+
   fetchAllEvents: async () => {
     set({ isLoading: true, error: null });
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
-        const response = await axiosInstance.get(`/performerEvent/upcomingevents/${userId}`,{withCredentials: true});
-        console.log('res',response.data.events)
-        const events: PerformerUpcomingEvent[] = response.data.events.map((event:PerformerUpcomingEvent) => ({
-          ...event,
-          date: new Date(event.date).toISOString(),
-          createdAt: new Date(event.createdAt).toISOString(),
-          updatedAt: new Date(event.updatedAt).toISOString(),
-        }));
-        set({ performerupcomingEvents: events, 
-          totalCount: response.data.totalCount,isLoading: false });
+        const { events, totalCount } = await fetchUpcomingEvents(userId);
+        set({ performerupcomingEvents: events, totalCount, isLoading: false });
       } else {
         set({ error: 'Unable to fetch user ID from token', isLoading: false });
       }
     } catch (error) {
       set({ error: 'Failed to fetch upcoming events', isLoading: false });
-      console.error('Error fetching upcoming events:', error);
     }
   },
 

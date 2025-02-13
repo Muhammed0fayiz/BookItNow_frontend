@@ -1,11 +1,10 @@
-// store/useUpcomingEventsStore.ts
 import { create } from 'zustand';
 import { UpcomingEvent, UpcomingEventsStore } from '@/types/store';
-import axiosInstance from '@/shared/axiousintance';
+import { fetchUserEventHistory } from '@/services/userEvent';
 
 export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
   upcomingEvents: [],
-  totalCount:0,
+  totalCount: 0,
   isLoading: false,
   error: null,
 
@@ -14,30 +13,23 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
-        const response = await axiosInstance.get(`/userEvent/eventHistory/${userId}`,{withCredentials: true});
-        // Transform the response data to match our interface if needed
-      console.log('dddd',response.data.totalCount,'erssfdsajf');
-      
+        const data = await fetchUserEventHistory(userId);
         
-        const events: UpcomingEvent[] = response.data.events.map((event: UpcomingEvent) => ({
+        const events: UpcomingEvent[] = data.events.map((event: UpcomingEvent) => ({
           ...event,
-          // Ensure dates are properly formatted as strings
           date: new Date(event.date).toISOString(),
           createdAt: new Date(event.createdAt).toISOString(),
-          updatedAt: new Date(event.updatedAt).toISOString()
+          updatedAt: new Date(event.updatedAt).toISOString(),
         }));
-        set({ upcomingEvents: events,totalCount: response.data.totalCount, isLoading: false });
+
+        set({ upcomingEvents: events, totalCount: data.totalCount, isLoading: false });
       } else {
         set({ error: 'Failed to fetch user ID from token', isLoading: false });
       }
     } catch (error) {
       set({ error: 'Failed to fetch upcoming events', isLoading: false });
-      console.error('Error fetching upcoming events:', error);
     }
   },
-
-
-  
 
   getUserIdFromToken: () => {
     try {
@@ -60,7 +52,7 @@ export const useUserEventHistory = create<UpcomingEventsStore>((set, get) => ({
       return null;
     }
   },
- 
+
   removeUpcomingEvent: (eventId: string) => {
     set((state) => ({
       upcomingEvents: state.upcomingEvents.filter((event) => event._id !== eventId),

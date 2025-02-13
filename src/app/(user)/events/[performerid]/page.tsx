@@ -10,7 +10,8 @@ import useUserStore from "@/store/useUserStore";
 import useChatNotifications from "@/store/useChatNotification";
 import DescriptionViewer from "@/component/performerDiscription";
 import { startChat } from "@/services/chat";
-import axiosInstance from "@/shared/axiousintance";
+
+import { getPerformerData } from "@/services/userEvent";
 
 
 const PerformerDetailsPage = () => {
@@ -26,38 +27,22 @@ const PerformerDetailsPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userProfile, fetchUserProfile } = useUserStore();
   const { totalUnreadMessage, fetchNotifications } = useChatNotifications();
-  // Fetch events and performers on component mount
 
-  interface PerformerResponse {
-    performer: Performer;
-  }
-  
-  interface EventsResponse {
-    data: Events[];
-    success: boolean;
-  }
 
-  
   useEffect(() => {
-    const fetchPerformerData = async () => {
+    const fetchData = async () => {
+      if (!performerId) return;
+
       try {
-        const [performerRes, eventsRes] = await Promise.all([
-          axiosInstance.get<PerformerResponse>(`/userEvent/getPerformer/${performerId}`),
-          axiosInstance.get<EventsResponse>(`/userEvent/getPerformerEvents/${performerId}`)
-        ]);
-
-
-        
-        setPerformer(performerRes.data.performer);
-        setPerformerEvents(eventsRes.data.data);
+        const { performer, events } = await getPerformerData(performerId);
+        setPerformer(performer);
+        setPerformerEvents(events);
       } catch (error) {
-        console.error("Error fetching performer data:", error);
+        console.error("Failed to fetch performer data");
       }
     };
 
-    if (performerId) {
-      fetchPerformerData();
-    }
+    fetchData();
   }, [performerId]);
 
 

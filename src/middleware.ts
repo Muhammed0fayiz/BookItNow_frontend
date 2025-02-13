@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
     "/performer-dashboard",
     "/performer-profile",
     "/event-management",
-    "/eventupdate",
+    "/event-management/eventupdate",
     "/chatsession",
     "/performer-slotmanagement",
     "/performer-upcomingevent",
@@ -30,27 +30,51 @@ export async function middleware(req: NextRequest) {
   ];
   const authPath = "/";
 
-  // Function to decode the token
+
+  const isUserProtectedPath = (pathname: string) => {
+    return userProtectedPaths.some(path => {
+
+      if (pathname === path) return true;
+
+      if (path === "/events" && 
+          pathname.startsWith("/events/") &&
+          pathname.split("/").length === 4) return true;
+      return false;
+    });
+  };
+
+
+  const isPerformerProtectedPath = (pathname: string) => {
+    return performerProtectedPaths.some(path => {
+
+      if (pathname === path) return true;
+
+      if (path === "/event-management/eventupdate" && 
+          pathname.startsWith("/event-management/eventupdate/")) return true;
+      return false;
+    });
+  };
+
+
   const decodeToken = (token: string) => {
     const payload = token.split(".")[1];
     return JSON.parse(atob(payload));
   };
 
-  // If the user has a token
+
   if (token) {
     try {
-      // Decode token to get user details (role, id)
-      const user = decodeToken(token);
-      console.log(user, "user is");
 
-      // Fetch user data to verify block status
+      const user = decodeToken(token);
+      
+
       const response = await axiosInstance.get(`/getUser/${user.id}`, {
         withCredentials: true,
       });
       const userData = response.data.response;
 
       if (user.role === "user") {
-        // For users, check isblocked
+
         if (userData.isblocked) {
           const redirectResponse = NextResponse.redirect(
             new URL(authPath, req.url)
@@ -61,12 +85,10 @@ export async function middleware(req: NextRequest) {
           return redirectResponse;
         }
 
-        if (!userProtectedPaths.includes(req.nextUrl.pathname)) {
-
+        if (!isUserProtectedPath(req.nextUrl.pathname)) {
           return NextResponse.redirect(new URL("/home", req.url));
         }
       } else if (user.role === "performer") {
-   
         if (userData.isPerformerBlocked) {
           const redirectResponse = NextResponse.redirect(
             new URL(authPath, req.url)
@@ -77,32 +99,26 @@ export async function middleware(req: NextRequest) {
           return redirectResponse;
         }
 
-        if (!performerProtectedPaths.includes(req.nextUrl.pathname)) {
-       
+        if (!isPerformerProtectedPath(req.nextUrl.pathname)) {
           return NextResponse.redirect(
             new URL("/performer-dashboard", req.url)
           );
         }
       } else {
-   
         return NextResponse.redirect(new URL(authPath, req.url));
       }
     } catch (error) {
       console.error("Error verifying token or fetching user:", error);
-
       return NextResponse.redirect(new URL(authPath, req.url));
     }
   } else {
-  
     if (
-      userProtectedPaths.includes(req.nextUrl.pathname) ||
-      performerProtectedPaths.includes(req.nextUrl.pathname)
+      isUserProtectedPath(req.nextUrl.pathname) ||
+      isPerformerProtectedPath(req.nextUrl.pathname)
     ) {
-
       return NextResponse.redirect(new URL(authPath, req.url));
     }
   }
-
 
   return NextResponse.next();
 }
@@ -116,10 +132,12 @@ export const config = {
     "/performer-dashboard",
     "/performer-profile",
     "/performer-eventhistory",
-     "/chatsession",
+    "/chatsession",
     "/event-management",
-    "/eventupdate",
+    "/event-management/eventupdate",
+    "/event-management/eventupdate/:id*",
     "/events",
+    "/events/:performerid/:eventid*", 
     "/upcoming-events",
     "/chatsession",
     "/performer-slotmanagement",

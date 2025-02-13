@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
+import { fetchPerformerEventHistory } from "@/services/performerEvent";
+import { create } from "zustand";
 
 export interface PerformerEventHistory {
   _id: string;
@@ -11,7 +11,7 @@ export interface PerformerEventHistory {
   category: string;
   bookingStatus: string;
   price: number;
-  status: 'Confirmed' | 'Pending' | 'Cancelled';
+  status: "Confirmed" | "Pending" | "Cancelled";
   createdAt: string;
   updatedAt: string;
 }
@@ -31,34 +31,20 @@ export const useEventHistory = create<PerformerEventHistoryStore>((set, get) => 
   isLoading: false,
   error: null,
   totalCount: 0,
-  
+
   fetchAllEvents: async () => {
     set({ isLoading: true, error: null });
     try {
       const userId = get().getUserIdFromToken();
-      if (userId) {
-        const response = await axiosInstance.get(`/performerEvent/eventhistory/${userId}`, {
-          withCredentials: true
-        });
-        
-        const events: PerformerEventHistory[] = response.data.events.map((event: PerformerEventHistory) => ({
-          ...event,
-          date: new Date(event.date).toISOString(),
-          createdAt: new Date(event.createdAt).toISOString(),
-          updatedAt: new Date(event.updatedAt).toISOString(),
-        }));
-        
-        set({ 
-          performerEvents: events,
-          totalCount: response.data.totalCount, 
-          isLoading: false 
-        });
-      } else {
-        set({ error: 'Unable to fetch user ID from token', isLoading: false });
+      if (!userId) {
+        throw new Error("Unable to fetch user ID from token");
       }
+
+      const { events, totalCount } = await fetchPerformerEventHistory(userId);
+
+      set({ performerEvents: events, totalCount, isLoading: false });
     } catch (error) {
-      set({ error: 'Failed to fetch events', isLoading: false });
-      console.error('Error fetching events:', error);
+      set({ error: error instanceof Error ? error.message : "Unknown error", isLoading: false });
     }
   },
 
@@ -67,19 +53,19 @@ export const useEventHistory = create<PerformerEventHistoryStore>((set, get) => 
       const getCookie = (name: string): string | undefined => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
-        if (parts.length > 1) return parts[1].split(';')[0];
+        if (parts.length > 1) return parts[1].split(";")[0];
         return undefined;
       };
 
-      const token = getCookie('userToken');
-      if (token) {
-        const payload = token.split('.')[1];
-        const decodedPayload = JSON.parse(atob(payload));
-        return decodedPayload.id as string;
-      }
-      return null;
+      const token = getCookie("userToken");
+      if (!token) return null;
+
+      const payload = token.split(".")[1];
+      const decodedPayload = JSON.parse(atob(payload));
+
+      return decodedPayload.id || null;
     } catch (error) {
-      console.error('Error extracting user ID from token:', error);
+      console.error("Error extracting user ID from token:", error);
       return null;
     }
   },
@@ -87,6 +73,7 @@ export const useEventHistory = create<PerformerEventHistoryStore>((set, get) => 
   removeEvent: (eventId: string) => {
     set((state) => ({
       performerEvents: state.performerEvents.filter((event) => event._id !== eventId),
+      totalCount: state.totalCount > 0 ? state.totalCount - 1 : 0
     }));
-  },
+  }
 }));

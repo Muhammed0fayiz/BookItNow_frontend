@@ -10,9 +10,8 @@ import Sidebar from '@/component/performersidebar';
 // Store Hooks
 import { useUIStore } from '@/store/useUIStore';
 import usePerformerStore from '@/store/usePerformerStore';
-import axiosInstance from '@/shared/axiousintance';
 import { useSlotStore } from '@/store/useslotDetails';
-import { addSlot } from '@/services/performer';
+import { addSlot, removeSlot } from '@/services/performer';
 
 // Type Definitions
 interface Slot {
@@ -91,18 +90,21 @@ const SlotManagement: React.FC = () => {
   };
   
   
-  const handleRemoveSlot = async (slotId:string) => {
-    try {
-      const response = await axiosInstance.post(`/remove-slot/${slotId}`, {
-        userId: performerDetails?.userId, // Pass the performer ID here
-      });
+  const handleRemoveSlot = async (slotId: string) => {
+    if (!performerDetails?.userId) {
+      console.error("Performer ID is missing");
+      return;
+    }
   
-      if (response.data.message === 'Slot removed successfully') {
-        console.log('Slot removed');
-        // You can also update the UI to reflect the removed slot.
+    try {
+      const response = await removeSlot(slotId, performerDetails.userId);
+  
+      if (response.message === "Slot removed successfully") {
+        console.log("Slot removed");
+        // You can update the UI here if needed
       }
     } catch (error) {
-      console.error('Error removing slot:', error);
+      console.error("Failed to remove slot:", error);
     }
   };
   

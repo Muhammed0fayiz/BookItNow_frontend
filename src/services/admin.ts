@@ -1,7 +1,7 @@
 import axiosInstance from "@/shared/axiousintance";
 import { PerformerApiResponse, UserApiResponse } from "@/types/user";
 import axios from "axios";
-
+import { Events } from '@/types/store';
 export const checkSession = async () => {
     try {
       const response = await axiosInstance.get('/admin/checkSession', { withCredentials: true });
@@ -66,27 +66,6 @@ export const checkSession = async () => {
   };
   
 
-  export const blockEvent = async (eventId: string, duration: string, reason: string) => {
-    try {
-      const response = await axiosInstance.post(
-        `/admin/blockUnblockEvents/${eventId}`,
-        { duration, reason, action: 'block' },
-        { withCredentials: true }
-      );
-      return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-      
-        throw new Error(error.response?.data?.message || 'Failed to block event');
-      } else if (error instanceof Error) {
- 
-        throw new Error(error.message);
-      } else {
-     
-        throw new Error('An unknown error occurred');
-      }
-    }
-  };
 
 
 
@@ -210,3 +189,42 @@ export const fetchAllEvents = async () => {
   }
 };
 
+export const blockEvent = async (eventId: string, duration: string, reason: string) => {
+  try {
+    const response = await axiosInstance.post(`/admin/blockUnblockEvents/${eventId}`, {
+      duration,
+      reason,
+      action: 'block'
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error blocking event:', error);
+    throw error;
+  }
+}
+
+
+export const unblockEvent = async (eventId: string) => {
+  try {
+    const response = await axiosInstance.post(`/admin/blockUnblockEvents/${eventId}`, {
+      action: 'unblock'
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error unblocking event:', error);
+    throw error;
+  }
+};
+
+
+export const fetchAllAdminEvents = async (): Promise<Events[]> => {
+  try {
+    const response = await axiosInstance.get('/admin/getAllEvents');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching admin events:', error);
+    throw error;
+  }
+};

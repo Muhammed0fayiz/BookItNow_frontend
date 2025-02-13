@@ -3,12 +3,13 @@ import React, { useState, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes, faChevronLeft, faChevronRight, faSearch } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '@/shared/axiousintance';
 import useAllEventsAdminStore from '@/store/useAllEventsAdmin';
 import Image from "next/image";
 import Sidebar from '@/component/adminSidebar';
 import BlockEventModal from '@/component/adminEventBlock';
 import Description from '@/component/description';
+import { adminLogout, blockEvent, checkAdminSession, unblockEvent } from '@/services/admin';
+import { toast } from 'sonner';
 
 
 const EventManagement = () => {
@@ -45,21 +46,13 @@ const EventManagement = () => {
     }
   
     try {
-      const response = await axiosInstance.post(`/admin/blockUnblockEvents/${selectedEvent}`, {
-        duration,
-        reason,
-        action: 'block'
-      });
-      
-      if(response.status === 200) {
-        fetchAllEvents();
-        setIsBlockModalOpen(false);
-      }
+      await blockEvent(selectedEvent, duration, reason);
+      fetchAllEvents();
+      setIsBlockModalOpen(false);
     } catch (error) {
-      console.error('Error blocking event:', error);
+      console.error('Failed to block event:', error);
     }
   };
-
   // Unblock Event Handler
   const handleUnblockEvent = async () => {
     if (!selectedEvent) {
@@ -68,19 +61,13 @@ const EventManagement = () => {
     }
   
     try {
-      const response = await axiosInstance.post(`/admin/blockUnblockEvents/${selectedEvent}`, {
-        action: 'unblock'
-      });
-      
-      if(response.status === 200) {
-        fetchAllEvents();
-        setIsUnblockConfirmOpen(false);
-      }
+      await unblockEvent(selectedEvent);
+      fetchAllEvents();
+      setIsUnblockConfirmOpen(false);
     } catch (error) {
-      console.error('Error unblocking event:', error);
+      console.error('Failed to unblock event:', error);
     }
   };
-
   // Block/Unblock Event Selector
   const blockUnblockEvent = async (_id?: string) => {
     if (!_id) {
@@ -125,32 +112,33 @@ const EventManagement = () => {
   // Logout Handler
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.post('/admin/adminLogout');
-      if (response.data.success) {
+      const response = await adminLogout(); 
+      if (response.success) {
+        toast.success('Logged out successfully');
         setTimeout(() => {
           router.replace('/adminlogin');
         }, 1000);
+      } else {
+        toast.error('Logout failed: ' + response.message);
       }
     } catch (error) {
+      toast.error('Error during logout');
       console.error('Error during logout:', error);
     }
   };
 
   // Session Check Effect
+
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await axiosInstance.get('/admin/checkSession');
-        if (!response.data.isAuthenticated) {
-          router.replace('/adminlogin');
-        }
-      } catch (error) {
-        console.error('Session check failed:', error);
+    const verifySession = async () => {
+      const isAuthenticated = await checkAdminSession();
+      if (!isAuthenticated) {
+        router.replace('/adminlogin');
       }
     };
-    checkSession();
+  
+    verifySession();
   }, [router]);
-
   // Loading Effect
   useEffect(() => {
     const timer = setTimeout(() => {

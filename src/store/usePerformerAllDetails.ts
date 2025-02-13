@@ -1,5 +1,5 @@
+import { fetchPerformerDetails } from "@/services/performer";
 import { create } from "zustand";
-import axiosInstance from "@/shared/axiousintance";
 
 interface PerformerAllDetails {
   walletAmount: number | null;
@@ -49,12 +49,8 @@ const usePerformerAllDetails = create<PerformerAllAdminStore>((set) => ({
   fetchPerformerAllDetails: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get(`/performer/performerAllDetails/${userId}`,{withCredentials: true});
-      if (response.status === 200) {
-        set({ performerAllDetails: response.data.performerDetails, isLoading: false });
-      } else {
-        set({ error: "Failed to fetch performer details", isLoading: false });
-      }
+      const performerDetails = await fetchPerformerDetails(userId);
+      set({ performerAllDetails: performerDetails, isLoading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Unknown error",

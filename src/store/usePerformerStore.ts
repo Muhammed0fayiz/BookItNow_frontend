@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
-import { PerformerStore, PerformerDetails, PerformerStats, ChatMessage } from '@/types/store';
+
+import { PerformerStore, PerformerDetails, PerformerStats } from '@/types/store';
+import { getPerformerDetails } from '@/services/performer';
 
 const defaultStats: PerformerStats = {
   upcomingEvents: 0,
@@ -12,10 +13,7 @@ const defaultStats: PerformerStats = {
 const usePerformerStore = create<PerformerStore>((set) => ({
   performerDetails: null,
   stats: defaultStats,
-  messages: [],
   sidebarOpen: false,
-  chatOpen: false,
-  newMessage: '',
 
   fetchPerformerDetails: async () => {
     try {
@@ -32,31 +30,31 @@ const usePerformerStore = create<PerformerStore>((set) => ({
         const decodedPayload = JSON.parse(atob(payload));
         const userId = decodedPayload.id;
 
-        const response = await axiosInstance.get(`/performer/getPerformer/${userId}`,{withCredentials: true});
-        if (response.data.response) {
-          const performerData: PerformerDetails = {
-            PId:userId,
-            userId: response.data.response.userId,
-            bandName: response.data.response.bandName,
-            place: response.data.response.place,
-            rating: response.data.response.rating,
-            description: response.data.response.description,
-            image: response.data.response.profileImage,
-            genre: response.data.response.genre || 'Not specified',
-            totalReviews: response.data.response.totalReviews,
-            walletBalance: response.data.response.walletBalance,
+        const performerData = await getPerformerDetails(userId);
+        if (performerData) {
+          const performerDetails: PerformerDetails = {
+            PId: userId,
+            userId: performerData.userId,
+            bandName: performerData.bandName,
+            place: performerData.place,
+            rating: performerData.rating,
+            description: performerData.description,
+            image: performerData.profileImage,
+            genre: performerData.genre || 'Not specified',
+            totalReviews: performerData.totalReviews,
+            walletBalance: performerData.walletBalance,
             imageUrl: undefined,
-            mobileNumber:response.data.response.mobileNumber
+            mobileNumber: performerData.mobileNumber
           };
 
           const stats: PerformerStats = {
-            upcomingEvents: response.data.response.upcomingEvents || 0,
-            pastEvents: response.data.response.pastEvents || 0,
-            walletBalance: response.data.response.walletBalance || 0,
-            totalReviews: response.data.response.totalReviews || 0
+            upcomingEvents: performerData.upcomingEvents || 0,
+            pastEvents: performerData.pastEvents || 0,
+            walletBalance: performerData.walletBalance || 0,
+            totalReviews: performerData.totalReviews || 0
           };
 
-          set({ performerDetails: performerData, stats });
+          set({ performerDetails, stats });
         }
       }
     } catch (error) {
@@ -64,32 +62,9 @@ const usePerformerStore = create<PerformerStore>((set) => ({
     }
   },
 
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
-
-  sendMessage: (message: string) => {
-    if (message.trim()) {
-      set((state) => {
-        const newMessage: ChatMessage = {
-          id: Date.now(),
-          text: message,
-          sender: 'performer',
-          timestamp: new Date() // Added timestamp field
-          ,
-          content: undefined
-        };
-        
-        return {
-          messages: [...state.messages, newMessage],
-          newMessage: ''
-        };
-      });
-    }
-  },
-
   handleLogout: () => {
     document.cookie = 'userToken=; Max-Age=0; path=/;';
-    window.location.href = '/auth';
+    window.location.href = '/';
   },
 }));
 

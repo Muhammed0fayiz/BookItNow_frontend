@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
+// import { fetchPerformers } from '@/services/performerService';
 import { Performer } from '@/types/store';
+import { fetchPerformers } from '@/services/userEvent';
 
 interface PerformersState {
   performers: Performer[];
@@ -24,10 +25,14 @@ const usePerformersStore = create<PerformersState>((set) => ({
         set({ error: 'Failed to retrieve user ID', isLoading: false });
         return;
       }
-      const response = await axiosInstance.get<{ data: Performer[] }>(`/userevent/getperformers/${id}`,{withCredentials: true});
-      set({ performers: response.data.data, isLoading: false });
+
+      const performers = await fetchPerformers(id);
+      set({ performers, isLoading: false });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to fetch performers', isLoading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch performers',
+        isLoading: false,
+      });
     }
   },
 
@@ -43,6 +48,7 @@ const usePerformersStore = create<PerformersState>((set) => ({
         if (parts.length > 1) return parts[1].split(';')[0];
         return undefined;
       };
+
       const token = getCookie('userToken');
       if (token) {
         const payload = token.split('.')[1];

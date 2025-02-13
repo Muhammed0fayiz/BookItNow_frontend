@@ -3,6 +3,10 @@ import { ChatRoom } from './../types/store';
 import axiosInstance from "@/shared/axiousintance";
 import mongoose from "mongoose";
 import { Socket } from "socket.io-client";
+import { ChatResponse } from '@/types/chat';
+
+
+
 export const startChat = async (userId: string, performerId: string) => {
     try {
       await axiosInstance.post(`/chat/chatwithPerformer/${userId}/${performerId}`);
@@ -108,3 +112,31 @@ export const chatSocketService = {
 };
 
 
+export const fetchAllChatRooms = async (userId: string): Promise<ChatRoom[]> => {
+  try {
+    const response = await axiosInstance.get<{ data: ChatRoom[] }>(`/chat/chatrooms/${userId}`, {
+      withCredentials: true,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching chat rooms:', error);
+    throw error;
+  }
+};
+
+
+
+
+
+export const fetchChatNotifications = async (userId: string): Promise<ChatResponse> => {
+  try {
+    const response = await axiosInstance.get<{ data: ChatResponse }>(
+      `/chat/messageNotification/${userId}`,
+      { withCredentials: true }
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching chat notifications:', error);
+    throw error;
+  }
+};

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+
+import { appealBlockedEvent } from '@/services/performerEvent';
 
 interface PerformerAppealProps {
   eventId: string;
@@ -34,17 +35,15 @@ const PerformerAppeal: React.FC<PerformerAppealProps> = ({
 
   const handleAppeal = async () => {
     setError(null);
-
+  
     if (appealMessage.trim().length < 10) {
       setError('Appeal message must be at least 10 characters long');
       return;
     }
-
+  
     try {
       setIsSubmitting(true);
-      await axiosInstance.post(`/performerEvent/appealBlockedEvent/${eventId}/${performerEmail}`, {
-        appealMessage
-      });
+      await appealBlockedEvent(eventId, performerEmail ?? '', appealMessage);
       
       setIsSuccessful(true);
       setTimeout(handleClose, 2000);

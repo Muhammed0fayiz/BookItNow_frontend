@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faWallet, faBars, faTimes, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import axiosInstance from '@/shared/axiousintance';
+
 import useAdminDetails from '@/store/useAdminDetails';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -98,18 +98,16 @@ const AdminDashboard = () => {
     fetchAdminDetails();
   }, [fetchAdminDetails]);
   
+
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const response = await axiosInstance.get('/admin/checkSession');
-        if (!response.data.isAuthenticated) {
-          router.replace('/adminlogin');
-        }
-      } catch (error) {
-        console.error('Session check failed:', error);
+    const verifySession = async () => {
+      const isAuthenticated = await checkAdminSession();
+      if (!isAuthenticated) {
+        router.replace('/adminlogin');
       }
     };
-    checkSession();
+  
+    verifySession();
   }, [router]);
   
   useEffect(() => {

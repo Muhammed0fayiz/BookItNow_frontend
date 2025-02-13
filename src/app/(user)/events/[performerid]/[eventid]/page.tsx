@@ -5,7 +5,6 @@ import useAllEventsStore from "@/store/useAllEvents";
 import usePerformersStore from "@/store/useAllPerformerStore";
 import { Calendar, MapPin, Clock, Share2} from "lucide-react";
 import useUserStore from "@/store/useUserStore";
-import axiosInstance from "@/shared/axiousintance";
 import EventPayment from "@/component/eventPayment";
 import BookingConfirmationModal from "@/component/bookingconfirmation";
 
@@ -172,62 +171,43 @@ const EventDetailsPage = () => {
     }, 2000);
   };
   const handleWalletPaymentClick = async () => {
-    // Reset previous errors
     setAvailabilityError("");
     setPaymentError("");
   
-    // First validate the form
-    if (!validateForm()) {
-      return; // Exit if validation fails
-    }
+    if (!validateForm()) return;
   
-    // Check if event exists
     if (!event) {
       setPaymentError("Event details are missing");
       return;
     }
   
-    try {
-      // Check availability first
-      const availabilityResponse = await axiosInstance.post(
-        "/userEvent/checkavailable",
-        {
-          formData: formData,
-          eventId: eventId,
-          performerId: performerId,
-          userId: userProfile?.id,
-        },
-        { withCredentials: true }
-      );
+    // Ensure userProfile is not null
+    if (!userProfile) {
+      setPaymentError("User profile is missing. Please log in.");
+      return;
+    }
   
-      if (availabilityResponse.data.data === true) {
-        // Check wallet balance
-        if (
-          !userProfile?.walletBalance ||
-          event.price * 0.1 > userProfile.walletBalance
-        ) {
+    try {
+      const response = await checkEventAvailability(formData, eventId, performerId, userProfile.id);
+  
+      if (response.data === true) {
+        if (!userProfile.walletBalance || event.price * 0.1 > userProfile.walletBalance) {
           setPaymentError("Insufficient wallet balance");
           return;
         }
   
-        // If all validations pass, show the wallet payment modal
         setShowWalletPaymentModal(true);
       } else {
-        setAvailabilityError(
-          "This date is not available. Please choose another date."
-        );
-        setTimeout(() => {
-          setAvailabilityError("");
-        }, 3000);
+        setAvailabilityError("This date is not available. Please choose another date.");
+        setTimeout(() => setAvailabilityError(""), 3000);
       }
     } catch (error) {
       setAvailabilityError("Error checking availability. Please try again.");
       console.error("Availability check failed:", error);
-      setTimeout(() => {
-        setAvailabilityError("");
-      }, 2000);
+      setTimeout(() => setAvailabilityError(""), 2000);
     }
   };
+  
   
   const handleWalletPaymentConfirm = async () => {
     setAvailabilityError("");

@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import mongoose from 'mongoose';
 import { Menu, MessageCircle, Send, Search } from 'lucide-react';
-// import axiosInstance from '@/shared/axiousintance';
 import usePerformerStore from '@/store/usePerformerStore';
 import { useUIStore } from '@/store/useUIStore';
 import Sidebar from '@/component/performersidebar';
@@ -33,12 +32,6 @@ interface Message {
   __v: number;
   role?: string;
 }
-
-// interface OnlineStatus {
-//   isOnline: boolean;
-//   lastSeen?: Date;
-// }
-
 const ChatSession: React.FC = () => {
   const router = useRouter();
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -112,20 +105,12 @@ const ChatSession: React.FC = () => {
           selectedChatRoom.otherId,
           newMessage
         );
-  
-        // Emit socket event
-
-
-         // Emit socket event
                 chatSocketService.emitMessage(
                   socket,
                   selectedChatRoom.myId,
                   selectedChatRoom.otherId,
                   newMessage
                 );
-     
-  
-        // Optimistically add new message
           const newMessageObj: Message = {
                 _id: `temp-${Date.now()}`,
                 roomId: "",

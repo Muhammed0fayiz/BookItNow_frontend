@@ -1,14 +1,10 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
 import { Events } from '@/types/store';
-
-// Store interface for fetching all events
+import { fetchAllAdminEvents } from '@/services/admin';
 interface EventsStore {
   events: Events[];
   isLoading: boolean;
   error: string | null;
-
-  // Action to fetch all events
   fetchAllEvents: () => Promise<void>;
 }
 
@@ -17,23 +13,15 @@ const useAllEventsAdminStore = create<EventsStore>((set) => ({
   isLoading: false,
   error: null,
 
-  // Fetch all events
   fetchAllEvents: async () => {
     try {
       set({ isLoading: true, error: null });
 
-      const response = await axiosInstance.get('/admin/getAllEvents');
-
-      if (response.status === 200) {
-        set({
-          events: response.data || [],
-          isLoading: false,
-        });
-      }
+      const events = await fetchAllAdminEvents();
+      set({ events, isLoading: false });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       set({
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Failed to fetch events',
         isLoading: false,
       });
     }

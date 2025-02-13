@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, performerDetails, onLogout })
           <h3 className="text-md font-semibold">
             {performerDetails?.bandName || 'Welcome Back'}
           </h3>
-          <span className="text-sm font-light">Performer</span>
+          <span className="text-sm font-light">Profile</span>
         </div>
       </div>
 

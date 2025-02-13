@@ -11,10 +11,9 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({}) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/home'); // Navigate to home page after 1 second
+      router.replace('/home'); 
     }, 1000);
 
-    // Cleanup timer on component unmount
     return () => clearTimeout(timer);
   }, [router]);
 

@@ -1,7 +1,7 @@
-
 import { create } from 'zustand';
-import { UpcomingEvent, UpcomingEventsStore } from '@/types/store';
-import axiosInstance from '@/shared/axiousintance';
+import {  UpcomingEventsStore } from '@/types/store';
+import { fetchUpcomingEvents } from '@/services/userEvent';
+
 
 export const useUpcomingEventsStore = create<UpcomingEventsStore>((set, get) => ({
   upcomingEvents: [],
@@ -14,25 +14,14 @@ export const useUpcomingEventsStore = create<UpcomingEventsStore>((set, get) => 
     try {
       const userId = get().getUserIdFromToken();
       if (userId) {
-        const response = await axiosInstance.get(`/userEvent/upcomingevents/${userId}`, { withCredentials: true });
-        const events: UpcomingEvent[] = response.data.events.map((event: UpcomingEvent) => ({
-          ...event,
-          date: new Date(event.date).toISOString(),
-          createdAt: new Date(event.createdAt).toISOString(),
-          updatedAt: new Date(event.updatedAt).toISOString(),
-        }));
-        
-        set({
-          upcomingEvents: events,
-          totalCount: response.data.totalCount, // Set totalCount here
-          isLoading: false,
-        });
+        const { events, totalCount } = await fetchUpcomingEvents(userId);
+
+        set({ upcomingEvents: events, totalCount, isLoading: false });
       } else {
         set({ error: 'Failed to fetch user ID from token', isLoading: false });
       }
     } catch (error) {
       set({ error: 'Failed to fetch upcoming events', isLoading: false });
-      console.error('Error fetching upcoming events:', error);
     }
   },
 

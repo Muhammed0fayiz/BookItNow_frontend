@@ -1,57 +1,43 @@
 import { create } from 'zustand';
-import axiosInstance from '@/shared/axiousintance';
 import { Events } from '@/types/store';
+import { fetchTopRatedEvents } from '@/services/userEvent';
 
-// Store interface for fetching all events
 interface EventsStore {
   topEvents: Events[];
   isLoading: boolean;
   error: string | null;
-
-  // Action to fetch all events
-  fetchTopEvents : () => Promise<void>;
-  getUserIdFromToken: () => string | null; // Utility to get user ID
+  fetchTopEvents: () => Promise<void>;
+  getUserIdFromToken: () => string | null;
 }
 
-const topRatedEvent = create<EventsStore>((set) => ({
+const topRatedEvent = create<EventsStore>((set, get) => ({
   topEvents: [],
   isLoading: false,
   error: null,
 
-  // Fetch all events using the ID from the token
-  fetchTopEvents : async () => {
+  fetchTopEvents: async () => {
     try {
       set({ isLoading: true, error: null });
-
-      const userId = topRatedEvent.getState().getUserIdFromToken();
-
+  
+      const userId = get().getUserIdFromToken();
+  
       if (!userId) {
-        set({
-          error: 'Failed to retrieve user ID from token',
-          isLoading: false,
-        });
+        set({ error: 'Failed to retrieve user ID from token', isLoading: false });
         return;
       }
-
-      const response = await axiosInstance.get(`/userEvent/top-rated-event/${userId}`,{withCredentials: true});
-console.log('res',response);
-
-      if (response.status === 200) {
-        set({
-          topEvents: response.data.data || [],
-          isLoading: false,
-        });
-      }
+  
+      const events = await fetchTopRatedEvents(userId);
+      set({ topEvents: events, isLoading: false });
+  
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
+     
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+  
+      set({ error: errorMessage, isLoading: false });
     }
   },
+  
 
-  // Utility function to get user ID from token in cookie
   getUserIdFromToken: () => {
     try {
       const getCookie = (name: string): string | undefined => {
