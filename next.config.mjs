@@ -1,5 +1,4 @@
 
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -9,13 +8,6 @@ const nextConfig = {
       "lh3.googleusercontent.com", 
     ],
   },
-  experimental: {
-    runtime: 'nodejs',
-  },
 };
 
-
 export default nextConfig;
-
-
-  
