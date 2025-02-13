@@ -132,6 +132,17 @@ export const config = {
     "/home",
     "/",
     "/about",
+    "/chat",
+    "/event-history",
+    "/favorite-events",
+    "/user-wallet",
+    "/events",
+    "/events/:performerid/:eventid*",
+    "/events/paymenterror",
+    "/events/paymentsuccess",
+    "/upcoming-events",
+
+
     "/performer-dashboard",
     "/performer-profile",
     "/performer-eventhistory",
@@ -139,18 +150,10 @@ export const config = {
     "/event-management",
     "/event-management/eventupdate",
     "/event-management/eventupdate/:id*",
-    "/events",
-    "/events/:performerid/:eventid*",
-    "/events/paymenterror",
-    "/events/paymentsuccess",
-    "/upcoming-events",
-    "/chatsession",
+
     "/performer-slotmanagement",
     "/performer-upcomingevent",
     "/wallet-management",
-    "/chat",
-    "/event-history",
-    "/favorite-events",
-    "/user-wallet",
+   
   ],
 };
