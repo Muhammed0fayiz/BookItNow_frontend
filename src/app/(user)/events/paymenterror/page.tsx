@@ -1,17 +1,20 @@
-'use client'
-import React, { useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useState, Suspense } from 'react';
 import { XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-interface PaymentErrorProps {
-}
-
-const PaymentError: React.FC<PaymentErrorProps> = ({}) => {
+const PaymentError: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const eventId = searchParams.get('eventId');
-  const performerId = searchParams.get('performerId');
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [performerId, setPerformerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEventId(searchParams.get('eventId'));
+    setPerformerId(searchParams.get('performerId'));
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -36,4 +39,10 @@ const PaymentError: React.FC<PaymentErrorProps> = ({}) => {
   );
 };
 
-export default PaymentError;
+const PaymentErrorPage = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <PaymentError />
+  </Suspense>
+);
+
+export default PaymentErrorPage;

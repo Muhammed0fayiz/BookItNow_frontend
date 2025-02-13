@@ -49,6 +49,21 @@ export const uploadPEvent = async (performerId: string, formData: FormData) => {
   }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const getEditEvent = async (eventId: string) => {
     try {
 
