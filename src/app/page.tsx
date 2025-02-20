@@ -43,7 +43,7 @@ const LoginSignup: React.FC = () => {
             height={500} 
             className="w-full h-full object-cover" 
           />
-          <h1>jejlsfdjsf{process.env.NEXT_PUBLIC_SERVER_URL}</h1>
+        
         </div>
 
         <div className="w-full md:w-1/2 p-6 flex flex-col justify-center">
