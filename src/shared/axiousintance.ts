@@ -1,5 +1,7 @@
 
-export const localhost_backend = process.env.NEXT_PUBLIC_SERVER_URL;
+// export const localhost_backend = process.env.NEXT_PUBLIC_SERVER_URL;
+export const localhost_backend ='http://api.bookitnow.shop';
+
 import axios from 'axios';
 import Cookies from 'js-cookie'; 
 
