@@ -671,6 +671,7 @@ const EventsPage = () => {
                       >
                         View Profile
                       </button>
+                      
                     </div>
                   ))}
                 </div>

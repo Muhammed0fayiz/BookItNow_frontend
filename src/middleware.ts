@@ -38,13 +38,22 @@ export async function middleware(req: NextRequest) {
     return userProtectedPaths.some(path => {
       // Check for exact match
       if (pathname === path) return true;
-      // Check for dynamic events route match
+      
+      // Check for dynamic events route match with both performerid and eventid
       if (path === "/events" && 
           pathname.startsWith("/events/") &&
           pathname.split("/").length === 4 && 
           // Exclude payment routes
           pathname !== "/events/paymenterror" &&
           pathname !== "/events/success") return true;
+      
+      // Check for /events/:performerid pattern (just performer id)
+      if (path === "/events" && 
+          pathname.startsWith("/events/") &&
+          pathname.split("/").length === 3 &&
+          pathname !== "/events/paymenterror" &&
+          pathname !== "/events/success") return true;
+          
       return false;
     });
   };
@@ -141,7 +150,7 @@ export const config = {
     "/events/paymenterror",
     "/events/paymentsuccess",
     "/upcoming-events",
-
+"/events/:performerid",  
 
     "/performer-dashboard",
     "/performer-profile",
