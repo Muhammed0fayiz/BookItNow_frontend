@@ -1,5 +1,8 @@
-
 /** @type {import('next').NextConfig} */
+import dotenv from 'dotenv';
+
+const envConfig = dotenv.config({ path: '.env.local' });
+
 const nextConfig = {
   images: {
     domains: [
@@ -8,6 +11,9 @@ const nextConfig = {
       "lh3.googleusercontent.com", 
     ],
   },
+  env: {
+    ...(envConfig.parsed || {})
+  }
 };
 
 export default nextConfig;
