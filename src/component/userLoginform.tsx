@@ -73,7 +73,6 @@ export const UserLoginForm: React.FC<UserLoginFormProps> = ({ toggleForm, toggle
   return (
     <div className="form-container">
       <h1 className="text-3xl font-bold mb-6 text-center">Sign In as User</h1>
-      <h1>jejlsfdddjsf{process.env.NEXT_PUBLIC_SERVER_URL}</h1>
       <input 
         type="email" 
         name="email" 
