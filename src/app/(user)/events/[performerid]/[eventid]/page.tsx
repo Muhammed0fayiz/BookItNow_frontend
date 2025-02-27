@@ -75,8 +75,7 @@ const EventDetailsPage = () => {
 
   const event = events.find((e) => e._id === eventId);
 
-  console.log("events", event);
-  console.log("performerid", performerId);
+
 
   const performer = performers.find((p) => p.userId === performerId);
   console.log("performer", performer);
