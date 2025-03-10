@@ -1,3 +1,4 @@
+import { PerformerProfileData } from './../types/performer';
 
 import { LoginCredentials } from './../types/user';
 import axiosInstance from '@/shared/axiousintance';
@@ -163,4 +164,20 @@ export const appealBlockedEvent = async (eventId: string, appealMessage: string)
   }
 };
 
+export const updatePerformerProfile = async (
+  userId: string,
+  formData: PerformerProfileData,
+  imageUrl: string
+): Promise<{ message: string }> => {
+  try {
+    const response = await axiosInstance.put(`/performer/updatePerformerProfile/${userId}`, {
+      ...formData,
+      profileImage: imageUrl,
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 

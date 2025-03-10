@@ -12,3 +12,8 @@ export interface PerformerResponse {
     pastEvents?: number;
     mobileNumber: string;
   }
+
+
+  export interface PerformerProfileData {
+    [key: string]: string | File | null;
+  }

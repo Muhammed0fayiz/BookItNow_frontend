@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, X, Upload, CheckCircle } from 'lucide-react';
-import axiosInstance from '@/shared/axiousintance';
+import { Camera, Upload, CheckCircle } from 'lucide-react';
+// import { Camera, X, Upload, CheckCircle } from 'lucide-react';
 import Image from "next/image";
 import { useEdgeStore } from '@/lib/edgestore';
+import { updatePerformerProfile } from '@/services/performer';
 
 interface PerformerDetails {
   userId?: string;
@@ -21,7 +22,7 @@ interface EditPerformerProfileFormProps {
 
 const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
   performerDetails,
-  onClose,
+  // onClose,
   onSuccess,
 }) => {
   const [formData, setFormData] = useState({
@@ -175,62 +176,58 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
     e.preventDefault();
     
     const newErrors: Record<string, string> = {};
-    Object.keys(formData).forEach(key => {
-      if (key !== 'image') {
-        const error = validateField(key, formData[key as keyof typeof formData]);
+    
+    (Object.keys(formData) as Array<keyof typeof formData>).forEach((key) => {
+      if (key !== "image") {
+        const error = validateField(key, formData[key]); // ✅ No error now
         if (error) newErrors[key] = error;
       }
     });
-
+  
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
+  
     setIsSubmitting(true);
-
+  
     try {
-      let imageUrl = formData.image;
-    
-
+      let imageUrl: string = formData.image || "";
+  
       if (profilePic) {
-        const imageResponse = await edgestore.publicFiles.upload({
-          file: profilePic,
-        });
-
+        const imageResponse = await edgestore.publicFiles.upload({ file: profilePic });
+  
         if (!imageResponse?.url) {
-          throw new Error('Image upload failed');
+          throw new Error("Image upload failed");
         }
-
+  
         imageUrl = imageResponse.url;
       }
-      console.log('image urel',imageUrl)
-      const response = await axiosInstance.put(
-        `/performer/updatePerformerProfile/${performerDetails?.userId}`,
-        {
-          ...formData,
-          profileImage: imageUrl,
-        }
-      );
+  
 
-      if (response.data.message === 'Profile updated successfully') {
+  
+      // Call the API service
+      const data = await updatePerformerProfile(performerDetails?.userId as string, formData, imageUrl);
+  
+      if (data.message === "Profile updated successfully") {
         onSuccess();
       } else {
-        throw new Error(response.data.message);
+        throw new Error(data.message);
       }
     } catch (error) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        submit: 'Failed to update profile. Please try again.'
+        submit: "Failed to update profile. Please try again.",
       }));
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-xl shadow-2xl max-w-2xl mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
+      {/* <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
           Edit Performer Profile
         </h2>
@@ -240,11 +237,11 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
         >
           <X className="w-6 h-6 text-gray-500" />
         </button>
-      </div>
+      </div> */}
       
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
-          <label className="block text-lg font-medium text-gray-700">Profile Picture</label>
+          {/* <label className="block text-lg font-medium text-gray-700">Profile Picture</label> */}
           <div
             className={`relative flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 transition-all
               ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}
