@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, X, Upload, CheckCircle } from 'lucide-react';
-import { axiosInstanceMultipart } from '@/shared/axiousintance';
+import axiosInstance from '@/shared/axiousintance';
 import Image from "next/image";
+import { useEdgeStore } from '@/lib/edgestore';
 
 interface PerformerDetails {
   userId?: string;
@@ -36,6 +37,7 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imageInfo, setImageInfo] = useState<{ size: string; status: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const { edgestore } = useEdgeStore();
 
   useEffect(() => {
     if (performerDetails) {
@@ -188,19 +190,26 @@ const EditPerformerProfileForm: React.FC<EditPerformerProfileFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append('bandName', formData.bandName);
-      formDataToSubmit.append('place', formData.place);
-      formDataToSubmit.append('mobileNumber', formData.mobileNumber);
-      if (profilePic) {
-        formDataToSubmit.append('image', profilePic);
-      }
+      let imageUrl = formData.image;
+    
 
-      const response = await axiosInstanceMultipart.put(
+      if (profilePic) {
+        const imageResponse = await edgestore.publicFiles.upload({
+          file: profilePic,
+        });
+
+        if (!imageResponse?.url) {
+          throw new Error('Image upload failed');
+        }
+
+        imageUrl = imageResponse.url;
+      }
+      console.log('image urel',imageUrl)
+      const response = await axiosInstance.put(
         `/performer/updatePerformerProfile/${performerDetails?.userId}`,
-        formDataToSubmit,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          ...formData,
+          profileImage: imageUrl,
         }
       );
 

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-
+import { AxiosError } from 'axios';
+import { useEdgeStore } from '@/lib/edgestore';
 import Image from "next/image";
 import { editUserProfile } from '@/services/user';
+
 interface EditProfileFormProps {
   onClose: () => void;
   username: string;
@@ -14,6 +16,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { edgestore } = useEdgeStore();
 
   useEffect(() => {
     setUserName(username);
@@ -29,6 +32,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
     const validationError = validateUsername(userName);
     if (validationError) {
@@ -40,14 +44,30 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
     try {
       const userProfile = new FormData();
       userProfile.append('username', userName);
-      if (profilePic) {
-        userProfile.append('profilePic', profilePic);
-      }
 
-      const response = await editUserProfile(userID,userProfile);
+      if (profilePic) {
+        const imageResponse = await edgestore.publicFiles.upload({
+          file: profilePic,
+        });
+
+        if (!imageResponse?.url) {
+          setError('Image upload failed');
+          setIsSubmitting(false);
+          return;
+        }
+
+        userProfile.append('profilePicUrl',imageResponse.url);
+      }
+console.log('fayiz mannaniuserddid',userID,'userprofile',userProfile)
+      const response = await editUserProfile(userID, userProfile);
       console.log('Profile updated successfully', response);
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response?.data) {
+        setError(error.response.data.message || 'An error occurred');
+      } else {
+        setError('An error occurred while updating the profile');
+      }
       console.error('Failed to update profile:', error);
     } finally {
       setIsSubmitting(false);
@@ -97,23 +117,31 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ onClose, username, us
         className="border rounded p-2 mb-4"
       />
       {imagePreview && (
-       <div className="mt-2 flex justify-center">
-       <Image 
-         src={imagePreview} 
-         width={500}
-         height={300}
-         alt="Profile Preview" 
-         className="w-32 h-32 object-cover rounded" 
-       />
-     </div>
-     
+        <div className="mt-2 flex justify-center">
+          <Image 
+            src={imagePreview} 
+            width={500}
+            height={300}
+            alt="Profile Preview" 
+            className="w-32 h-32 object-cover rounded" 
+          />
+          <button
+            onClick={() => {
+              setImagePreview(null);
+              setProfilePic(null);
+            }}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            Remove
+          </button>
+        </div>
       )}
 
       <div className="flex justify-between mt-4">
         <button
           type="button"
           onClick={handleCancel}
-          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 "
+          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
           disabled={isSubmitting}
         >
           Cancel

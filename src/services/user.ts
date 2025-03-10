@@ -1,6 +1,6 @@
 import { WalletDocument } from "@/types/store";
 import { LoginCredentials, SignUpData } from "./../types/user";
-import axiosInstance, { axiosInstanceMultipart } from "@/shared/axiousintance";
+import axiosInstance from "@/shared/axiousintance";
 
 export const userLogin = async (loginData: LoginCredentials) => {
   try {
@@ -44,10 +44,8 @@ export const signUp = async (signUpData: SignUpData) => {
 
 export const editUserProfile = async (userID: string, userProfile: FormData) => {
   try {
-    const response = await axiosInstanceMultipart.put(`/updateUserProfile/${userID}`, userProfile, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    console.log('hellog',userProfile)
+    const response = await axiosInstance.put(`/updateUserProfile/${userID}`,userProfile,{
       withCredentials: true,
     });
 

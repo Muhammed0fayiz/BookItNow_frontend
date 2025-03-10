@@ -9,6 +9,7 @@ import useUserStore from "@/store/useUserStore"
 import Image from "next/image";
 import { loginImage } from "@/datas/logindatas"
 import Sidebar from "@/component/userSidebar"
+
 import useChatNotifications from "@/store/useChatNotification"
 import { useUpcomingEventsStore } from "@/store/useUserUpcomingEvents"
 import { useUserEventHistory } from "@/store/useUserEventHistory"
@@ -24,6 +25,7 @@ const Profile = () => {
   const { totalCount: userEventHistoryTotalCount, fetchAllEvents: fetchUserEventHistory } = useUserEventHistory()
   const { userProfile, isLoading, error, fetchUserProfile, handleLogout } = useUserStore()
   const {fetchNotifications } = useChatNotifications()
+
 
   useEffect(() => {
     setIsModalOpen(false)

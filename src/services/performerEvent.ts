@@ -39,6 +39,7 @@ export const deletePerformerEvent = async (eventId: string) => {
 
 export const uploadPEvent = async (performerId: string, formData: FormData) => {
   try {
+    console.log('frome',formData)
     const response = await axiosInstance.post(
       `/performerEvent/uploadEvents/${performerId}`,
       formData,{ withCredentials: true }
